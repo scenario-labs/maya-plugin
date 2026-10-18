@@ -75,8 +75,27 @@ def cu_exact(value: Any) -> str:
 
 
 def cu_display(exact: str) -> str:
-    """``"1200"`` -> ``"1,200 CU"``, ``"2.75"`` -> ``"2.75 CU"``."""
-    number = Decimal(exact)
-    if number == number.to_integral_value():
-        return f"{int(number):,} CU"
-    return f"{number:,f} CU"
+    """Spec 4.2: ``"1200"`` -> ``"1,200 CU"``, ``"2.75"`` -> ``"2.75 CU"``, ``"12345"`` -> ``"12.3K CU"``.
+
+    Up to three decimals without trailing zeros, thousands separators below
+    10,000, then K, M and B with three significant digits. A non-zero price
+    that rounds to zero shows as ``< 0.001 CU``.
+    """
+    number = Decimal(str(exact))
+    if number < 10000:
+        rounded = number.quantize(Decimal("0.001"))
+        if number > 0 and rounded == 0:
+            return "< 0.001 CU"
+        text = f"{rounded:,f}"
+        if "." in text:
+            text = text.rstrip("0").rstrip(".")
+        return f"{text} CU"
+    for size, suffix in ((Decimal(10) ** 9, "B"), (Decimal(10) ** 6, "M"), (Decimal(10) ** 3, "K")):
+        if number >= size:
+            scaled = number / size
+            digits = 3 - len(str(int(scaled)))
+            text = f"{scaled:.{max(digits, 0)}f}"
+            if "." in text:
+                text = text.rstrip("0").rstrip(".")
+            return f"{text}{suffix} CU"
+    return f"{number} CU"  # pragma: no cover

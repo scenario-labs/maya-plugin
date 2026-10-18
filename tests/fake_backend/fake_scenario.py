@@ -66,6 +66,8 @@ class State:
         self.assets: dict = {}
         self.files: dict = {}
         self.uploads: dict = {}
+        self.file_requests: list = []  # (name, Range header) per file GET
+        self.file_faults: dict = {}  # name -> list of "503", "cut" (half the bytes, then close), "redirect:<url>"
         self.polls_to_finish = 2
         self.reply_mode = "sse"  # or "json"
         self.issue_sessions = False
@@ -286,10 +288,30 @@ class Handler(BaseHTTPRequestHandler):
 
     def _file(self, name: str) -> None:
         data = self.state.files.get(name)
+        header = self.headers.get("Range") or ""
+        with self.state.lock:
+            self.state.file_requests.append((name, header))
+            queue = self.state.file_faults.get(name) or []
+            fault = queue.pop(0) if queue else ""
         if data is None:
             self._send(404)
             return
-        header = self.headers.get("Range") or ""
+        if fault == "503":
+            self._send(503, b"busy", "text/plain")
+            return
+        if fault.startswith("redirect:"):
+            self._send(302, b"", "text/plain", {"Location": fault[len("redirect:") :]})
+            return
+        if fault == "cut":
+            half = data[: len(data) // 2]
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(half)
+            self.wfile.flush()
+            self.close_connection = True
+            return
         if header.startswith("bytes="):
             start = int(header[6:].split("-")[0] or 0)
             part = data[start:]

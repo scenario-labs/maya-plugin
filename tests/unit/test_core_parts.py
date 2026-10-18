@@ -41,6 +41,14 @@ def test_cu_exact_rejects_nonsense():
 def test_cu_display():
     assert cu_display("1200") == "1,200 CU"
     assert cu_display("2.75") == "2.75 CU"
+    assert cu_display("0.0004") == "< 0.001 CU"
+    assert cu_display("0") == "0 CU"
+    assert cu_display("11.25") == "11.25 CU"
+    assert cu_display("1.23456") == "1.235 CU"
+    assert cu_display("9999") == "9,999 CU"
+    assert cu_display("12345") == "12.3K CU"
+    assert cu_display("120000") == "120K CU"
+    assert cu_display("2500000") == "2.5M CU"
 
 
 # -- quotes ------------------------------------------------------------------
