@@ -27,12 +27,15 @@ for STAGE in $STAGES; do
     if ! kill -0 "$PID" 2>/dev/null; then break; fi
     sleep 1
   done
+  QUIT_OK=1
   if kill -0 "$PID" 2>/dev/null; then
+    QUIT_OK=0
     echo "   Maya still running after ${LIMIT}s: asking it to quit"
     kill -TERM "$PID" 2>/dev/null || true
     sleep 10
   fi
   if [ -f "$OUT/results_$STAGE.json" ]; then
+    python3 -c "import json,sys; p=sys.argv[1]; r=json.load(open(p)); r['checks'].append({'name': 'Maya quit by itself', 'ok': sys.argv[2] == '1', 'detail': '' if sys.argv[2] == '1' else 'stopped by the runner; see quit_' + r['stage'] + '.txt'}); json.dump(r, open(p, 'w'), indent=1)" "$OUT/results_$STAGE.json" "$QUIT_OK"
     python3 -c "import json,sys; r=json.load(open(sys.argv[1])); [print('   ' + ('PASS' if c['ok'] else 'FAIL') + '  ' + c['name'] + ('  (' + c['detail'] + ')' if c['detail'] and not c['ok'] else '')) for c in r['checks']]; [print('   modal: ' + repr(m['title']) + ' answered ' + repr(m['answered'])) for m in r['modals']]" "$OUT/results_$STAGE.json"
   else
     echo "   no results for $STAGE (see $OUT/maya_$STAGE.log)"

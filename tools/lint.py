@@ -16,7 +16,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEXT = (".py", ".md", ".json", ".yml", ".yaml", ".toml", ".txt", ".mel", ".mod", ".sh", ".html", ".css", ".js")
 SKIP = ("ScenarioForMaya/scripts/scenario_maya/_vendor/",)
-EM_DASH = "—"
+EM_DASH = "\u2014"
 SECRETS = (
     (re.compile(r"(?i)(api[_-]?secret|client[_-]?secret|refresh[_-]?token|access[_-]?token)\s*[=:]\s*[\"'][A-Za-z0-9_\-]{16,}[\"']"), "a credential value"),
     (re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{24,}"), "a bearer token"),

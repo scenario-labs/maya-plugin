@@ -36,6 +36,7 @@ class Dispatcher:
         self._timer = None
         self._closed = False
         self.longest_slice_ms = 0.0
+        self.longest_call = ("", 0.0)  # qualified name and ms of the slowest single call
         self.slices = 0
         self.errors: list = []
 
@@ -65,6 +66,8 @@ class Dispatcher:
     def background(self, fn: Callable, on_done: Callable[[Any], Any] | None = None, on_error: Callable[[BaseException], Any] | None = None) -> concurrent.futures.Future:
         """Worker call whose result or error is delivered on the main thread."""
         future = self.run_in_worker(fn)
+
+        future._scenario_callback = on_done or on_error or fn  # type: ignore[attr-defined]
 
         def deliver(done: concurrent.futures.Future) -> None:
             error = done.exception()
@@ -99,7 +102,11 @@ class Dispatcher:
                 future, fn, args, kwargs = self._queue.get_nowait()
             except queue.Empty:
                 break
+            began = time.perf_counter()
             self._run(future, fn, args, kwargs)
+            took = (time.perf_counter() - began) * 1000.0
+            if took > self.longest_call[1]:
+                self.longest_call = (_name(fn, args), took)
             count += 1
             if time.perf_counter() - start >= budget:
                 break
@@ -108,6 +115,9 @@ class Dispatcher:
             self.slices += 1
             self.longest_slice_ms = max(self.longest_slice_ms, elapsed)
         return count
+
+    def reset_timing(self) -> None:
+        self.longest_slice_ms, self.longest_call, self.slices = 0.0, ("", 0.0), 0
 
     def pending(self) -> int:
         return self._queue.qsize()
@@ -159,3 +169,11 @@ class Dispatcher:
             except queue.Empty:
                 break
             future.cancel()
+
+
+def _name(fn: Callable, args: tuple) -> str:
+    """``deliver`` wrappers name the callback they deliver to, which is what a slow slice is about."""
+    target = fn
+    if getattr(fn, "__name__", "") == "deliver" and args:
+        target = getattr(args[0], "_scenario_callback", fn)
+    return getattr(target, "__qualname__", None) or repr(target)[:80]

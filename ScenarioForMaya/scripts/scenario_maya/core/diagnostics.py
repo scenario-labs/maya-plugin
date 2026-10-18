@@ -34,7 +34,8 @@ def report(session=None, dispatcher=None, extra: dict | None = None) -> str:
             counts[row["state"]] = counts.get(row["state"], 0) + 1
         lines.append("Jobs: " + (", ".join(f"{state} {n}" for state, n in sorted(counts.items())) or "none"))
     if dispatcher is not None:
-        lines.append(f"Main thread: longest slice {dispatcher.longest_slice_ms:.1f} ms over {dispatcher.slices} slices; {dispatcher.pending()} queued")
+        name, took = getattr(dispatcher, "longest_call", ("", 0.0))
+        lines.append(f"Main thread: longest slice {dispatcher.longest_slice_ms:.1f} ms over {dispatcher.slices} slices; slowest call {name or 'none'} {took:.1f} ms; {dispatcher.pending()} queued")
         if dispatcher.errors:
             lines.append("Recent main-thread errors: " + " | ".join(dispatcher.errors[-3:]))
     for key, value in (extra or {}).items():
