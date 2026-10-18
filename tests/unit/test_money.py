@@ -65,7 +65,7 @@ def test_no_spend_refuses_before_sending(signed_in, fake, monkeypatch):
     assert not fake.state.paid_runs()
 
 
-@pytest.mark.parametrize("fault", ["drop", "http500", "http429", "tool_error_500", "tool_error_generic"])
+@pytest.mark.parametrize("fault", ["drop", "http500", "tool_error_500", "tool_error_generic"])
 def test_unknown_outcome_is_not_confirmed_and_never_resent(signed_in, fake, fault):
     params = {"prompt": "a crate"}
     quote = signed_in.price("model_meshy-7-1-txt23d", params)
@@ -172,3 +172,15 @@ def test_price_check_returning_a_job_stops_price_checks(signed_in, fake, monkeyp
         signed_in.price("model_openai-gpt-image-2-5-flare", {"prompt": "x"})
     tracked = signed_in.ledger.list(states=("remote",))
     assert tracked and tracked[0]["driver"] == "price-check"
+
+
+def test_rate_limited_paid_call_is_not_sent_and_not_retried(signed_in, fake):
+    params = {"prompt": "a crate"}
+    quote = signed_in.price("model_meshy-7-1-txt23d", params)
+    fake.state.fail("model_run", "http429")
+    with pytest.raises(errors.RateLimited, match="Not sent"):
+        signed_in.submit(quote.quote_id, approved_cost="120", params=params)
+    assert len(fake.state.paid_runs()) == 1
+    assert signed_in.ledger.list(states=("failed",))
+    again = signed_in.price("model_meshy-7-1-txt23d", params)
+    assert signed_in.submit(again.quote_id, approved_cost="120", params=params)["state"] == "remote"

@@ -246,7 +246,7 @@ class Session:
             row = self.ledger.not_confirmed(local_id, error.message)
             self._notify("not_confirmed", local_id=local_id)
             raise
-        except (errors.Blocked, errors.ToolError, errors.Forbidden, errors.AuthFailed, errors.Refused, errors.ProtocolError, errors.NotFound) as error:
+        except (errors.Blocked, errors.ToolError, errors.Forbidden, errors.AuthFailed, errors.Refused, errors.ProtocolError, errors.NotFound, errors.RateLimited) as error:
             self.ledger.refused(local_id, str(error), error.hint)
             raise
         except BaseException as error:  # noqa: BLE001 - unknown outcome: never resend

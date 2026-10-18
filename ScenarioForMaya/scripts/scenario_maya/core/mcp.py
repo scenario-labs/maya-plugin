@@ -10,10 +10,11 @@ Retry rules, which carry the money contract:
 - Reads are retried up to twice on network errors, 408, 429 and 5xx.
 - Paid calls (``paid=True``) are sent once. A 401 is refreshed and resent once,
   and an expired session (404 with a session id) is renewed and resent once:
-  both mean the request was refused before it reached the tool. Any other
-  failure where Scenario may have started the work (no reply, timeout, 408,
-  429, 5xx, an unknown JSON-RPC error, a tool error whose text is not a known
-  refusal) raises ``NotConfirmed``. The session layer then blocks an identical
+  both mean the request was refused before it reached the tool. A 429 is a
+  refusal too and is reported as not sent, never retried. Any failure where
+  Scenario may have started the work (no reply, timeout, 408, 5xx, an unknown
+  JSON-RPC error, a tool error that is not a 4xx refusal) raises
+  ``NotConfirmed``. The session layer then blocks an identical
   request until a person reviews it.
 """
 
@@ -282,8 +283,10 @@ class McpClient:
             if status >= 300:
                 error = errors.from_http_status(status, _error_text(response), retry_after=retry_after_seconds(response))
                 if paid:
-                    if status in (408, 429) or status >= 500:
+                    if status == 408 or status >= 500:
                         raise errors.NotConfirmed(f"{name}: Scenario answered HTTP {status}; the outcome is unknown.") from error
+                    if status == 429:
+                        raise errors.RateLimited("Not sent: Scenario asked to slow down. Try again.", status=429, retry_after=error.retry_after) from error
                     raise error
                 if error.retryable and attempt < attempts:
                     self._sleep(min(error.retry_after or attempt, 10.0))
@@ -302,7 +305,7 @@ class McpClient:
                 message, api_status = tool_error_detail(payload_out)
                 if _MODERATION.search(message):
                     raise errors.Blocked(message, status=api_status)
-                refused = 400 <= api_status < 500 and api_status not in (408, 429)
+                refused = 400 <= api_status < 500 and api_status != 408
                 if paid and not refused and (api_status or _JOB_ID.search(message) or not _DEFINITE_REFUSAL.search(message)):
                     raise errors.NotConfirmed(f"{name}: {message}", status=api_status)
                 if api_status == 403:
@@ -311,7 +314,9 @@ class McpClient:
                     raise errors.NotFound(message, status=api_status)
                 if api_status == 429 or api_status >= 500:
                     error = errors.from_http_status(api_status, message)
-                    if not paid and attempt < attempts:
+                    if paid:
+                        raise errors.RateLimited("Not sent: Scenario asked to slow down. Try again.", status=429)
+                    if attempt < attempts:
                         self._sleep(attempt)
                         continue
                     raise error
