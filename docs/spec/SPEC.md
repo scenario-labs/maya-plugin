@@ -1,6 +1,6 @@
 # Scenario for Maya: Spec v1
 
-Status: **draft for review, 2026-10-18.** Nothing is implemented. Repository: proposed `scenario-labs/maya-plugin`, created locally, no remote, nothing pushed until the plug-in is built and tested end to end in a real Maya session.
+Status: **approved 2026-10-19**, with the decisions recorded in section 16. Drafted 2026-10-18. Repository: `scenario-labs/maya-plugin`, created locally, no remote, nothing pushed until the plug-in is built and tested end to end in a real Maya session.
 
 This spec covers the product, the architecture and the plan for a Maya plug-in that gives an artist or an AI agent the whole Scenario platform from inside Autodesk Maya: every model, the team's trained models, workflows, the asset library and prompt tools, with the deepest support for 3D (generate, remesh, retexture, UV unwrap, rig, animate, split into parts) and results landing as native Maya nodes. It follows the money and trust contract shared by the Scenario plug-ins for Blender, Godot, Unity and Unreal, and adapts it to Maya.
 
@@ -18,7 +18,7 @@ Facts are marked **[verified]** when they were checked on 2026-10-18 in a source
 6. **GLB lands through our own reader.** Maya 2025 to 2027 ship no glTF importer [verified], and Scenario's 3D outputs are GLB first. A pure-Python GLB reader (prototyped: meshes, UVs, normals, PBR materials, skins, skeletal animation, blend shapes, all matching Maya USD's own import to the centimetre on a reference character [verified]) builds Maya nodes directly. FBX through Maya's FBX plug-in is the fallback and the route for Maya-targeted outputs.
 7. **3D apply modes on the user's own meshes.** Beyond "import as new", a result can replace geometry, replace UVs, replace textures, split the mesh into parts, attach a returned rig and weights, apply returned animation onto an existing skeleton (with HumanIK retargeting for bipeds) or add face shapes, each with preconditions checked first, a review that says exactly what will change, one Ctrl+Z, and a kept original. Every mode was prototyped headless in Maya 2027.2 with exact undo and redo [verified].
 8. **Price before every paid call, never a double charge.** The Generate button carries the exact price from a free dry run bound to the payload. A quote is used once. Paid calls are never retried; an uncertain submission blocks an identical one until it is reconciled.
-9. **Agents are first-class but contained.** The MCP server listens on loopback with a token. Reading the scene is always allowed; changing the scene needs the "Allow agents to change this scene" switch (off by default), running Python needs a second switch, and spending always needs a quote the server issued.
+9. **Agents are first-class but contained.** The MCP server listens on loopback with a token. Reading the scene is always allowed; changing the scene needs the "Allow agents to change this scene" switch (off by default), running Python needs a second switch, and spending needs a quote the server issued. A call with a valid quote is approved automatically, with no prompt and no cap, the same rule as every Scenario plug-in.
 
 ---
 
@@ -51,7 +51,7 @@ Facts are marked **[verified]** when they were checked on 2026-10-18 in a source
 | Rigger | "Auto-rig this character, keep my mesh and UVs, and give me clean weights to start from." | Attach rig: the returned skeleton and weights are bound to the user's own mesh when the surface matches; a weight check report; HumanIK characterization as the next step. |
 | Animator and previs artist | "Put a walk on my character, turn this reference video into motion, and restyle my playblast into a look test." | Apply animation onto the existing skeleton (names, hierarchy and rest pose checked), clips as Time Editor clips or on an animation layer, Render Video from a playblast range. |
 | Pipeline TD | "Run 200 asset generations overnight in `mayapy`, and give agents a safe way in." | Python API with environment credentials, headless server mode, the same money rules, `SCENARIO_NO_SPEND` for dry runs, a module that deploys like any studio module. |
-| Agent-driven pipeline | "Claude, block out a forest clearing with generated props and a sky, and keep me in control of spend." | Local MCP server with Scenario and landing tools, one-click client setup, approvals in Maya, mutate switch, read-back results. |
+| Agent-driven pipeline | "Claude, block out a forest clearing with generated props and a sky, and keep me in control of spend." | Local MCP server with Scenario and landing tools, one-click client setup, every spend shown in Maya, mutate switch, read-back results. |
 
 ### 1.4 What we learned from other tools
 
@@ -729,7 +729,7 @@ Plan a layout from a prompt (named blocks with sizes and positions), build it fr
 2. **A quote is single use and bound to the payload**: model id, canonical JSON of the parameters with its SHA-256, workspace, input asset ids, and the scene origin it was made from (scene, target node and its fingerprint). Any change invalidates it. Quotes expire after 120 s. Before quoting, every model named in the form (LoRAs, composition members) is re-read and must be usable.
 3. **A price check that returns a job is an alarm**: automatic price checks stop until Maya restarts, and the job is tracked like any other.
 4. **The intent is saved before the paid request.** The ledger row moves `prepared` to `submitting` with the payload hash, quote hash, exact cost string and claim time, then exactly one request is sent, with no retry. Any transport or HTTP failure after the claim, including an apparent rejection, makes the job **Not confirmed** (`uncertain`). On restart, a saved `submitting` row becomes `uncertain`.
-5. **A Not confirmed job blocks an identical request** (same workspace, model, target and payload hash), checked after the price check, before the claim and inside the claim under a lock. Resolution is human only: the plug-in lists candidate jobs from Scenario's history (same model or workflow, from 10 minutes before to 1 hour after the claim, closest first, at most 20, none preselected); the person links one, which is verified by a fresh read, or marks the row reviewed. Agents can search candidates but cannot link or mark. This follows the Blender plug-in's rule, stricter than the automatic match in the Unreal spec; decision 9 proposes one rule for every plug-in.
+5. **A Not confirmed job blocks an identical request** (same workspace, model, target and payload hash), checked after the price check, before the claim and inside the claim under a lock. Resolution is human only: the plug-in lists candidate jobs from Scenario's history (same model or workflow, from 10 minutes before to 1 hour after the claim, closest first, at most 20, none preselected); the person links one, which is verified by a fresh read, or marks the row reviewed. Agents can search candidates but cannot link or mark. This follows the Blender plug-in's rule, stricter than the automatic match in the Unreal spec; decision 9 makes it the rule for every plug-in.
 6. **Spend guards**: an optional confirmation threshold for people (off by default), `SCENARIO_NO_SPEND=1`, and team caps enforced by Scenario and shown as errors. The plug-in sets no CU cap of its own.
 7. **Moderation shows as Blocked** and is never retried. Failed jobs show Scenario's error and hint; refund is Scenario's policy and is not inferred from the job record (the record has no refund field [verified]).
 8. **Uploads are free** as far as the job records show (`cuCost: 0` on upload jobs [verified]), but still happen only on an explicit action, because they send the user's files.
@@ -740,11 +740,11 @@ Plan a layout from a prompt (named blocks with sizes and positions), build it fr
 |---|---|---|
 | Person | Every paid call | The click on a priced Generate button; a confirm dialog only above a threshold the user chose. Workflows and Prompt Spark have their own priced Approve button |
 | Person | Changes to existing scene content | The Apply click in a review that names the target and what changes (4.7). New content (an import) is one click on the result card |
-| Agent | Every paid call | The agent must call `estimate_cost` and pass the returned `quote_id` and the exact `approved_cost` string; the server refuses anything else. Each agent spend shows in the panel and the Agents activity log with client, tool, model and CU. By default there is no extra prompt and no cap, as in the Unreal plug-in; a setting "Ask me in Maya before an agent spends" turns each paid call into a card the person approves (decision 7) |
+| Agent | Every paid call | The agent must call `estimate_cost` and pass the returned `quote_id` and the exact `approved_cost` string; the server refuses anything else. A call with a valid quote is approved automatically: no prompt in Maya and no CU cap from the plug-in, the same rule for every Scenario plug-in (decision 7). Each agent spend shows in the panel and the Agents activity log with client, tool, model and CU. `SCENARIO_NO_SPEND=1` and Scenario's own team limits still apply |
 | Agent | Any change to the scene | Only when **Allow agents to change this scene** is on (off by default, per user, shown in the panel header). When it is off, `apply_result_application` returns `pending_approval` and the panel shows a proposal card that the person applies or dismisses |
 | Agent | Running Python or MEL | Only when **Allow agents to run Python** is on (separate switch, off by default, needs the first one). It is not a sandbox: code runs with the user's rights |
 
-The agent's own description of a price is guidance, never authorization. Turning off the per-call prompt does not remove the quote check.
+The agent's own description of a price is guidance, never authorization. Automatic approval never skips the quote check.
 
 ### 7.3 Undo
 
@@ -1077,7 +1077,7 @@ The test report lists versions, OS, hardware, what ran, what passed and failed, 
 
 | Milestone | Content | Gate |
 |---|---|---|
-| M0 | This spec, approved | Decisions in section 16 answered |
+| M0 | This spec, approved | Done 2026-10-19 |
 | M1 Foundations | Repo, CI, module skeleton, installer, plug-in load and unload (GUI and `mayapy`), dispatcher, `core` (backend client, API key and OAuth, credential stores, quotes, ledger, schema forms, catalog), fixtures, free contract check; first GUI checks (panel restore, secure loading prompt, keychain prompt) | Layers 1 and 4 green; GUI checks recorded |
 | M2 First lane end to end | Panel, picker, price button, Image lane: generate, download, land (material, card, image plane), provenance, Jobs, restart recovery, sign-in and onboarding | First generation under 2 minutes from a fresh install, measured |
 | M3 3D | GLB builder (static, PBR, skin, animation, morphs) and FBX path, import checks, Text, Image and Multi-view modes, mesh capture and export, Edit selection with every apply mode, Motion | Layers 2 and 3 green for 3D; paid acceptance for each 3D task |
@@ -1116,28 +1116,28 @@ The test report lists versions, OS, hardware, what ran, what passed and failed, 
 
 ## 16. Decisions and open questions
 
-Each item has a recommendation. Implementation starts when these are answered.
+Decided on 2026-10-19: every recommendation below was accepted, with decision 7 amended (agents spend automatically, no cap, one rule for every Scenario plug-in) and decisions 3, 11 and 18 made precise.
 
-| # | Topic | Recommendation | Alternatives |
+| # | Topic | Decision | Alternatives considered |
 |---|---|---|---|
 | 1 | License | **MIT**, as the Godot, Unity and Unreal plug-ins and the skills repo (section 12) | Apache-2.0; proprietary |
 | 2 | Names | Repository `scenario-labs/maya-plugin`, private until v0.1 is tested; product "Scenario for Maya"; module `ScenarioForMaya`; Python package `scenario_maya`; MCP server name `scenario-maya`; docs at `maya.scenario.com` in the style of `blender.scenario.com` | `scenario-labs/scenario-maya` |
-| 3 | Maya versions | 2025, 2026 and 2027 from one code base; live tests on 2027.2, and on 2025 and 2026 if they can be installed on the development Mac | 2027 only (simpler, but excludes studios that stay on a version for a production's length) |
+| 3 | Maya versions | 2025, 2026 and 2027 from one code base; live tests on 2027.2 only for v0.1, with 2025 and 2026 covered by code rules and unit tests and marked "not tested live" in the report | 2027 only (simpler, but excludes studios that stay on a version for a production's length) |
 | 4 | Sign-in | Browser OAuth with device code fallback, and API key, through the hosted Scenario MCP (as Unreal and Unity) | API key only for v0.1 |
 | 5 | Agent server | Inside Maya, port 9878, bearer token on by default, written by Connect; adapters in section 8.5 later | No token (as Blender 0.12) |
 | 6 | Agent permissions | "Allow agents to change this scene" and "Allow agents to run Python" both off by default | Scene changes on by default |
-| 7 | Agent spending | Quote contract only: no extra prompt and no cap by default, every spend logged and shown, an optional "Ask me in Maya" setting (as Unreal) | Ask in Maya for every paid agent call by default |
+| 7 | Agent spending | Quote contract, approved automatically: an agent call with a valid server-issued quote spends with no prompt and no cap; every spend logged and shown. One rule for every Scenario plug-in | Ask in Maya for every paid agent call; automatic approval below a CU threshold |
 | 8 | Machines | macOS (Apple Silicon) for live tests; Windows and Linux built and unit-tested on GitHub runners but marked untested in v0.1 | Borrow or rent a Windows machine with Maya for one test pass before release |
 | 9 | Not confirmed submissions | Human-only resolution, as Blender (7.1), and align the Unreal, Unity and Godot specs on it | Automatic match of one candidate, as the Unreal spec |
 | 10 | Distribution | GitHub release ZIP with the drag-and-drop installer for v0.1; Autodesk Marketplace after v0.1 (needs an Autodesk publisher account, a reviewer test account with credits, a public privacy policy URL, the MCP manifest and declaration form) | Marketplace from v0.1 |
-| 11 | Test spend | Existing test project; low-cost models and small settings; no single run above a few dollars of credits without asking; every run in the ledger | |
+| 11 | Test spend | A dedicated test API key in the existing test project, kept in the macOS Keychain only; low-cost models and small settings; no single run above a few dollars of credits without asking; every run in the ledger | |
 | 12 | Telemetry | Opt-in, off by default, asked once; the client ships silent until Scenario names an endpoint for it (the Blender plug-in's relay is on its own domain) | No telemetry in v1 |
 | 13 | Skills | After the plug-in is tested: a `scenario-maya` skill and the Maya family updates (section 9) in one pull request to `scenario-labs/skills`, including the public-text cleanup, shown before it is opened | Skill first, from the spec |
 | 14 | Maya Creative | Not supported in v1; detected with a clear message; tested if a Creative install becomes available | Ship a Creative module file blind |
 | 15 | Material default | openPBRSurface where available, aiStandardSurface on request (section 6.8) | aiStandardSurface everywhere (wider Arnold habits, less portable to USD) |
 | 16 | Prompt storage | Prompts stored on nodes by default, with a project setting to leave them out | Off by default (more private, less useful) |
 | 17 | LookdevX provider | Later, once Autodesk's generative texture API leaves its experimental state | v1.1 |
-| 18 | Reviewer | Name the code owner for the repo | |
+| 18 | Reviewer | The Scenario plug-in maintainer who reviews the Unreal plug-in is the code owner (`CODEOWNERS`) | |
 
 Open questions for Scenario (not blocking the start, each with a test in the milestones):
 - Conversion to GLB was free and kept skins and clips in a sibling plug-in's runs. What survives conversion to FBX (textures, blend shapes, multiple materials, UV sets)?
