@@ -1,0 +1,106 @@
+name: Bug report
+description: The Scenario panel, a generation, an import or apply, or the agent server behaves wrong
+type: Bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue is public and permanent. Before you submit, remove your API key and secret, OAuth or agent tokens, signed asset URLs, e-mail addresses, local paths with your username (Copy Diagnostics includes paths), and any prompt or artwork you do not want published. Team and project ids identify your account: leave them out.
+
+        Would rather not post in public? Send the same fields to support@scenario.com. Account, billing, credit and security problems always go there or to in-app support at https://app.scenario.com.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: One or two sentences. The symptom, not the suspected cause.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Image
+        - Video
+        - 3D or 3D edit
+        - Material
+        - Audio
+        - Environment (sky)
+        - Render (restyle a view)
+        - Workflows or Library
+        - Import, apply or provenance
+        - Agents (local Scenario MCP server, Connect a client)
+        - Python API or mayapy
+        - Sign in, panel or settings
+        - Install or update
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps. Name the model, the settings you changed and what was selected in the scene.
+      placeholder: |
+        1. Select a mesh, open the 3D lane > Edit selection > UV unwrap, keep the default model
+        2. Press Generate
+        3. Apply the result with Replace UVs
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: The verbatim text from the Scenario panel, the Script Editor or the log (`<MAYA_APP_DIR>/scenario/logs/scenario.log`). Paste text, not a screenshot, so it is searchable.
+    validations:
+      required: true
+  - type: input
+    id: maya_version
+    attributes:
+      label: Maya version
+      description: From Help > About Maya.
+      placeholder: "2027.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: plugin_version
+    attributes:
+      label: Plug-in version
+      description: From Windows > Settings/Preferences > Plug-in Manager (scenario_for_maya) or Scenario > Help > About Scenario for Maya, and whether it came from a GitHub release ZIP, a studio deployment on a shared module path or a source checkout.
+      placeholder: 0.1.0 GitHub release ZIP
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: "Only ids you can share publicly: the job id and model from the Scenario panel or the result's provenance, the UTC time, and the output of Scenario > Help > Copy Diagnostics. Copy Diagnostics leaves secrets out but includes paths: check them first. No signed asset URLs, they are credentials."
+      placeholder: |
+        job id: ...
+        model: ...
+        when: <UTC date and time>
+        Copy Diagnostics: <paste the output>
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched open and closed issues for a duplicate.
+          required: true
+        - label: This report contains no keys, tokens, signed asset URLs or personal data.
+          required: true

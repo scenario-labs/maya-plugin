@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.join(os.path.dirname(HERE), "fixtures", "mcp")
 
 API_KEY = "api_testkey000000000001"
-API_SECRET = "test-secret-not-real"
+API_SECRET = "test-secret-not-real"  # not a secret
 TEAM = {"id": "team_fake0000000000000001", "name": "Test team"}
 PROJECT = {"id": "proj_fake0000000000000001", "name": "Test project"}
 

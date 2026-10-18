@@ -1,0 +1,73 @@
+name: CI
+
+# Checks that run without Maya. GitHub-hosted runners have no Maya install, so
+# the mayapy and GUI tests run on a Mac with tools/test_maya.sh and
+# tools/test_maya_gui.sh (see AGENTS.md).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: No em dashes, no secrets, JSON parses
+        run: python3 tools/lint.py
+      - name: Ruff
+        run: |
+          uvx ruff@0.17.1 check .
+          uvx ruff@0.17.1 format --check .
+
+  unit:
+    name: unit (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2025]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: Core unit tests against the fake Scenario server (0 CU)
+        env:
+          SCENARIO_MAYA_CREDSTORE: memory
+        run: uv run --no-project --python ${{ matrix.python }} --with pytest==8.4.2 pytest -q tests/unit
+
+  # The one check branch rules should require from this workflow, so jobs can
+  # be added or renamed without touching the rules. Do not rename it.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [lint, unit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every CI job to succeed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for result in $RESULTS; do
+            if [ "$result" != success ]; then
+              echo "::error::A CI job did not succeed: $RESULTS"
+              exit 1
+            fi
+          done

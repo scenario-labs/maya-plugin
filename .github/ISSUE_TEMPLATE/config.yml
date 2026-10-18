@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Account, billing, credits or a security report
+    url: https://app.scenario.com
+    about: Anything tied to your account is private. Use in-app support or support@scenario.com, not a public issue.
+  - name: Documentation
+    url: https://github.com/scenario-labs/maya-plugin/tree/main/docs
+    about: Privacy notes and the specification in the repository's docs folder.
+  - name: Scenario Knowledge Base
+    url: https://help.scenario.com
+    about: How the platform, models and credits work.
