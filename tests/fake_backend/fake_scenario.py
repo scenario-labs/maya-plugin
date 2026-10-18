@@ -90,10 +90,7 @@ class State:
 
     def paid_runs(self) -> list:
         """Paid requests that got past authentication (a 401 or an expired session refuses before the tool)."""
-        return [
-            c for c in self.calls
-            if c["tool"] == "model_run" and not c["arguments"].get("dry_run") and c.get("fault") not in ("http401", "session_404")
-        ]
+        return [c for c in self.calls if c["tool"] == "model_run" and not c["arguments"].get("dry_run") and c.get("fault") not in ("http401", "session_404")]
 
     def tool_calls(self, name: str) -> list:
         return [c for c in self.calls if c["tool"] == name]
@@ -165,21 +162,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path == "/.well-known/oauth-authorization-server":
-            self._json(200, {
-                "issuer": self.base,
-                "authorization_endpoint": self.base + "/oauth/authorize",
-                "token_endpoint": self.base + "/oauth/token",
-                "registration_endpoint": self.base + "/oauth/register",
-                "revocation_endpoint": self.base + "/oauth/revoke",
-                "device_authorization_endpoint": self.base + "/oauth/device_authorization",
-                "code_challenge_methods_supported": ["S256"],
-            })
+            self._json(
+                200,
+                {
+                    "issuer": self.base,
+                    "authorization_endpoint": self.base + "/oauth/authorize",
+                    "token_endpoint": self.base + "/oauth/token",
+                    "registration_endpoint": self.base + "/oauth/register",
+                    "revocation_endpoint": self.base + "/oauth/revoke",
+                    "device_authorization_endpoint": self.base + "/oauth/device_authorization",
+                    "code_challenge_methods_supported": ["S256"],
+                },
+            )
             return
         if parsed.path == "/oauth/authorize":
             self._authorize(urllib.parse.parse_qs(parsed.query))
             return
         if parsed.path.startswith("/files/"):
-            self._file(parsed.path[len("/files/"):])
+            self._file(parsed.path[len("/files/") :])
             return
         self._send(404)
 
@@ -317,7 +317,11 @@ class Handler(BaseHTTPRequestHandler):
                 session = "sess_" + secrets.token_hex(6)
                 self.state.sessions.add(session)
                 headers["Mcp-Session-Id"] = session
-            self._rpc_reply(request_id, {"protocolVersion": "2025-06-18", "capabilities": {"tools": {}}, "serverInfo": {"name": "fake-scenario-mcp", "version": "0.34.0"}, "instructions": "Fake Scenario MCP for tests."}, headers=headers)
+            self._rpc_reply(
+                request_id,
+                {"protocolVersion": "2025-06-18", "capabilities": {"tools": {}}, "serverInfo": {"name": "fake-scenario-mcp", "version": "0.34.0"}, "instructions": "Fake Scenario MCP for tests."},
+                headers=headers,
+            )
             return
         if request_id is None:
             self._send(202)
@@ -326,7 +330,28 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, b'{"error":"session not found"}')
             return
         if method == "tools/list":
-            self._rpc_reply(request_id, {"tools": [{"name": n, "inputSchema": {"type": "object"}} for n in ("teams_list", "models_list", "model_schema_get", "model_run", "job_get", "jobs_wait", "jobs_list", "asset_get", "asset_download", "upload_asset", "upload_asset_complete", "recommend")]})
+            self._rpc_reply(
+                request_id,
+                {
+                    "tools": [
+                        {"name": n, "inputSchema": {"type": "object"}}
+                        for n in (
+                            "teams_list",
+                            "models_list",
+                            "model_schema_get",
+                            "model_run",
+                            "job_get",
+                            "jobs_wait",
+                            "jobs_list",
+                            "asset_get",
+                            "asset_download",
+                            "upload_asset",
+                            "upload_asset_complete",
+                            "recommend",
+                        )
+                    ]
+                },
+            )
             return
         if method != "tools/call":
             self._rpc_reply(request_id, error={"code": -32601, "message": "Method not found"})
@@ -374,14 +399,17 @@ class Handler(BaseHTTPRequestHandler):
         self._rpc_reply(request_id, {"content": [{"type": "text", "text": json.dumps(result)}], "structuredContent": result, "_meta": {"scenario.com/trace_id": "mcpt_fake"}})
 
     def _tool_error(self, request_id, status: int, body: dict) -> None:
-        self._rpc_reply(request_id, {
-            "content": [
-                {"type": "text", "text": "⚠ Scenario error (trace_id: mcpt_fake). For a diagnostic report, run diagnostics_run."},
-                {"type": "text", "text": f"Error: {status} {json.dumps(body)}"},
-            ],
-            "isError": True,
-            "_meta": {"scenario.com/trace_id": "mcpt_fake"},
-        })
+        self._rpc_reply(
+            request_id,
+            {
+                "content": [
+                    {"type": "text", "text": "⚠ Scenario error (trace_id: mcpt_fake). For a diagnostic report, run diagnostics_run."},
+                    {"type": "text", "text": f"Error: {status} {json.dumps(body)}"},
+                ],
+                "isError": True,
+                "_meta": {"scenario.com/trace_id": "mcpt_fake"},
+            },
+        )
 
     # -- tools -----------------------------------------------------------
 
@@ -412,7 +440,18 @@ class Handler(BaseHTTPRequestHandler):
         job_id = "job_fake" + secrets.token_hex(8)
         asset_id = "asset_fake" + secrets.token_hex(8)
         with self.state.lock:
-            self.state.jobs[job_id] = {"jobId": job_id, "jobType": "custom", "status": "queued", "progress": 0, "modelId": model_id, "assetIds": [], "cuCost": cost, "createdAt": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()), "polls": 0, "result_asset": asset_id}
+            self.state.jobs[job_id] = {
+                "jobId": job_id,
+                "jobType": "custom",
+                "status": "queued",
+                "progress": 0,
+                "modelId": model_id,
+                "assetIds": [],
+                "cuCost": cost,
+                "createdAt": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
+                "polls": 0,
+                "result_asset": asset_id,
+            }
             self.state.files[asset_id + ".png"] = _png()
             self.state.assets[asset_id] = {"id": asset_id, "mimeType": "image/png", "kind": "image", "file": asset_id + ".png"}
         return {"model_id": model_id, "job_id": job_id, "status": "queued"}
@@ -462,7 +501,12 @@ class Handler(BaseHTTPRequestHandler):
         upload_id = "upl_fake" + secrets.token_hex(6)
         with self.state.lock:
             self.state.uploads[upload_id] = {"data": b"", "name": args.get("file_name"), "kind": args.get("kind"), "size": args.get("file_size")}
-        return {"upload_id": upload_id, "parts": [{"part_number": 1, "upload_url": f"{self.base}/upload/{upload_id}?partNumber=1", "content_length": args.get("file_size")}], "part_size": 6000000, "total_parts": 1}
+        return {
+            "upload_id": upload_id,
+            "parts": [{"part_number": 1, "upload_url": f"{self.base}/upload/{upload_id}?partNumber=1", "content_length": args.get("file_size")}],
+            "part_size": 6000000,
+            "total_parts": 1,
+        }
 
     def _tool_upload_asset_complete(self, args):
         upload = self.state.uploads.get(args.get("upload_id"))
@@ -498,7 +542,7 @@ class FakeScenario:
     def metadata_url(self) -> str:
         return self.base + "/.well-known/oauth-authorization-server"
 
-    def start(self) -> "FakeScenario":
+    def start(self) -> FakeScenario:
         self.thread.start()
         return self
 
@@ -506,7 +550,7 @@ class FakeScenario:
         self.httpd.shutdown()
         self.httpd.server_close()
 
-    def __enter__(self) -> "FakeScenario":
+    def __enter__(self) -> FakeScenario:
         return self.start()
 
     def __exit__(self, *exc) -> None:

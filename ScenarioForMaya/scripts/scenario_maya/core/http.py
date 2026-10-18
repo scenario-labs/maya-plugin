@@ -119,7 +119,7 @@ class UrllibTransport(Transport):
                     hint="A proxy may be inspecting TLS; its root certificate must be in the system trust store.",
                 ) from error
             raise errors.NetworkError(f"Could not reach Scenario ({_reason_text(reason)}).") from error
-        except (TimeoutError, socket.timeout) as error:
+        except TimeoutError as error:
             raise errors.NetworkError("No answer from Scenario before the time limit.") from error
         except (ConnectionError, ssl.SSLError, OSError) as error:
             raise errors.NetworkError(f"Connection to Scenario failed ({type(error).__name__}).") from error

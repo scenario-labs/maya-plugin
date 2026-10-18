@@ -186,7 +186,9 @@ class Session:
 
     def _track_alarm(self, model_id: str, params: dict, message: str) -> None:
         job_id = message.split("job ", 1)[-1].split(".", 1)[0].strip()
-        row = self.ledger.prepare(kind="model", target_id=model_id, workspace=self.workspace(), payload_hash=payload_hash(params), params=params, driver="price-check", label="Price check returned a job")
+        row = self.ledger.prepare(
+            kind="model", target_id=model_id, workspace=self.workspace(), payload_hash=payload_hash(params), params=params, driver="price-check", label="Price check returned a job"
+        )
         self.ledger.set_state(row["local_id"], "submitting", "price check returned a job")
         self.ledger.submitted(row["local_id"], job_id, "tracked: a price check returned this job")
 

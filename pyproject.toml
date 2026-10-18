@@ -1,0 +1,21 @@
+[project]
+name = "scenario-maya"
+version = "0.1.0"
+description = "Scenario for Maya: every Scenario model inside Autodesk Maya, for artists and agents."
+requires-python = ">=3.11"
+license = "MIT"
+
+[tool.ruff]
+line-length = 200
+target-version = "py311"
+extend-exclude = ["ScenarioForMaya/scripts/scenario_maya/_vendor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE"]
+ignore = ["E501", "UP007"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["scenario_maya", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]

@@ -23,9 +23,9 @@ import secrets
 import threading
 import time
 import urllib.parse
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Callable
 
 from . import errors
 from .http import Response, Transport, UrllibTransport, is_secure_url
@@ -48,7 +48,7 @@ class Metadata:
     device_authorization_endpoint: str = ""
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Metadata":
+    def from_dict(cls, data: dict) -> Metadata:
         fields = ("authorization_endpoint", "token_endpoint", "registration_endpoint", "revocation_endpoint", "device_authorization_endpoint")
         for name in fields:
             url = data.get(name) or ""
@@ -138,9 +138,7 @@ class OAuthClient:
             "application_type": "native",
             "scope": self.scope,
         }
-        response = self.transport.send(
-            "POST", meta.registration_endpoint, {"Content-Type": "application/json", "Accept": "application/json"}, json.dumps(body).encode(), 30.0
-        )
+        response = self.transport.send("POST", meta.registration_endpoint, {"Content-Type": "application/json", "Accept": "application/json"}, json.dumps(body).encode(), 30.0)
         data = self._json(response)
         if response.status not in (200, 201) or not data.get("client_id"):
             raise errors.ProtocolError(f"Client registration failed (HTTP {response.status}): {_oauth_error(data)}")
@@ -346,9 +344,7 @@ class LoopbackReceiver:
             except OSError as error:
                 last_error = error
         if self._server is None:
-            raise errors.Refused(
-                "The local sign-in ports are busy.", hint='Use "Sign in on another device" or an API key.'
-            ) from last_error
+            raise errors.Refused("The local sign-in ports are busy.", hint='Use "Sign in on another device" or an API key.') from last_error
         self._server.timeout = 0.5
         self._thread = threading.Thread(target=self._serve, name="scenario-oauth-callback", daemon=True)
         self._thread.start()

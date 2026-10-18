@@ -136,10 +136,7 @@ class MacKeychainStore(CredentialStore):
         return result.stdout.rstrip("\n")
 
     def set(self, account: str, secret: str) -> None:
-        command = (
-            f"add-generic-password -U -s {_quote(self.service)} -a {_quote(account)} "
-            f"-l {_quote(self.service)} -X {secret.encode('utf-8').hex()}\n"
-        )
+        command = f"add-generic-password -U -s {_quote(self.service)} -a {_quote(account)} -l {_quote(self.service)} -X {secret.encode('utf-8').hex()}\n"
         result = self._run(["-i"], stdin=command)
         if result.returncode != 0 or "error" in (result.stderr or "").lower():
             raise errors.CredentialStoreError("Keychain write failed.", hint="Unlock the login keychain and try again.")
@@ -169,9 +166,7 @@ class SecretToolStore(CredentialStore):
         return result.stdout.rstrip("\n")
 
     def set(self, account: str, secret: str) -> None:
-        result = subprocess.run(
-            ["secret-tool", "store", f"--label={self.service}", *self._attrs(account)], input=secret, capture_output=True, text=True, timeout=20
-        )
+        result = subprocess.run(["secret-tool", "store", f"--label={self.service}", *self._attrs(account)], input=secret, capture_output=True, text=True, timeout=20)
         if result.returncode != 0:
             raise errors.CredentialStoreError("Secret Service write failed.")
 

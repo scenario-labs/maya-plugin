@@ -25,7 +25,7 @@ import sys
 import threading
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from . import errors
 from .paths import user_dir
@@ -99,7 +99,7 @@ _COLUMNS = (
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 class _SessionLock:
@@ -177,7 +177,9 @@ class Ledger:
                 connection.execute("PRAGMA journal_mode=WAL")
                 connection.execute(
                     "CREATE TABLE IF NOT EXISTS jobs ("
-                    + ", ".join(f"{name} {'TEXT PRIMARY KEY' if name == 'local_id' else ('REAL' if name == 'claim_epoch' else ('INTEGER DEFAULT 0' if name == 'reviewed' else 'TEXT'))}" for name in _COLUMNS)
+                    + ", ".join(
+                        f"{name} {'TEXT PRIMARY KEY' if name == 'local_id' else ('REAL' if name == 'claim_epoch' else ('INTEGER DEFAULT 0' if name == 'reviewed' else 'TEXT'))}" for name in _COLUMNS
+                    )
                     + ")"
                 )
                 connection.execute("CREATE INDEX IF NOT EXISTS jobs_state ON jobs(state)")
@@ -284,10 +286,7 @@ class Ledger:
             connection.close()
 
     def blocking_uncertain(self, workspace: str, target_id: str, target: str, payload_hash: str, connection: sqlite3.Connection | None = None) -> list:
-        query = (
-            "SELECT * FROM jobs WHERE state = 'uncertain' AND reviewed = 0 AND workspace = ? AND target_id = ? "
-            "AND COALESCE(target, '') = ? AND payload_hash = ?"
-        )
+        query = "SELECT * FROM jobs WHERE state = 'uncertain' AND reviewed = 0 AND workspace = ? AND target_id = ? AND COALESCE(target, '') = ? AND payload_hash = ?"
         args = (workspace, target_id, target or "", payload_hash)
         if connection is not None:
             return [self._row(row) for row in connection.execute(query, args).fetchall()]
@@ -357,11 +356,7 @@ class Ledger:
                 raise errors.NotFound(f"No local job {local_id}.")
             if row["state"] != "prepared":
                 raise errors.Refused(f"Job {local_id} is {row['state']}, not prepared; it was not sent again.")
-            blocking = [
-                job
-                for job in self.blocking_uncertain(row["workspace"], row["target_id"], row["target"] or "", row["payload_hash"], connection)
-                if job["local_id"] != local_id
-            ]
+            blocking = [job for job in self.blocking_uncertain(row["workspace"], row["target_id"], row["target"] or "", row["payload_hash"], connection) if job["local_id"] != local_id]
             if blocking:
                 raise errors.Refused(
                     "An identical request is Not confirmed; it may have run and been charged.",

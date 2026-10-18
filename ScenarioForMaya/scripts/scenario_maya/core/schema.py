@@ -136,7 +136,7 @@ class ModelForm:
     fields: list
 
     @classmethod
-    def from_schema(cls, schema: dict) -> "ModelForm":
+    def from_schema(cls, schema: dict) -> ModelForm:
         if not isinstance(schema, dict) or not isinstance(schema.get("parameters"), list):
             raise errors.ProtocolError("The model schema has no parameter list.")
         fields = [parse_field(item) for item in schema["parameters"] if isinstance(item, dict) and item.get("name")]
