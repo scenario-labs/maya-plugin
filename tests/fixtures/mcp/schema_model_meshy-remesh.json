@@ -1,0 +1,58 @@
+{
+ "model_id": "model_meshy-remesh",
+ "name": "Meshy Remesh",
+ "capabilities": [
+  "3d23d"
+ ],
+ "parameters": [
+  {
+   "name": "model",
+   "type": "file",
+   "description": "Upload a GLB file of the 3D model you want to remesh.",
+   "required": true,
+   "kind": "3d"
+  },
+  {
+   "name": "topology",
+   "type": "string",
+   "description": "Choose the mesh structure type used for the generated model. For Quad, choose output format 'obj'",
+   "default": "triangle",
+   "allowed_values": [
+    "triangle",
+    "quad"
+   ],
+   "required": false
+  },
+  {
+   "name": "targetPolycount",
+   "type": "number",
+   "description": "Set the approximate number of polygons for your 3D model. Higher values increase detail, while lower values create simpler meshes.",
+   "default": 30000,
+   "min": 100,
+   "max": 300000,
+   "required": false
+  },
+  {
+   "name": "resizeHeight",
+   "type": "number",
+   "description": "Adjust the model's height in meters. Set to 0 to keep the original scale.",
+   "default": 0,
+   "min": 0,
+   "max": 10000,
+   "step": 1,
+   "required": false
+  },
+  {
+   "name": "originAt",
+   "type": "string",
+   "description": "Define where the model's origin point is positioned. Leave empty to keep the default origin.",
+   "default": "empty",
+   "allowed_values": [
+    "empty",
+    "bottom",
+    "center"
+   ],
+   "required": false
+  }
+ ]
+}

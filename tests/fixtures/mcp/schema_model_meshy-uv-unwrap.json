@@ -1,0 +1,16 @@
+{
+ "model_id": "model_meshy-uv-unwrap",
+ "name": "Meshy UV Unwrap",
+ "capabilities": [
+  "3d23d"
+ ],
+ "parameters": [
+  {
+   "name": "model",
+   "type": "file",
+   "description": "Upload a GLB file of the 3D model you want to UV unwrap. Models above 44,000 faces are rejected \u2014 run Meshy Remesh first to reduce polygon count if needed.",
+   "required": true,
+   "kind": "3d"
+  }
+ ]
+}

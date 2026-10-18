@@ -1,0 +1,17 @@
+{
+ "_meta": {
+  "server_schema_version": "0.34.0",
+  "scenario.com/trace_id": "mcpt_fixture"
+ },
+ "content": [
+  {
+   "type": "text",
+   "text": "\u26a0 Scenario error (trace_id: mcpt_fixture). For a diagnostic report, run diagnostics_run."
+  },
+  {
+   "type": "text",
+   "text": "Error: 400 {\"reason\":\"Input prompt is required\"}"
+  }
+ ],
+ "isError": true
+}

@@ -1,0 +1,60 @@
+{
+ "models": [
+  {
+   "id": "model_hunyuan-3d-v2-1",
+   "authorId": "00000000000000000000000000000000",
+   "ownerId": "bftve3VtQgmpXxwAPUFWTQ",
+   "createdAt": "2025-06-27T10:21:10.139Z",
+   "updatedAt": "2026-09-25T21:32:28.724Z",
+   "name": "Hunyuan 3D 2.1",
+   "shortDescription": "Hunyuan 3D 2.1 by Tencent converts a single image into a textured 3D mesh with production-ready PBR materials, precise geometry, and adjustable face count.",
+   "type": "custom",
+   "privacy": "public",
+   "capabilities": [
+    "img23d"
+   ],
+   "source": "other",
+   "status": "trained",
+   "trainingImagesNumber": 0,
+   "tags": [
+    "Deprecated",
+    "Hunyuan",
+    "Image to 3D",
+    "PBR",
+    "Tencent",
+    "deprecated:model_hunyuan-3d-pro-3-1-i23d",
+    "sc:legacy",
+    "sc:third-party"
+   ],
+   "collectionIds": []
+  },
+  {
+   "id": "model_vast-ai-triposplat",
+   "authorId": "00000000000000000000000000000000",
+   "ownerId": "bftve3VtQgmpXxwAPUFWTQ",
+   "createdAt": "2026-07-27T15:14:44.610Z",
+   "updatedAt": "2026-10-12T15:10:49.782Z",
+   "name": "TripoSplat",
+   "shortDescription": "Turn one product photo into a 3D Gaussian splat. TripoSplat reconstructs an object's full shape and color from a single image, output as a .spz preview & a downloadable .ply.",
+   "type": "custom",
+   "privacy": "public",
+   "capabilities": [
+    "img23d"
+   ],
+   "source": "other",
+   "status": "trained",
+   "trainingImagesNumber": 0,
+   "tags": [
+    "3D",
+    "Gaussian Splatting",
+    "Image to 3D",
+    "Splat",
+    "Tripo",
+    "image to 3d",
+    "sc:third-party",
+    "splat"
+   ],
+   "collectionIds": []
+  }
+ ]
+}

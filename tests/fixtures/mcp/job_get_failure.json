@@ -1,0 +1,15 @@
+{
+ "job": {
+  "jobId": "job_fixture000000000001",
+  "jobType": "custom",
+  "status": "failure",
+  "progress": 1,
+  "createdAt": "2026-10-18T21:05:57.452Z",
+  "updatedAt": "2026-10-18T21:06:04.793Z",
+  "modelId": "model_tencent-texture-edit",
+  "assetIds": [],
+  "cuCost": 68,
+  "error": "Unsupported file format: GLB. Must be FBX.",
+  "hint": "Your file is in GLB format, but this model requires FBX."
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "asset": {
+  "id": "asset_fixture000000000001",
+  "url": "https://cdn.example.invalid/asset_fixture000000000001",
+  "mimeType": "image/png",
+  "metadata": {
+   "type": "uploaded",
+   "kind": "image",
+   "width": 64,
+   "size": 177,
+   "height": 64
+  },
+  "properties": {
+   "width": 64,
+   "size": 177,
+   "height": 64
+  },
+  "kind": "image",
+  "source": "uploaded",
+  "ownerId": "proj_fixture",
+  "authorId": "apiu_fixture",
+  "createdAt": "2026-10-18T22:43:44.921Z",
+  "updatedAt": "2026-10-18T22:43:44.921Z",
+  "privacy": "private",
+  "tags": [],
+  "collectionIds": [],
+  "status": "success",
+  "editCapabilities": [
+   "REMOVE_BACKGROUND",
+   "REFINE",
+   "PIXELATE",
+   "PROMPT_EDITING",
+   "UPSCALE",
+   "UPSCALE_360",
+   "DETECTION",
+   "VECTORIZATION",
+   "SEGMENTATION",
+   "REFRAME",
+   "GENERATIVE_FILL"
+  ]
+ }
+}

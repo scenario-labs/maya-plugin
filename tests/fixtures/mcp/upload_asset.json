@@ -1,0 +1,15 @@
+{
+ "upload_id": "upl_fixture",
+ "parts": [
+  {
+   "part_number": 1,
+   "upload_url": "https://uploads.example.invalid/upl_fixture.png?partNumber=1&uploadId=fixture",
+   "content_length": 179,
+   "expires_at": "2026-10-20T22:43:43.262Z"
+  }
+ ],
+ "part_size": 6000000,
+ "total_parts": 1,
+ "instructions": "PUT each part: use the full upload_url verbatim (including its query string). Send only the raw part bytes as the body.\n\nExample (one local file = one part):\n  curl -fS -X PUT -T /path/to/file.ext '<paste upload_url here>'\n\nDo NOT add HTTP headers like x-amz-checksum-crc32 or x-amz-sdk-checksum-algorithm (even if tutorials suggest them for AWS multipart). Do NOT strip checksum params from the URL and re-send them as headers. Then call upload_asset_complete with upload_id.",
+ "message": "Follow instructions for PUT (avoid extra x-amz-checksum-* headers), then call upload_asset_complete with upload_id."
+}

@@ -1,0 +1,19 @@
+{
+ "_meta": {
+  "server_schema_version": "0.34.0",
+  "scenario.com/trace_id": "mcpt_fixture"
+ },
+ "content": [
+  {
+   "type": "text",
+   "text": "{\n  \"dry_run\": true,\n  \"model_id\": \"model_meshy-7-1-txt23d\",\n  \"job\": {},\n  \"creativeUnitsCost\": 120,\n  \"creativeUnitsDiscount\": 0\n}"
+  }
+ ],
+ "structuredContent": {
+  "dry_run": true,
+  "model_id": "model_meshy-7-1-txt23d",
+  "job": {},
+  "creativeUnitsCost": 120,
+  "creativeUnitsDiscount": 0
+ }
+}

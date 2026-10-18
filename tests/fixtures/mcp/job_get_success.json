@@ -1,0 +1,15 @@
+{
+ "job": {
+  "jobId": "job_fixture000000000002",
+  "jobType": "custom",
+  "status": "success",
+  "progress": 1,
+  "createdAt": "2026-10-18T21:54:33.950Z",
+  "updatedAt": "2026-10-18T21:56:22.695Z",
+  "modelId": "model_tencent-texture-edit",
+  "assetIds": [
+   "asset_fixture000000000002"
+  ],
+  "cuCost": 68
+ }
+}
