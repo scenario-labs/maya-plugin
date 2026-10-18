@@ -93,12 +93,15 @@ def download_results(
     root: str,
     *,
     provenance: dict | None = None,
+    convert: dict | None = None,
     progress: Callable[[int, int, int], None] | None = None,
     cancel: threading.Event | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> dict:
     """Downloads every result asset of a finished job into one folder under ``root``.
 
+    ``convert`` maps a delivered MIME type to a format Scenario converts to
+    (``{"image/webp": "png"}``: Maya's file node cannot read WebP).
     ``progress(index, received, total)`` reports per file. Returns the ``ready`` row.
     """
     row = session.ledger.get(local_id)
@@ -125,10 +128,13 @@ def download_results(
                 files.append(kept[asset_id])
                 continue
             first = backend.download_url(asset_id)
+            fmt = (convert or {}).get((first.get("mime_type") or "").lower(), "")
+            if fmt:
+                first = backend.download_url(asset_id, fmt)
             links = [first]
 
-            def get_link(asset_id=asset_id, links=links):
-                return links.pop() if links else backend.download_url(asset_id)
+            def get_link(asset_id=asset_id, links=links, fmt=fmt):
+                return links.pop() if links else backend.download_url(asset_id, fmt)
 
             name = stem if len(asset_ids) == 1 else f"{stem}_{index + 1}"
             path = _part_or_new(folder, name, naming.extension_for(first.get("mime_type", ""), first.get("url", "").split("?", 1)[0]))

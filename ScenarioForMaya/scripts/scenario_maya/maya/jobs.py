@@ -1,0 +1,159 @@
+"""Sent jobs to files on disk to nodes in the scene, without blocking Maya.
+
+``JobRunner.generate`` spends one quote on a worker, then ``track`` follows
+the job and downloads its results on a worker too. Every change is announced
+on the main thread as a ``job`` event (``row``, ``note``, ``progress``), which
+the panel, the Jobs view and the agent server listen to. ``land`` runs on the
+main thread: it puts a downloaded result in the scene in one undo step and
+records it on the job.
+
+Recovery (spec 7.4): nothing resumes by itself at load. ``resume_polling``
+(when the panel opens) follows jobs that were running on Scenario;
+``resume_downloads`` (the "Resume my jobs" banner, Retry download) fetches
+results that finished while Maya was closed.
+"""
+
+from __future__ import annotations
+
+import threading
+import time
+
+from ..core import delivery, errors, provenance
+from . import compat, landing, scene
+
+CONVERT = {"image/webp": "png", "image/avif": "png", "image/heif": "png"}
+_PROGRESS_EVERY = 0.2
+
+
+class JobRunner:
+    def __init__(self, runtime) -> None:
+        self.runtime = runtime
+        self.session = runtime.session
+        self.ledger = runtime.ledger
+        self._active: dict = {}
+        self._lock = threading.Lock()
+
+    # -- events ----------------------------------------------------------
+
+    def _announce(self, row: dict, note: str = "", progress: float | None = None) -> None:
+        if row is None:
+            return
+        self.runtime.dispatcher.call_on_main(self.runtime.emit, "job", row=row, note=note, progress=progress)
+
+    def active(self) -> list:
+        with self._lock:
+            return list(self._active)
+
+    # -- sending ---------------------------------------------------------
+
+    def generate(self, quote_id: str, *, approved_cost: str, params: dict, origin: dict, model_name: str, label: str = "", driver: str = "person", on_sent=None, on_error=None):
+        """Spends the quote on a worker; on success the job is tracked. Callbacks run on the main thread."""
+        root = scene.folders()["images"]
+
+        def send():
+            return self.session.submit(quote_id, approved_cost=approved_cost, params=params, origin=origin, driver=driver, label=label, model_name=model_name)
+
+        def sent(row):
+            self._announce(row, "Sent to Scenario")
+            self.track(row["local_id"], root=root)
+            if on_sent is not None:
+                on_sent(row)
+
+        return self.runtime.background(send, on_done=sent, on_error=on_error)
+
+    # -- following and downloading ----------------------------------------
+
+    def track(self, local_id: str, root: str | None = None) -> bool:
+        """Follows and downloads one job on a worker. False when it is already tracked."""
+        root = root or scene.folders()["images"]
+        info = {"scene_uuid": scene.scene_uuid(create=False), "maya_version": compat.maya_version()}
+        with self._lock:
+            if local_id in self._active:
+                return False
+            cancel = threading.Event()
+            self._active[local_id] = cancel
+
+        def work():
+            try:
+                return self._deliver(local_id, root, info, cancel)
+            finally:
+                with self._lock:
+                    self._active.pop(local_id, None)
+
+        def failed(error):
+            row = self.ledger.get(local_id)
+            message = error.message if isinstance(error, errors.ScenarioError) else f"{type(error).__name__}: {error}"
+            self._announce(row, message)
+
+        self.runtime.background(work, on_error=failed)
+        return True
+
+    def _deliver(self, local_id: str, root: str, info: dict, cancel: threading.Event) -> dict:
+        row = delivery.follow(self.session, local_id, on_update=lambda r, note: self._announce(r, note), cancel=cancel)
+        if cancel.is_set() or row["state"] not in ("succeeded", "downloading", "download_failed"):
+            return row
+        last = [0.0]
+
+        def progress(index, received, total):
+            now = time.monotonic()
+            if total and (now - last[0] >= _PROGRESS_EVERY or received >= total):
+                last[0] = now
+                self._announce(dict(row, state="downloading"), f"file {index + 1}", received / total)
+
+        row = delivery.download_results(self.session, local_id, root, provenance=info, convert=CONVERT, progress=progress, cancel=cancel)
+        self._announce(row, "Ready")
+        return row
+
+    def resume_polling(self) -> int:
+        rows = self.ledger.list(states=("remote", "cancel_requested"), workspace=self.session.workspace() or None)
+        return sum(self.track(row["local_id"]) for row in rows)
+
+    def resume_downloads(self) -> int:
+        rows = self.ledger.list(states=("succeeded", "downloading", "download_failed"), workspace=self.session.workspace() or None)
+        return sum(self.track(row["local_id"]) for row in rows)
+
+    def waiting_downloads(self) -> list:
+        return [row for row in self.ledger.list(states=("succeeded", "downloading", "download_failed"), workspace=self.session.workspace() or None) if row["local_id"] not in self._active]
+
+    def stop(self) -> None:
+        with self._lock:
+            for cancel in self._active.values():
+                cancel.set()
+
+    # -- landing ---------------------------------------------------------
+
+    def land(self, local_id: str, mode: str, index: int = 0, *, select: bool = True, camera=None, targets=None) -> dict:
+        """Main thread. Lands one downloaded file; the job row records it."""
+        row = self.ledger.get(local_id)
+        if row is None:
+            raise errors.NotFound(f"No local job {local_id}.")
+        files = (row.get("result") or {}).get("files") or []
+        if row["state"] not in ("ready", "applied", "apply_failed") or index >= len(files):
+            raise landing.LandingError("Nothing was imported: this result is not downloaded yet.")
+        item = files[index]
+        attrs = provenance.attributes(
+            row,
+            item.get("asset_id", ""),
+            maya_version=compat.maya_version(),
+            apply=mode,
+            store_prompt=bool(self.runtime.settings.get("store_prompts_on_nodes", True)),
+        )
+        label = str((row.get("params") or {}).get("prompt") or row.get("label") or "")
+        if mode == "material" and targets is None:
+            targets = scene.selected_surfaces()
+            if not targets:
+                raise landing.LandingError("Nothing was applied: select a mesh or faces first.")
+        self.ledger.set_state(local_id, "applying", mode)
+        try:
+            made = landing.land(item["path"], attrs, mode, label=label, camera=camera, targets=targets, select=select)
+        except Exception as error:
+            message = error.args[0] if isinstance(error, landing.LandingError) and error.args else f"{type(error).__name__}: {error}"
+            failed = self.ledger.set_state(local_id, "apply_failed", message, error=message)
+            self._announce(failed, message)
+            raise
+        landed = list((row.get("result") or {}).get("landed") or [])
+        landed.insert(0, {"mode": mode, "index": index, "top": made.get("top") or made.get("material"), "namespace": made.get("namespace"), "scene_uuid": scene.scene_uuid()})
+        result = dict(row.get("result") or {}, landed=landed[:20])
+        done = self.ledger.set_state(local_id, "applied", made.get("summary", mode), result_json=result, error="")
+        self._announce(done, made.get("summary", ""))
+        return made

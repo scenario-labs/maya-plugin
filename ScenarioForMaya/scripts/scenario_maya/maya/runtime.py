@@ -10,11 +10,13 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from ..core import http, log
+from ..core.catalog import Catalog
 from ..core.ledger import Ledger
 from ..core.session import Session
 from ..core.settings import Settings
 from . import compat
 from .dispatcher import Dispatcher
+from .jobs import JobRunner
 
 _RUNTIME: Runtime | None = None
 
@@ -36,6 +38,8 @@ class Runtime:
         self.session.load()
         self._subscribers: list = []
         self.session.listeners.append(self._forward)
+        self.catalog = Catalog()
+        self.jobs = JobRunner(self)
         if gui:
             self.dispatcher.start_gui_timer()
         log.LOGGER.info("runtime started (%s, gui=%s, recovered=%s)", http.user_agent(), gui, {k: len(v) for k, v in self.recovered.items()})
@@ -66,6 +70,7 @@ class Runtime:
         if self._forward in self.session.listeners:
             self.session.listeners.remove(self._forward)
         self._subscribers.clear()
+        self.jobs.stop()
         self.dispatcher.stop()
         self.ledger.close()
         log.LOGGER.info("runtime stopped")
