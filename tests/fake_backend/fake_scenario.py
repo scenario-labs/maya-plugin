@@ -28,6 +28,17 @@ FIXTURES = os.path.join(os.path.dirname(HERE), "fixtures", "mcp")
 API_KEY = "api_testkey000000000001"
 API_SECRET = "test-secret-not-real"  # not a secret
 TEAM = {"id": "team_fake0000000000000001", "name": "Test team"}
+IMAGE_MODEL = {
+    "id": "model_openai-gpt-image-2-5-flare",
+    "name": "GPT Image 2.5 Flare",
+    "shortDescription": "Fast image generation and editing.",
+    "type": "custom",
+    "privacy": "public",
+    "capabilities": ["txt2img", "img2img"],
+    "status": "trained",
+    "tags": ["Image"],
+    "createdAt": "2026-09-01T00:00:00.000Z",
+}
 PROJECT = {"id": "proj_fake0000000000000001", "name": "Test project"}
 
 PRICES = {
@@ -442,7 +453,10 @@ class Handler(BaseHTTPRequestHandler):
         return {"projects": [dict(PROJECT)]}
 
     def _tool_models_list(self, args):
-        return _load_fixture("models_list.json")
+        data = _load_fixture("models_list.json")
+        if (args.get("filters") or {}).get("modality") == "image" and (args.get("filters") or {}).get("privacy") == "public":
+            data["models"] = data["models"] + [IMAGE_MODEL]
+        return data
 
     def _tool_model_schema_get(self, args):
         name = f"schema_{args.get('model_id')}.json"

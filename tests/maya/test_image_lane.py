@@ -46,7 +46,8 @@ def test_generate_follow_download_and_land(lane, fake, cmds, tmp_path):
     events = []
     runtime.subscribe(lambda event, data: events.append((event, data.get("row", {}).get("state"), threading.current_thread() is threading.main_thread())) if event == "job" else None)
     local_id = generate(runtime)
-    pump_until(lambda: runtime.ledger.get(local_id)["state"] == "ready", timeout=20)
+    # The ledger turns ready on the worker; the matching event reaches the main thread just after.
+    pump_until(lambda: events and events[-1][1] == "ready", timeout=20)
     row = runtime.ledger.get(local_id)
     image = row["result"]["files"][0]["path"]
     assert image.startswith(str(tmp_path / "project" / "sourceimages" / "scenario"))

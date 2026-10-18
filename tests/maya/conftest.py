@@ -21,6 +21,13 @@ PLUGIN = "scenario_for_maya"
 
 @pytest.fixture(scope="session", autouse=True)
 def maya_session():
+    # An offscreen Qt application made before Maya starts lets the panel's widgets be
+    # built and clicked headless; Maya stays in batch mode, so the plug-in builds no UI itself.
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6 import QtWidgets
+
+    if QtWidgets.QApplication.instance() is None:
+        maya_session.app = QtWidgets.QApplication([])
     maya_standalone.initialize(name="python")
     yield
     # uninitialize() is left to process exit: Maya 2027 can stall in it after Qt use.
@@ -50,6 +57,23 @@ def fresh(name):
 def pump_until(predicate, timeout=10.0):
     runtime = fresh("scenario_maya.maya.runtime").get()
     assert runtime.dispatcher.pump(until=predicate, timeout=timeout), "timed out pumping the main thread"
+
+
+def qt_pump_until(predicate, timeout=10.0):
+    """Like ``pump_until``, and runs Qt events too (timers, signals) for widget tests."""
+    import time
+
+    from PySide6 import QtWidgets
+
+    runtime = fresh("scenario_maya.maya.runtime").get()
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        QtWidgets.QApplication.processEvents()
+        runtime.dispatcher.drain(budget_s=0.05)
+        if predicate():
+            return
+        time.sleep(0.01)
+    raise AssertionError("timed out waiting with Qt events")
 
 
 @pytest.fixture

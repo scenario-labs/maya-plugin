@@ -26,6 +26,22 @@ def row_texts(row: dict) -> list:
     return [status_word(row), row.get("target_name") or row.get("target_id") or "", str(prompt), _cu(row.get("cost_exact")), _cu(row.get("charged_exact"))]
 
 
+def job_details(row: dict) -> str:
+    lines = [
+        f"Local job: {row['local_id']}",
+        f"State: {status_word(row)} ({row['state']})",
+        f"Model: {row.get('target_name') or row.get('target_id')}",
+        f"Scenario job: {row.get('remote_job_id') or '-'}",
+        f"Quoted: {row.get('cost_exact') or '-'} CU, charged: {row.get('charged_exact') or '-'} CU",
+        f"Created: {row.get('created_utc')} UTC",
+    ]
+    if row.get("error"):
+        lines.append(f"Error: {row['error']}")
+    if row.get("hint"):
+        lines.append(f"Hint: {row['hint']}")
+    return "\n".join(lines)
+
+
 class JobsView(QtWidgets.QWidget):
     def __init__(self, runtime, parent=None, limit: int = 50) -> None:
         super().__init__(parent)
@@ -90,16 +106,4 @@ class JobsView(QtWidgets.QWidget):
         menu.exec(self.tree.viewport().mapToGlobal(point))
 
     def details(self, row: dict) -> str:
-        lines = [
-            f"Local job: {row['local_id']}",
-            f"State: {status_word(row)} ({row['state']})",
-            f"Model: {row.get('target_name') or row.get('target_id')}",
-            f"Scenario job: {row.get('remote_job_id') or '-'}",
-            f"Quoted: {row.get('cost_exact') or '-'} CU, charged: {row.get('charged_exact') or '-'} CU",
-            f"Created: {row.get('created_utc')} UTC",
-        ]
-        if row.get("error"):
-            lines.append(f"Error: {row['error']}")
-        if row.get("hint"):
-            lines.append(f"Hint: {row['hint']}")
-        return "\n".join(lines)
+        return job_details(row)

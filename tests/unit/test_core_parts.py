@@ -163,7 +163,7 @@ def test_form_from_recorded_3d_schema():
     assert form.prompt_field.name == "prompt" and form.prompt_field.prompt_spark
     assert form.field("textureImage").is_file and form.field("textureImage").kind == "image"
     assert form.field("geometryResolution").cost_impact
-    assert form.problems({}) == ["Needs prompt"]
+    assert form.problems({}) == ["Needs a prompt"]
     assert "at most 300000" in form.problems({"prompt": "x", "targetPolycount": 400000})[0]
 
 
@@ -175,7 +175,7 @@ def test_build_params_leaves_defaults_out():
 
 def test_file_fields_need_asset_ids():
     form = ModelForm.from_schema(schema("model_meshy-remesh"))
-    assert form.problems({}) == ["Needs model (3d)"]
+    assert form.problems({}) == ["Needs a model (3d)"]
     assert "asset id" in form.problems({"model": "/Users/me/crate.glb"})[0]
     assert form.problems({"model": "asset_abc"}) == []
 

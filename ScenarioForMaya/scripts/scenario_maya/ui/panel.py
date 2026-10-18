@@ -13,8 +13,10 @@ from shiboken6 import getCppPointer
 
 from .. import __version__
 from ..core import diagnostics, links
+from ..core.lanes import IMAGE, LANES
 from .common import copy_text, error_text, message_label, open_url, show_message
 from .jobs import JobsView
+from .lane import LanePage
 from .qt import QtCore, QtWidgets, dpi, isValid, maya_main_window
 from .signin import SignInPage
 
@@ -60,17 +62,55 @@ class ScenarioPanel(QtWidgets.QWidget):
         self.message = message_label()
         self.signin = SignInPage(runtime)
         self.signin.signed_in.connect(self._after_sign_in)
+        self.lanes = QtWidgets.QHBoxLayout()
+        self.lanes.setSpacing(dpi(2))
+        self.lane_buttons = QtWidgets.QButtonGroup(self)
+        for lane in LANES:
+            button = QtWidgets.QToolButton()
+            button.setText(lane.label)
+            button.setCheckable(True)
+            button.setAutoRaise(True)
+            button.setToolTip(f"{lane.label} lane")
+            self.lane_buttons.addButton(button)
+            self.lanes.addWidget(button)
+            button.setChecked(lane is IMAGE)
+        self.lanes.addStretch(1)
+        self.lane = LanePage(runtime, IMAGE)
+        self.banner = QtWidgets.QFrame()
+        self.banner.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
+        self.banner_text = QtWidgets.QLabel()
+        self.banner_text.setWordWrap(True)
+        self.banner_button = QtWidgets.QPushButton("Download")
+        self.banner_button.setToolTip("Download the results of jobs that finished while Maya was closed.")
+        self.banner_button.clicked.connect(self._resume_downloads)
+        banner_layout = QtWidgets.QHBoxLayout(self.banner)
+        banner_layout.addWidget(self.banner_text, 1)
+        banner_layout.addWidget(self.banner_button)
+        self.banner.hide()
         self.jobs = JobsView(runtime)
+        self.jobs.setMinimumHeight(dpi(150))
         jobs_title = QtWidgets.QLabel("Jobs")
         font = jobs_title.font()
         font.setBold(True)
         jobs_title.setFont(font)
-        home = QtWidgets.QWidget()
-        home_layout = QtWidgets.QVBoxLayout(home)
-        home_layout.setContentsMargins(dpi(6), 0, dpi(6), dpi(6))
+        form = QtWidgets.QWidget()
+        home_layout = QtWidgets.QVBoxLayout(form)
+        home_layout.setContentsMargins(dpi(8), dpi(2), dpi(8), dpi(8))
+        home_layout.setSpacing(dpi(6))
+        home_layout.addLayout(self.lanes)
+        home_layout.addWidget(self.banner)
+        home_layout.addWidget(self.lane)
+        home_layout.addSpacing(dpi(6))
         home_layout.addWidget(jobs_title)
-        home_layout.addWidget(self.jobs, 1)
+        home_layout.addWidget(self.jobs)
+        home_layout.addStretch(1)
+        home = QtWidgets.QScrollArea()
+        home.setWidgetResizable(True)
+        home.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        home.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        home.setWidget(form)
         self.home = home
+        self._states: dict = {}
 
         self.pages = QtWidgets.QStackedWidget()
         self.pages.addWidget(self.signin)
@@ -85,6 +125,7 @@ class ScenarioPanel(QtWidgets.QWidget):
         self._unsubscribe = runtime.subscribe(self._on_event)
         self.destroyed.connect(lambda *_: self._detach())
         self.refresh()
+        QtCore.QTimer.singleShot(0, self.resume)
 
     # -- state -----------------------------------------------------------
 
@@ -127,8 +168,34 @@ class ScenarioPanel(QtWidgets.QWidget):
         if event in ("signed_in", "signed_out", "workspace"):
             show_message(self.message, "")
             self.refresh()
+            self.lane.refresh()
+            self.resume()
+        elif event == "job":
+            row = data.get("row") or {}
+            self.lane.on_job(data)
+            if self._states.get(row.get("local_id")) != row.get("state"):
+                self._states[row.get("local_id")] = row.get("state")
+                self.jobs.refresh()
+                self._update_banner()
         elif event in ("submitted", "not_confirmed", "jobs"):
             self.jobs.refresh()
+
+    def resume(self) -> None:
+        """Spec 7.4: jobs running on Scenario resume when the panel opens; downloads wait for a click."""
+        if not self.runtime.session.signed_in or not self.runtime.session.workspace():
+            return
+        self.runtime.jobs.resume_polling()
+        self._update_banner()
+
+    def _update_banner(self) -> None:
+        waiting = self.runtime.jobs.waiting_downloads() if self.runtime.session.signed_in else []
+        if waiting:
+            self.banner_text.setText(f"{len(waiting)} result(s) finished while Maya was closed or their download stopped.")
+        self.banner.setVisible(bool(waiting))
+
+    def _resume_downloads(self) -> None:
+        self.runtime.jobs.resume_downloads()
+        self.banner.hide()
 
     def show_error(self, error: BaseException) -> None:
         show_message(self.message, error_text(error), "error")

@@ -168,7 +168,7 @@ class ModelForm:
             value = values.get(item.name)
             empty = value is None or value == "" or value == [] or value == ()
             if item.required and empty:
-                out.append(f"Needs {item.label.lower()}" if not item.is_file else f"Needs {item.label.lower()} ({item.kind or 'file'})")
+                out.append(f"Needs a {item.label.lower()}" if not item.is_file else f"Needs a {item.label.lower()} ({item.kind or 'file'})")
                 continue
             if empty:
                 continue
