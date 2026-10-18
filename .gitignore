@@ -15,3 +15,4 @@ tests/live/*.local.*
 .env*
 credentials.json
 .cache/
+uv.lock
