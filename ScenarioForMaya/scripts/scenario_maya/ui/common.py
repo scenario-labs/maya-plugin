@@ -54,7 +54,10 @@ def show_message(label: QtWidgets.QLabel, text: str, tone: str = "") -> None:
 def heading(text: str, scale: float = 1.25, parent=None) -> QtWidgets.QLabel:
     label = QtWidgets.QLabel(text, parent)
     font = label.font()
-    font.setPointSizeF(font.pointSizeF() * scale)
+    if font.pointSizeF() > 0:
+        font.setPointSizeF(font.pointSizeF() * scale)
+    else:  # Maya's style sizes fonts in pixels
+        font.setPixelSize(max(1, round(font.pixelSize() * scale)))
     font.setBold(True)
     label.setFont(font)
     return label

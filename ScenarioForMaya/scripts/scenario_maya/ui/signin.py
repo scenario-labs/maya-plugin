@@ -32,8 +32,7 @@ class SignInPage(QtWidgets.QWidget):
         self.browser_button.setDefault(True)
         self.browser_button.clicked.connect(self.sign_in_browser)
         self.browser_note = QtWidgets.QLabel("Opens your browser.")
-        others = link_label('<a href="device">Sign in on another device</a> &nbsp;·&nbsp; <a href="key">Use an API key</a>', self._on_link)
-        account = link_label('<a href="signup">Create an account</a>', self._on_link)
+        links = [link_label(f'<a href="{href}">{text}</a>', self._on_link) for href, text in (("device", "Sign in on another device"), ("key", "Use an API key"), ("signup", "Create an account"))]
         self.status = message_label()
         self.cancel_button = QtWidgets.QPushButton("Cancel")
         self.cancel_button.setToolTip("Stops waiting for the browser.")
@@ -54,14 +53,13 @@ class SignInPage(QtWidgets.QWidget):
         layout.addWidget(self.browser_button)
         layout.addWidget(self.browser_note, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
         layout.addSpacing(dpi(4))
-        layout.addWidget(others, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(account, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+        for label in links:
+            label.setWordWrap(False)
+            layout.addWidget(label, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(self.status)
         layout.addWidget(self.cancel_button, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
         layout.addStretch(1)
         layout.addWidget(privacy)
-        for label in (others, account):
-            label.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
     # -- flows -----------------------------------------------------------
 

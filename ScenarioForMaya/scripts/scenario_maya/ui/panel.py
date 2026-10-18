@@ -175,6 +175,8 @@ def show(page: str | None = None) -> ScenarioPanel | None:
         else:
             options["floating"] = True
         cmds.workspaceControl(CONTROL, **options)
+    # A new tab beside the Channel Box is added behind it: bring it to the front.
+    cmds.workspaceControl(CONTROL, edit=True, r=True)
     panel = current()
     if panel is None:
         # Some Maya versions defer the uiScript until the control is shown.
