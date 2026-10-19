@@ -83,12 +83,14 @@ def test_generate_download_and_import_on_the_ground(lane, fake, cmds, tmp_path):
 def test_panel_shows_the_3d_lane_with_its_preset_and_import(lane, fake, cmds):
     runtime = lane
     runtime.session.set_workspace("team_fake0000000000000001", "proj_fake0000000000000001", "Test team", "Test project")
+    runtime.session.settings.update(lane_image_prompt="a brass lantern")  # someone who already generated an image
     panel = fresh("scenario_maya.ui.panel").ScenarioPanel(runtime)
     try:
         assert [button.text() for button in panel.lane_buttons.buttons()] == ["Image", "3D"]
         panel.select_lane("3d")
         page = panel.lane
         assert page.lane.id == "3d" and runtime.session.settings.get("lane") == "3d"
+        assert page.prompt.toPlainText() == "a carved wooden treasure chest, game prop", "a lane never used yet starts with its example"
         qt_pump_until(lambda: page.fields is not None, timeout=10)
         values = page.values()
         assert values["shouldRemesh"] is True and values["targetPolycount"] == 30000, "the lane proposes a game polycount"

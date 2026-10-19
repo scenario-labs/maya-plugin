@@ -293,8 +293,9 @@ class LanePage(QtWidgets.QWidget):
         self.expiry_timer.timeout.connect(self.check_price)
 
         settings = self.session.settings
-        prompt = settings.get(f"lane_{lane.id}_prompt") or ""
-        if not prompt and not settings.get("onboarded"):
+        # Each lane starts with its own example until something is sent from it; a prompt cleared later stays cleared.
+        prompt = settings.get(f"lane_{lane.id}_prompt")
+        if prompt is None:
             prompt = lane.starter_prompt
         self.prompt.blockSignals(True)
         self.prompt.setPlainText(prompt)
@@ -447,7 +448,7 @@ class LanePage(QtWidgets.QWidget):
         self._busy = True
         self._button("Waiting for Scenario...", False)
         settings = self.session.settings
-        settings.update(**{f"lane_{self.lane.id}_prompt": params.get("prompt", ""), f"lane_{self.lane.id}_values_{self._model_id}": self.fields.values() if self.fields else {}, "onboarded": True})
+        settings.update(**{f"lane_{self.lane.id}_prompt": params.get("prompt", ""), f"lane_{self.lane.id}_values_{self._model_id}": self.fields.values() if self.fields else {}})
         started = time.monotonic()
 
         def sent(row):
