@@ -638,6 +638,7 @@ Maya has no splat format of its own and Viewport 2.0 does not draw splats; Arnol
 | `preferredMaterial` marks data textures sRGB | Colour spaces set by role after import |
 | Importers change the playback range | Range, current frame and rate captured and restored |
 | FBX and OBJ create several top-level nodes | New assemblies found by diff, grouped under one transform |
+| `cmds` takes distances in the scene's unit, the API (mesh points, matrices, anim curve keys) in centimetres: a builder that scaled API values by the scene unit landed 1 m models 1 cm wide in a metre scene | Two factors in the GLB builder; tested in metre and millimetre scenes on a skinned, a morphing and a moving sample |
 | Leading digits dropped, non-ASCII becomes `?`, `-` becomes `FBXASC045` | Names slugified first; FBX names cleaned after import |
 | FBX embedded media extract beside the FBX, with no extension sometimes | FBX copied into the asset folder first; textures renamed by format |
 | Arnold writes `.tx` files beside textures | Texture folders are inside the project and writable |

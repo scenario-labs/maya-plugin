@@ -104,6 +104,33 @@ def test_morph_target_and_weight_keys(cmds, land, tmp_path):
     assert cmds.aliasAttr(blend, query=True)[0] == "Lift"
 
 
+@pytest.mark.parametrize("unit, per_metre", [("m", 1.0), ("mm", 1000.0)])
+def test_sizes_hold_in_metre_and_millimetre_scenes(cmds, land, tmp_path, unit, per_metre):
+    """Mesh points, bind matrices and distance keys go through the API in centimetres, whatever the scene unit."""
+
+    def world_points(sample):
+        made = land(sample(str(tmp_path / f"{sample.__name__}.glb")), attributes={})
+        start = cmds.playbackOptions(query=True, minTime=True)
+        points = []
+        for frame in (start, start + 24):
+            cmds.currentTime(frame)
+            for shape in made["meshes"]:
+                points += [cmds.pointPosition(f"{shape}.vtx[{i}]", world=True) for i in range(cmds.polyEvaluate(shape, vertex=True))]
+        return points
+
+    samples = (glb_samples.skinned_strip, glb_samples.morph_quad, glb_samples.moving_quad)
+    in_cm = {sample: world_points(sample) for sample in samples}
+    cmds.file(new=True, force=True)
+    cmds.currentUnit(linear=unit)
+    try:
+        for sample in samples:
+            scaled = [[value * per_metre / 100.0 for value in point] for point in in_cm[sample]]
+            found = world_points(sample)
+            assert len(found) == len(scaled) and all(close(a, b, 1e-3 * per_metre / 100.0) for a, b in zip(found, scaled, strict=True)), sample.__name__
+    finally:
+        cmds.currentUnit(linear="cm")
+
+
 def test_z_up_scene_turns_the_root(cmds, land, tmp_path):
     cmds.upAxis(axis="z", rotateView=False)
     try:

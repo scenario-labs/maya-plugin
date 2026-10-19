@@ -25,6 +25,10 @@
 - A form that misses its image says "Add an image".
 - `tools/render_glb.py` renders a GLB in Viewport 2.0 without a window, through the plug-in's importer: stills or a turntable GIF for documentation.
 
+### Fixes
+
+- 3D results and Import GLB land at the right size in scenes set to metres or millimetres (they were 100 times too small in metres and 10 times too large in millimetres; centimetre scenes were right).
+
 ### Development
 
 - `tools/lint.py` also checks files not yet added to git, so a local run before a commit finds what CI finds.

@@ -5,6 +5,9 @@ import is one undo step; the file is parsed beforehand by ``core.gltf``,
 which also writes the embedded textures. Glossary of the conversions:
 
 - Units: glTF metres become the scene's linear unit (x100 in centimetres).
+  Values given through ``cmds`` use the scene unit; mesh points, matrices and
+  distance keys given through the API are in centimetres whatever the scene
+  unit (a metre scene once got models 100 times too small).
 - Up axis: glTF is Y-up; in a Z-up scene the root group turns 90 degrees on X.
 - Meshes: one Maya mesh per glTF mesh node, its triangle primitives merged
   with a shading group per primitive. Vertices that glTF splits along UV or
@@ -79,7 +82,9 @@ class _Builder:
         self.data = doc.json
         self.images = images
         self.base = base
+        # cmds takes distances in the scene's unit; the API (mesh points, matrices, anim curves) in centimetres.
         self.unit = om.MDistance(1.0, om.MDistance.kMeters).asUnits(om.MDistance.uiUnit())
+        self.internal = om.MDistance(1.0, om.MDistance.kMeters).asUnits(om.MDistance.internalUnit())
         self.fps = om.MTime(1.0, om.MTime.kSeconds).asUnits(om.MTime.uiUnit())
         self.notes: list = []
         self.nodes: dict = {}
@@ -263,7 +268,7 @@ class _Builder:
     # -- meshes ------------------------------------------------------------------
 
     def _geometry(self, primitives: list, weld: bool) -> dict:
-        unit = self.unit
+        unit = self.internal
         welded: dict = {}
         points: list = []
         first: list = []
@@ -432,7 +437,7 @@ class _Builder:
             shape = cmds.listRelatives(duplicate, shapes=True, fullPath=True)[0]
             points = om.MPointArray(
                 [
-                    (x + deltas[3 * o] * self.unit, y + deltas[3 * o + 1] * self.unit, z + deltas[3 * o + 2] * self.unit)
+                    (x + deltas[3 * o] * self.internal, y + deltas[3 * o + 1] * self.internal, z + deltas[3 * o + 2] * self.internal)
                     for (x, y, z), o in zip(mesh_record["points"], mesh_record["first"], strict=True)
                 ]
             )
@@ -469,9 +474,9 @@ class _Builder:
             dag = path.getDagPath(0)
             logical = fn.indexForInfluenceObject(dag)
             matrix = list(inverse_binds.row(k)) if inverse_binds else list(om.MMatrix())
-            matrix[12] *= self.unit
-            matrix[13] *= self.unit
-            matrix[14] *= self.unit
+            matrix[12] *= self.internal
+            matrix[13] *= self.internal
+            matrix[14] *= self.internal
             cmds.setAttr(f"{cluster}.bindPreMatrix[{logical}]", matrix, type="matrix")
             to_physical.append(physical[dag.fullPathName()])
         joint_ids = self._per_vertex(record["primitives"], "JOINTS_0", 4)
@@ -525,7 +530,7 @@ class _Builder:
             rows = [output.row(3 * i + 1) if interpolation == "CUBICSPLINE" else output.row(i) for i in range(len(times))]
             node = self.nodes[index]
             if path == "translation":
-                series = [("translate" + axis, oma.MFnAnimCurve.kAnimCurveTL, [row[k] * self.unit for row in rows]) for k, axis in enumerate("XYZ")]
+                series = [("translate" + axis, oma.MFnAnimCurve.kAnimCurveTL, [row[k] * self.internal for row in rows]) for k, axis in enumerate("XYZ")]
             elif path == "scale":
                 series = [("scale" + axis, oma.MFnAnimCurve.kAnimCurveTU, [row[k] for row in rows]) for k, axis in enumerate("XYZ")]
             elif path == "rotation":

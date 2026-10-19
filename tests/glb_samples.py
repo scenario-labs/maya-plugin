@@ -143,6 +143,20 @@ def morph_quad(path: str) -> str:
     return w.save(path)
 
 
+def moving_quad(path: str) -> str:
+    """A 0.5 m quad whose node moves from the origin to (2, 1, 0) m in one second."""
+    w = Writer()
+    position = w.accessor("VEC3", [(0, 0, 0), (0.5, 0, 0), (0.5, 0.5, 0), (0, 0.5, 0)], bounds=True)
+    indices = w.accessor("SCALAR", [0, 1, 2, 0, 2, 3], component=5123)
+    times = w.accessor("SCALAR", [0.0, 1.0])
+    moves = w.accessor("VEC3", [(0, 0, 0), (2, 1, 0)])
+    w.add("meshes", {"name": "tile", "primitives": [{"attributes": {"POSITION": position}, "indices": indices}]})
+    w.add("nodes", {"name": "Mover", "mesh": 0})
+    w.add("animations", {"samplers": [{"input": times, "output": moves}], "channels": [{"sampler": 0, "target": {"node": 0, "path": "translation"}}]})
+    w.add("scenes", {"nodes": [0]})
+    return w.save(path)
+
+
 def apply(m, point) -> tuple:
     """A column-major matrix applied to a point."""
     x, y, z = point
