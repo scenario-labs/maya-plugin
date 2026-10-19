@@ -1,6 +1,7 @@
 """GLB parsing and format sniffing on plain Python (0 CU)."""
 
 import json
+import os
 import struct
 
 import pytest
@@ -110,7 +111,7 @@ def test_sniff_format_by_header(tmp_path, head, kind):
 def test_extract_images_names_by_role_and_never_overwrites(tmp_path):
     doc = gltf.Document.load(glb_samples.textured_quad(str(tmp_path / "crate.glb")))
     first = gltf.extract_images(doc, str(tmp_path / "tex"), "crate")
-    assert [p.rsplit("/", 1)[-1] for p in first] == ["crate_base_color.png", "crate_metal_rough.png", "crate_normal.png"]
+    assert [os.path.basename(p) for p in first] == ["crate_base_color.png", "crate_metal_rough.png", "crate_normal.png"]
     assert all(open(p, "rb").read(4) == b"\x89PNG" for p in first)
     again = gltf.extract_images(doc, str(tmp_path / "tex"), "crate")
     assert again[0].endswith("crate_base_color_2.png")
