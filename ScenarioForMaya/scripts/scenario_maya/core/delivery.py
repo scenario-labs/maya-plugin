@@ -221,6 +221,33 @@ def download_results(
     return session.ledger.set_state(local_id, "ready", "downloaded", result_json=result, error="", hint="")
 
 
+def late_thumbnail(session, local_id: str, *, attempts: int = 4, wait: float = 5.0, cancel: threading.Event | None = None, sleep: Callable[[float], None] = time.sleep) -> dict | None:
+    """The preview picture of a downloaded 3D result that had none yet.
+
+    Scenario renders 3D previews a few seconds after the job ends (Meshy 7.1:
+    9 s after the asset was written), so the asset is read again a few times.
+    Returns the updated row, or None while there is still no picture. Best
+    effort: the result itself is never touched.
+    """
+    row = session.ledger.get(local_id) or {}
+    result = row.get("result") or {}
+    files = result.get("files") or []
+    if not files or result.get("thumbnail") or not files[0].get("asset_id"):
+        return None
+    backend = session.backend()
+    folder = result.get("folder") or os.path.dirname(files[0]["path"])
+    for attempt in range(attempts):
+        if attempt:
+            sleep(wait)
+        if cancel is not None and cancel.is_set():
+            return None
+        url = _thumbnail_url(backend, files[0]["asset_id"])
+        if url:
+            path = _thumbnail(url, folder, os.path.basename(folder.rstrip(os.sep)), cancel, sleep)
+            return session.ledger.merge_result(local_id, thumbnail=path) if path else None
+    return None
+
+
 def _thumbnail_url(backend, asset_id: str) -> str:
     try:
         return ((backend.asset(asset_id) or {}).get("thumbnail") or {}).get("url") or ""

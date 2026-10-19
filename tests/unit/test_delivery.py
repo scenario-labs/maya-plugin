@@ -210,6 +210,24 @@ def test_3d_results_download_only_the_glb_and_its_thumbnail(signed_in, fake, tmp
     assert again["state"] == "ready" and len(fake.state.tool_calls("asset_get")) == reads, "the pick is kept on the job"
 
 
+def test_a_3d_preview_rendered_after_the_download_is_fetched_later(signed_in, fake, tmp_path):
+    row = delivery.follow(signed_in, sent_3d_job(signed_in)["local_id"], sleep=lambda s: None)
+    previews = {asset_id: asset.pop("thumbnail", None) for asset_id, asset in fake.state.assets.items()}
+    ready = delivery.download_results(signed_in, row["local_id"], str(tmp_path), formats=lanes.THREE_D.formats)
+    assert not ready["result"].get("thumbnail"), "Scenario has not rendered the preview yet"
+    waits = []
+    assert delivery.late_thumbnail(signed_in, row["local_id"], attempts=2, sleep=waits.append) is None
+    assert waits == [5.0]
+    signed_in.ledger.merge_result(row["local_id"], landed=[{"mode": "model"}])  # imported meanwhile
+    for asset_id, preview in previews.items():
+        if preview:
+            fake.state.assets[asset_id]["thumbnail"] = preview
+    later = delivery.late_thumbnail(signed_in, row["local_id"], sleep=waits.append)
+    assert os.path.exists(later["result"]["thumbnail"]) and later["state"] == "ready"
+    assert later["result"]["landed"] == [{"mode": "model"}], "the import recorded meanwhile is kept"
+    assert delivery.late_thumbnail(signed_in, row["local_id"]) is None, "fetched once"
+
+
 def test_asset_format_reads_metadata_then_mime_type():
     assert delivery.asset_format({"metadata": {"format": "GLB"}, "mimeType": "model/obj"}) == "glb"
     assert delivery.asset_format({"mimeType": "application/vnd.autodesk.fbx"}) == "fbx"

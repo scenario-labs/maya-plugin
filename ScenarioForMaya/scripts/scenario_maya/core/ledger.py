@@ -395,6 +395,20 @@ class Ledger:
 
         return self._write(run)
 
+    def merge_result(self, local_id: str, **values) -> dict:
+        """Adds keys to a job's result without a state change, read and written in one transaction
+        (a landing that records itself meanwhile is kept)."""
+
+        def run(connection):
+            row = self._row(connection.execute("SELECT * FROM jobs WHERE local_id = ?", (local_id,)).fetchone())
+            if row is None:
+                raise errors.NotFound(f"No local job {local_id}.")
+            result = dict(row.get("result") or {}, **values)
+            connection.execute("UPDATE jobs SET result_json = ?, updated_utc = ? WHERE local_id = ?", (json.dumps(result), utc_now(), local_id))
+            return self._row(connection.execute("SELECT * FROM jobs WHERE local_id = ?", (local_id,)).fetchone())
+
+        return self._write(run)
+
     def link(self, local_id: str, remote_job_id: str) -> dict:
         """A person linked a Not confirmed row to the Scenario job it produced."""
         return self._write(lambda c: self._transition(c, local_id, "remote", f"linked by a person to {remote_job_id}", remote_job_id=remote_job_id, reviewed=1))

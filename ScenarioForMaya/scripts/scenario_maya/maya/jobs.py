@@ -113,6 +113,10 @@ class JobRunner:
 
         row = delivery.download_results(self.session, local_id, root, provenance=info, convert=CONVERT, formats=formats, progress=progress, cancel=cancel)
         self._announce(row, "Ready")
+        if formats and not (row.get("result") or {}).get("thumbnail"):
+            later = delivery.late_thumbnail(self.session, local_id, cancel=cancel)
+            if later is not None:
+                self._announce(later)
         return row
 
     def resume_polling(self) -> int:

@@ -103,6 +103,8 @@ def test_panel_shows_the_3d_lane_with_its_preset_and_import(lane, fake, cmds):
         assert buttons[0] == "Import" and "Card" not in buttons
         assert card.note.text().startswith("GLB  .  2 faces")
         assert not panel.lane_pages["image"].cards, "a 3D job never shows in the Image lane"
+        card.update_row(dict(card.row, result=dict(card.row["result"], thumbnail="")))
+        assert card.thumb.text() == "3D", "a model whose preview is not rendered yet shows a placeholder"
         page.land(card.row, "model")
         assert page.message.text().startswith("Imported carved_wooden_treasure_chest: 2 faces, on the ground"), page.message.text()
         assert len(fake.state.paid_runs()) == 1

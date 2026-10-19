@@ -54,6 +54,10 @@ def model_facts(files: list) -> str:
     return "  .  ".join(part for part in parts if part)
 
 
+def _count(number: int, word: str) -> str:
+    return f"{number:,} {word}{'' if number == 1 else 's'}"
+
+
 def checks_line(checks: dict) -> str:
     """The import checks in one line (spec 6.7): size, materials, and anything to look at."""
     if not checks:
@@ -61,13 +65,13 @@ def checks_line(checks: dict) -> str:
     parts = []
     if checks.get("size_metres"):
         parts.append(" x ".join(f"{value:.2f}" for value in checks["size_metres"]) + " m")
-    parts.append(f"{checks.get('materials', 0)} material(s), {checks.get('textures', 0)} texture(s)")
+    parts.append(f"{_count(checks.get('materials', 0), 'material')}, {_count(checks.get('textures', 0), 'texture')}")
     if checks.get("missing_textures"):
-        parts.append(f"{len(checks['missing_textures'])} missing texture(s)")
+        parts.append(_count(len(checks["missing_textures"]), "missing texture"))
     if checks.get("non_manifold_edges"):
-        parts.append(f"{checks['non_manifold_edges']} non-manifold edge(s)")
+        parts.append(_count(checks["non_manifold_edges"], "non-manifold edge"))
     if checks.get("collapsed_triangles"):
-        parts.append(f"{checks['collapsed_triangles']} collapsed triangle(s) left out")
+        parts.append(_count(checks["collapsed_triangles"], "collapsed triangle") + " left out")
     if checks.get("clip"):
         parts.append(f"clip {checks['clip'].get('name') or ''} keyed".replace("  ", " "))
     parts.extend(checks.get("notes") or [])
@@ -111,6 +115,7 @@ class ResultCard(QtWidgets.QFrame):
 
     def update_row(self, row: dict, note: str = "", progress: float | None = None) -> None:
         changed_state = row.get("state") != self.row.get("state")
+        changed_thumb = (row.get("result") or {}).get("thumbnail") != (self.row.get("result") or {}).get("thumbnail")
         self.row = row
         prompt = str((row.get("params") or {}).get("prompt") or row.get("label") or "")
         self.title.setText(prompt if len(prompt) < 90 else prompt[:87] + "...")
@@ -138,6 +143,7 @@ class ResultCard(QtWidgets.QFrame):
         self.note.setVisible(bool(message))
         if changed_state:
             self._build_actions()
+        if changed_state or changed_thumb:
             self._load_thumb()
 
     def _files(self) -> list:
@@ -189,10 +195,13 @@ class ResultCard(QtWidgets.QFrame):
     def _load_thumb(self) -> None:
         files = self._files()
         path = (self.row.get("result") or {}).get("thumbnail") or (files[0].get("path", "") if files else "")
+        placeholder = "3D" if files and self.page.lane.results == "model" else ""
         if not path or not os.path.exists(path) or path.lower().endswith((".glb", ".gltf", ".fbx", ".obj")):
-            self.thumb.setText("3D" if files and self.page.lane.results == "model" else "")
-            self.thumb.setPixmap(QtGui.QPixmap())
+            self.thumb.clear()  # setPixmap would clear the text again
+            self.thumb.setText(placeholder)
             return
+        if self.thumb.pixmap().isNull():
+            self.thumb.setText(placeholder)  # until the picture is decoded, or if it cannot be
         size = dpi(72)
         if path in _THUMBS:
             self.thumb.setPixmap(_THUMBS[path])
