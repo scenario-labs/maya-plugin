@@ -103,6 +103,7 @@ Every change keeps them. They are enforced in `core/session.py`,
 uv run --python 3.13 --with pytest pytest -q   # core unit tests, fake server, 0 CU (also 3.11)
 tools/test_maya.sh                             # mayapy tests, headless (needs a licensed Maya)
 tools/test_maya_gui.sh [install generate restart oauth] # scripted GUI session with screenshots; opens Maya windows; generate spends a few CU
+tools/readme_media.sh <signed-in MAYA_APP_DIR> # README pictures, GIFs and videos from a real session; opens Maya; spends one image and one 3D model
 python3 tools/lint.py                          # no em dashes, no secrets, JSON parses
 uvx ruff check . && uvx ruff format --check .
 python3 tools/contract_check.py                # free live check, needs a test key
@@ -156,6 +157,9 @@ reports go under `tests/reports/`.
   `fix(maya): keep the selection after applying a material`.
 - Fill `.github/pull_request_template.md`; tick only what you ran.
 - Screenshots of a visible change go in the PR description, never in a commit.
+  The one exception is `docs/media/`, the README's pictures and recordings,
+  made by `tools/readme_media.sh` with the team and account names masked;
+  look at every file before committing it.
 - Name the contributing agent in the PR and keep its co-author trailer on
   commits and in the squash message. A human reviews the complete diff before
   merge.
