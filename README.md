@@ -23,7 +23,7 @@ what comes next.
 | --- | --- | --- |
 | Sign-in | Browser (OAuth), a code on another device, or an API key; secrets in the system keychain | |
 | Panel | Docked beside the Channel Box and restored with the workspace; team and project picker; model picker; job list | Studio window, quick composer over the viewport |
-| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; multi-view to 3D from views captured around a selected object (Tripo P2, Tripo 3.1, Hunyuan 3D Pro 3.1), landed over it; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs, a new material or new geometry, reviewed first, one Ctrl+Z); GLB import with PBR materials, skins, blend shapes and animation; import checks | Rig, animate, split into parts; motion; FBX results |
+| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; multi-view to 3D from views captured around a selected object (Tripo P2, Tripo 3.1, Hunyuan 3D Pro 3.1), landed over it; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs, a new material or new geometry, reviewed first, one Ctrl+Z); quad meshes, delivered as FBX; GLB import with PBR materials, skins, blend shapes and animation, FBX through Maya's importer; import checks | Rig, animate, split into parts; motion |
 | Image | Text to image with Scenario's image models; lands as a card, a material or an image plane | Image editing, upscale, LoRAs |
 | Jobs | One job list for every Maya session; downloads resume; results that finish while Maya is closed are offered on the next start | Results history, an "In this scene" view |
 | Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
@@ -159,6 +159,30 @@ flowchart LR
 Both Tripo results kept the shape and colours on every side, took under four
 minutes and landed on the blockout within half a centimetre of its 82 cm
 height.
+
+## Quad meshes and FBX results
+
+The Tripo models have a **quad** setting: the mesh comes back in quads,
+delivered as an FBX file (Scenario sends no GLB then). The plug-in imports
+FBX results through Maya's own FBX importer, as one Ctrl+Z, and lands them
+like a GLB: on the ground in front of the camera, or over the captured object
+in the Multi-view mode.
+
+<p align="center"><img src="docs/media/quad-fbx.jpg" width="600" alt="The robot from Tripo 3.1 Multi View with quad on: as imported, and with every edge drawn, a grid of quads"></p>
+
+*Tripo 3.1 Multi View with quad on and a face limit of 8,000, from the four
+robot views above: 8,153 faces, 8,132 of them quads. 53 CU.*
+
+Around Maya's FBX importer, the plug-in:
+
+- keeps the scene's unit, up axis, playback range, current frame and frame
+  rate (the importer would change them);
+- imports even when the scene already has nodes of the same names;
+- writes the file's textures under `sourceimages/scenario/`;
+- cleans the names the FBX format escaped (`FBXASC045` for a dash);
+- keeps the importer's materials (Phong), with colour textures in sRGB, every
+  other texture Raw and normal maps read as tangent-space normals;
+- reports the same import checks as for a GLB.
 
 ## Edit a mesh of the scene
 

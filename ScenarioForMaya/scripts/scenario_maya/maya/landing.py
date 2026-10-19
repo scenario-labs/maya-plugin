@@ -231,40 +231,67 @@ def _image_plane(path: str, base: str, attributes: dict, camera: tuple) -> dict:
     }
 
 
-def land_model(path: str, attributes: dict, *, texture_folder: str, label: str = "", select: bool = True, place: tuple | None = None, matrix: list | None = None, over: str = "") -> dict:
-    """Imports a 3D result (GLB) as a new group: one undo step, provenance on the group.
+def land_model(
+    path: str,
+    attributes: dict,
+    *,
+    texture_folder: str,
+    label: str = "",
+    select: bool = True,
+    place: tuple | None = None,
+    matrix: list | None = None,
+    box: list | None = None,
+    over: str = "",
+) -> dict:
+    """Imports a 3D result (GLB, or FBX through Maya's importer) as a new group: one undo step, provenance on the group.
 
-    Embedded textures are written to ``texture_folder`` first (files stay after
-    an undo, spec 7.3). With ``place`` (a world point) the group is moved so
-    the model's bottom centre sits on the ground plane below that point (spec
+    Textures are written to ``texture_folder`` first (files stay after an
+    undo, spec 7.3). With ``place`` (a world point) the group is moved so the
+    model's bottom centre sits on the ground plane below that point (spec
     10.4); with ``matrix`` (centimetres, as ``cmds.xform`` takes it) the group
     gets that world matrix, which is how an edit result lands over the mesh
-    it came from (``over`` names it); without either, the file's own origin
-    is kept. Returns what was made plus the import checks.
+    it came from; with ``box`` (a world bounding box in scene units) it is
+    scaled and moved onto that box, which is how a multi-view result lands
+    over the object its views show (``over`` names the mesh or object);
+    without any, the file's own origin is kept. Returns what was made plus
+    the import checks.
     """
-    from . import glb_builder, import_command
+    from . import fbx_import, glb_builder, import_command
 
     kind = gltf.sniff_format(path)
     if kind == "missing":
         raise LandingError("Nothing was imported: the result file is missing. Download it again from Jobs.")
-    if kind != "glb":
+    if kind not in ("glb", "fbx"):
         raise LandingError(f"Nothing was imported: this result is a {kind.upper()} file, which this version cannot import yet.")
-    try:
-        doc = gltf.Document.load(path)
-    except (errors.ProtocolError, ValueError, KeyError) as error:
-        raise LandingError(f"Nothing was imported: the GLB file could not be read ({error}).") from error
-    if doc.unsupported:
-        raise LandingError("Nothing was imported: the file uses " + " and ".join(doc.unsupported) + ", which the importer cannot read yet.")
     base = naming.slug(label or attributes.get("scenario_prompt") or os.path.splitext(os.path.basename(path))[0])
-    images = gltf.extract_images(doc, texture_folder, base)
+    if kind == "fbx":
+        images: list = []
+
+        def build():
+            return fbx_import.build(path, base, texture_folder)
+
+    else:
+        try:
+            doc = gltf.Document.load(path)
+        except (errors.ProtocolError, ValueError, KeyError) as error:
+            raise LandingError(f"Nothing was imported: the GLB file could not be read ({error}).") from error
+        if doc.unsupported:
+            raise LandingError("Nothing was imported: the file uses " + " and ".join(doc.unsupported) + ", which the importer cannot read yet.")
+        images = gltf.extract_images(doc, texture_folder, base)
+
+        def build():
+            return glb_builder.build(doc, images, base)
+
     namespace = free_namespace(f"scn_{base}")
     chunk = f"Scenario: Import {base}"
     with undo_chunk(chunk):
         scene.scene_uuid()
         with in_namespace(namespace) as ns:
-            made = import_command.run(lambda: glb_builder.build(doc, images, base))
+            made = import_command.run(build)
         if matrix is not None:
             cmds.xform(made["top"], matrix=matrix, worldSpace=True)
+        elif box is not None and made["meshes"]:
+            _onto_box(made["top"], made["meshes"], box)
         elif place is not None and made["meshes"]:
             _on_ground(made["top"], made["meshes"], place)
         if attributes:
@@ -282,10 +309,23 @@ def land_model(path: str, attributes: dict, *, texture_folder: str, label: str =
         textures_turned_on=bool(textures),
         summary=f"Imported {base}: {checks['faces']:,} faces"
         + (f", {checks['joints']} joints" if checks["joints"] else "")
-        + (f", over {over}" if matrix is not None and over else "")
-        + (", on the ground at the camera's centre of interest" if matrix is None and place is not None and made["meshes"] else ""),
+        + (f", over {over}" if (matrix is not None or box is not None) and over else "")
+        + (", on the ground at the camera's centre of interest" if matrix is None and box is None and place is not None and made["meshes"] else ""),
     )
     return made
+
+
+def _onto_box(top: str, meshes: list, box: list) -> None:
+    """Scales ``top`` uniformly and moves it so the meshes' bounding box has ``box``'s centre and diagonal (no rotation).
+
+    ``top`` is a new group at the origin, so its scale applies about the origin.
+    """
+    have = cmds.exactWorldBoundingBox(meshes)
+    size, want = math.dist(have[:3], have[3:]), math.dist(box[:3], box[3:])
+    scale = want / size if size > 0 else 1.0
+    cmds.setAttr(top + ".scale", scale, scale, scale, type="double3")
+    move = [(box[i] + box[i + 3]) / 2.0 - scale * (have[i] + have[i + 3]) / 2.0 for i in range(3)]
+    cmds.move(*move, top, relative=True, worldSpace=True)
 
 
 def _on_ground(top: str, meshes: list, point: tuple) -> None:

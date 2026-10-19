@@ -98,25 +98,6 @@ def import_over_target(row: dict, result_path: str) -> dict:
     }
 
 
-def import_over_views(capture: dict, result_path: str) -> dict:
-    """Where a multi-view result lands on Import: fitted to the box of the object its views were captured from.
-
-    The views are that object's own front, left, back and right, and the
-    multi-view results checked on 2026-10-19 came back facing the same way
-    (the front towards +Z in the file), so the bounds fit needs no rotation.
-    The box is where the object was when its views were taken (scene units).
-    """
-    result = topology.result_from_document(gltf.Document.load(result_path))
-    if not result.points:
-        raise ApplyError("The result has no mesh.")
-    to_m = om.MDistance(1.0, om.MDistance.uiUnit()).asMeters()
-    x0, y0, z0, x1, y1, z1 = (value * to_m for value in capture["box"])
-    z_up = capture.get("up_axis") == "z"
-    corners = [(x0, z0, -y1), (x1, z1, -y0)] if z_up else [(x0, y0, z0), (x1, y1, z1)]  # the box in the file's space (Y-up)
-    scale, offset = topology.fit(result.points, corners)
-    return {"matrix": placement_matrix(scale, offset, {"up_axis": "z" if z_up else "y"}), "scale": scale, "target_name": capture.get("name", "")}
-
-
 def fit_note(name: str, gap: dict) -> str:
     """Why a fitted result may not sit on the mesh, for the import message."""
     return f"not the same shape as {name} ({_far(name, gap)}): placed by the bounds only, check the placement"

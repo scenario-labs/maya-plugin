@@ -359,3 +359,20 @@ def test_provenance_has_inputs_and_no_secrets():
     assert attrs["scenario_prompt"] == "" and "worn brass" not in attrs["scenario_parameters"], "a named prompt follows the prompt setting"
     assert "blurry" in attrs["scenario_parameters"] and json.loads(attrs["scenario_input_asset_ids"]) == ["asset_in2"]
     assert provenance.web_url("asset_1", "team_1", "proj_1") == "https://app.scenario.com/assets?openAssetId=asset_1&teamId=team_1&projectId=proj_1"
+
+
+class _Records:
+    def __init__(self, records):
+        self.records = records
+
+    def asset(self, asset_id):
+        return self.records[asset_id]
+
+
+def test_a_job_with_only_an_fbx_downloads_the_fbx():
+    """Tripo's quad option returns one FBX asset (``model/x-fbx``), no GLB [checked live on 2026-10-19]."""
+    backend = _Records({"a": {"mimeType": "model/x-fbx", "metadata": {"format": "fbx", "faceCount": 8153}}, "b": {"mimeType": "image/png"}})
+    chosen, facts, _thumb = delivery.pick_assets(backend, ["b", "a"], lanes.THREE_D_VIEWS.formats)
+    assert chosen == ["a"] and facts["a"]["format"] == "fbx" and facts["a"]["faces"] == 8153
+    both = _Records({"g": {"metadata": {"format": "glb"}}, "f": {"metadata": {"format": "fbx"}}})
+    assert delivery.pick_assets(both, ["f", "g"], lanes.THREE_D.formats)[0] == ["g"], "the GLB first when there is one"

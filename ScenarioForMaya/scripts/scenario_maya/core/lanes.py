@@ -24,7 +24,7 @@ class Lane:
     starter_prompt: str
     examples: tuple
     destination: str  # the destination line before anything is generated
-    results: str = "image"  # "image" lands as card, material or image plane; "model" imports a GLB
+    results: str = "image"  # "image" lands as card, material or image plane; "model" imports a GLB or FBX
     formats: tuple = ()  # for "model" lanes: which result files to download, in order of preference
     presets: dict = field(default_factory=dict, compare=False, hash=False)  # first values per model, before the user saves any
     tab: str = ""  # lanes with the same tab are its modes; "" means the lane is its own tab
@@ -75,7 +75,7 @@ THREE_D = Lane(
     ),
     destination="Saved under scenario/<date> in the project. Imports as a new group at real-world size, on the ground at the camera's centre of interest.",
     results="model",
-    formats=("glb",),
+    formats=("glb", "fbx"),
     # Meshy 7.1 returns about a million triangles unless asked to remesh, for the same price.
     presets={"model_meshy-7-1-txt23d": {"shouldRemesh": True, "targetPolycount": 30000}},
 )
@@ -99,7 +99,7 @@ THREE_D_IMAGE = Lane(
     examples=(),
     destination="Saved under scenario/<date> in the project. Imports as a new group at real-world size, on the ground at the camera's centre of interest.",
     results="model",
-    formats=("glb",),
+    formats=("glb", "fbx"),
     presets={"model_meshy-7-1-img23d": {"shouldRemesh": True, "targetPolycount": 30000}},
     tab="3d",
     mode="Image",
@@ -126,7 +126,7 @@ THREE_D_VIEWS = Lane(
     examples=(),
     destination="Saved under scenario/<date> in the project. Imports as a new group at real-world size, on the ground at the camera's centre of interest.",
     results="model",
-    formats=("glb",),
+    formats=("glb", "fbx"),
     # Hunyuan's default is 500,000 faces; its minimum keeps the import light.
     presets={"model_hunyuan-3d-pro-3-1-multiview": {"faceCount": 40000}},
     tab="3d",

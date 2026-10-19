@@ -70,7 +70,7 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
   Maya process), `jobs.py` (quote to landed result, recovery),
   `landing.py` (images as card, material or image plane, 3D models, one
   undo step each), `import_command.py` (the recording `scenarioImport`
-  command that makes any import one undo step), `glb_builder.py` (GLB to
+  command that makes any import one undo step), `fbx_import.py` (FBX results through Maya's `FBXImport`: options set per import, root namespace then renamed in, timeline and up axis kept, importer's materials kept), `glb_builder.py` (GLB to
   meshes, materials, joints, skins, blend shapes and keys; import checks), `scene.py` (project folders, camera, selection, scene id),
   `capture.py` (a viewport still for a model input, and the selection from named sides for multi-view models; outside the undo queue),
   `mesh_export.py` (a selected mesh to the GLB sent for an edit, with the
@@ -124,7 +124,7 @@ uv run --python 3.13 --with pytest pytest -q   # core unit tests, fake server, 0
 tools/test_maya.sh                             # mayapy tests, headless (needs a licensed Maya)
 tools/test_maya_gui.sh [install generate restart oauth] # scripted GUI session with screenshots; opens Maya windows; generate spends a few CU
 tools/readme_media.sh <signed-in MAYA_APP_DIR> # README pictures, GIFs and videos from a real session; opens Maya; spends one image and one 3D model
-MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --turn 60 --gif out/turn.gif  # Viewport 2.0 stills or a turntable of a GLB, headless, 0 CU
+MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --turn 60 --gif out/turn.gif  # Viewport 2.0 stills or a turntable of a GLB or FBX, headless, 0 CU
 python3 tools/lint.py                          # no em dashes, no secrets, JSON parses
 uvx ruff check . && uvx ruff format --check .
 python3 tools/contract_check.py                # free live check, needs a test key

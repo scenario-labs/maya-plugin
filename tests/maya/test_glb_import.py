@@ -145,7 +145,11 @@ def test_refusals_say_why(cmds, land, tmp_path):
     fbx = tmp_path / "result.glb"
     fbx.write_bytes(b"Kaydara FBX Binary  \x00\x1a\x00")
     with pytest.raises(land.landing.LandingError, match="FBX file"):
-        land(str(fbx))
+        land(str(fbx))  # an FBX goes to Maya's importer, which cannot read this one
+    ply = tmp_path / "splat.glb"
+    ply.write_bytes(b"ply\nformat binary_little_endian 1.0\n")
+    with pytest.raises(land.landing.LandingError, match="PLY file, which this version cannot import"):
+        land(str(ply))
     writer = glb_samples.Writer()
     writer.doc["extensionsUsed"] = ["KHR_draco_mesh_compression"]
     with pytest.raises(land.landing.LandingError, match="Draco"):

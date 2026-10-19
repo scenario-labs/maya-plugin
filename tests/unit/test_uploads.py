@@ -106,7 +106,8 @@ def test_the_3d_tab_has_text_image_multi_view_and_edit_modes():
     assert lanes.THREE_D_VIEWS.inputs == "views" and lanes.THREE_D_VIEWS.quick_picks[0] == "model_tripo-p2-multiview-to-3d"
     assert lanes.lane_for_model(["img23d"]) is lanes.THREE_D_IMAGE
     assert lanes.lane_for_model(["3d23d"]) is lanes.THREE_D_EDIT and lanes.THREE_D_EDIT.inputs == "mesh"
-    assert lanes.THREE_D_IMAGE.quick_picks[0] == MESHY_IMAGE and lanes.THREE_D_IMAGE.formats == ("glb",)
+    assert lanes.THREE_D_IMAGE.quick_picks[0] == MESHY_IMAGE and lanes.THREE_D_IMAGE.formats == ("glb", "fbx")
+    assert lanes.THREE_D_EDIT.formats == ("glb",), "edit results are fitted from the GLB"
 
 
 def test_a_mesh_is_sent_as_3d_and_runs_an_edit_model(signed_in, fake, tmp_path):

@@ -174,9 +174,8 @@ def test_a_multi_view_result_lands_over_the_captured_object(plugin, cmds, tmp_pa
         cmds.move(30 * k, -12 * k, 7 * k, node)
         capture = {"box": cmds.exactWorldBoundingBox(node), "up_axis": up, "name": node}
         path = box_glb(tmp_path / "views.glb", (0.4 * 2.5, 0.2 * 2.5, 0.3 * 2.5), (0.1, 0.5, -0.05))
-        apply, landing = fresh("scenario_maya.maya.apply"), fresh("scenario_maya.maya.landing")
-        over = apply.import_over_views(capture, path)
-        made = landing.land_model(path, {}, texture_folder=str(tmp_path / "tex"), label="views", matrix=over["matrix"], over=over["target_name"])
+        landing = fresh("scenario_maya.maya.landing")
+        made = landing.land_model(path, {}, texture_folder=str(tmp_path / "tex"), label="views", box=capture["box"], over=capture["name"])
         assert cmds.exactWorldBoundingBox(made["meshes"]) == pytest.approx(capture["box"], abs=1e-3 * k)
         assert made["summary"].endswith(", over crate")
     finally:

@@ -177,10 +177,8 @@ class JobRunner:
                     if over["note"]:
                         made["checks"].setdefault("notes", []).append(over["note"])
                 elif ((row.get("origin") or {}).get("views_capture") or {}).get("box"):  # views captured around an object: over it
-                    from . import apply
-
-                    over = apply.import_over_views(row["origin"]["views_capture"], item["path"])
-                    made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, matrix=over["matrix"], over=over["target_name"])
+                    capture = row["origin"]["views_capture"]
+                    made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, box=capture["box"], over=capture.get("name", ""))
                 else:
                     made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, place=scene.interest_point(camera))
             else:

@@ -1,4 +1,4 @@
-"""Renders a GLB in Maya's Viewport 2.0 without a window, through the plug-in's own importer.
+"""Renders a GLB or FBX in Maya's Viewport 2.0 without a window, through the plug-in's own importer.
 
 Used for README pictures of 3D results: the model is landed exactly as the
 Import button lands it, lit by a key, a rim and a fill light in front of a
