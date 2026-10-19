@@ -5,8 +5,10 @@ Tripo models 1 m long, Meshy Remesh and Meshy 7 Retexture 2 m long), while
 Meshy UV Unwrap returns it where and as large as it was sent. So a result is
 never placed by its own coordinates: it is fitted onto the mesh that was sent
 (one uniform scale and an offset from the bounds, no rotation), then put in
-that mesh's object space. The sent file stays in the captures folder; the target is found again
-by its UUID, never by name or selection.
+that mesh's object space, and checked by sampled surface distance both
+ways (``topology.verify_fit``); a result that is not the same shape still
+lands, with a note. The sent file stays in the captures folder; the target is
+found again by its UUID, never by name or selection.
 """
 
 from __future__ import annotations
@@ -45,21 +47,22 @@ def find_target(record: dict) -> tuple:
     return transform, shapes[0] if shapes else ""
 
 
-def sent_points(record: dict) -> list:
-    """The sent mesh's points in the file's space (metres, Y-up), read back from the kept GLB."""
+def sent_mesh(record: dict) -> topology.Result:
+    """The sent mesh in the file's space (metres, Y-up), read back from the kept GLB."""
     path = record.get("path") or ""
     if not os.path.isfile(path):
         raise ApplyError("The mesh file that was sent is no longer in the captures folder, so the result cannot be fitted onto it.")
-    return topology.result_from_document(gltf.Document.load(path)).points
+    return topology.result_from_document(gltf.Document.load(path))
 
 
 def fit_result(result_path: str, record: dict) -> tuple:
-    """(scale, offset, result) that put the result onto the sent mesh."""
+    """(scale, offset, result, sent) that put the result onto the sent mesh."""
     result = topology.result_from_document(gltf.Document.load(result_path))
     if not result.points:
         raise ApplyError("The result has no mesh.")
-    scale, offset = topology.fit(result.points, sent_points(record))
-    return scale, offset, result
+    sent = sent_mesh(record)
+    scale, offset = topology.fit(result.points, sent.points)
+    return scale, offset, result, sent
 
 
 def placement_matrix(scale: float, offset: tuple, record: dict, world: list | None = None) -> list:
@@ -77,13 +80,30 @@ def placement_matrix(scale: float, offset: tuple, record: dict, world: list | No
 
 
 def import_over_target(row: dict, result_path: str) -> dict:
-    """Where an edit result lands on Import: its matrix over the source mesh, and what it was fitted to."""
+    """Where an edit result lands on Import: its matrix over the source mesh, what it was fitted to, and how well."""
     record = edit_record(row)
-    scale, offset, _result = fit_result(result_path, record)
+    scale, offset, result, sent = fit_result(result_path, record)
+    gap = topology.verify_fit(result, sent, scale, offset)
     transform, _shape = find_target(record)
     world = cmds.xform(transform, query=True, matrix=True, worldSpace=True) if transform else None
     name = transform.split("|")[-1] if transform else (record.get("meshes") or [{}])[0].get("node", "").split("|")[-1]
-    return {"matrix": placement_matrix(scale, offset, record, world), "scale": scale, "target": transform, "target_name": name, "target_found": bool(transform)}
+    return {
+        "matrix": placement_matrix(scale, offset, record, world),
+        "scale": scale,
+        "target": transform,
+        "target_name": name,
+        "target_found": bool(transform),
+        "fit": gap,
+        "note": "" if gap["verified"] else fit_note(name, gap),
+    }
+
+
+def fit_note(name: str, gap: dict) -> str:
+    """Why a fitted result may not sit on the mesh, for the import message."""
+    far = f"{gap['over_2']:.0%} of the points checked are more than 2% of its size away"
+    if gap["over_10"]:
+        far += f", {gap['over_10']:,} more than 10%"
+    return f"not the same shape as {name} ({far}): placed by the bounds only, check the placement"
 
 
 # -- Apply: the result written onto the mesh itself (spec 6.4) ---------------------------------------

@@ -113,7 +113,7 @@ flowchart LR
     glb --> check["Checked against the model<br/>format, triangle cap"]
     check --> send["Sent to your project<br/>once per unchanged mesh"]
     send --> model["Edit model<br/>remesh, UV unwrap, retexture"]
-    model --> fit["Fitted onto the sent mesh<br/>one uniform scale and an offset"]
+    model --> fit["Fitted onto the sent mesh<br/>one uniform scale and an offset,<br/>checked by surface distance"]
     fit --> land["Import<br/>a new group over the mesh, one Ctrl+Z"]
     fit --> proof["Same surface?<br/>vertices, faces, winding, UVs"]
     proof --> review["Review<br/>what changes, what is kept"]
@@ -143,7 +143,10 @@ models returned it 1 m long (also when it was sent 1.5 m off the origin),
 Meshy Remesh and Meshy 7 Retexture 2 m long, while Meshy UV Unwrap returned
 it in place; none rotated it. The plug-in keeps the file it sent and fits the
 result back onto it with one uniform scale and an offset from the bounding
-boxes, then applies the mesh's current transform.
+boxes, then applies the mesh's current transform. It then checks that the two
+surfaces meet: 1,500 points spread over each must lie within 2% of the mesh's
+size from the other (at most 5% farther, none beyond 10%). A result that fails
+still lands over the mesh, and the import message says it is not the same shape.
 
 **What came back.** A bevelled crate of 1,052 triangles with the cube's
 default UVs, sent by the plug-in, one run per model:

@@ -173,6 +173,8 @@ class JobRunner:
 
                     over = apply.import_over_target(row, item["path"])
                     made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, matrix=over["matrix"], over=over["target_name"])
+                    if over["note"]:
+                        made["checks"].setdefault("notes", []).append(over["note"])
                 else:
                     made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, place=scene.interest_point(camera))
             else:

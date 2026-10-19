@@ -124,3 +124,69 @@ def test_coincident_target_vertices_still_resolve():
 def test_fit_is_uniform_and_never_rotates():
     scale, offset = topology.fit([(0, 0, 0), (2, 1, 1)], [(10, 10, 10), (11, 10.5, 10.5)])
     assert abs(scale - 0.5) < 1e-12 and [round(v, 9) for v in offset] == [10.0, 10.0, 10.0]
+
+
+def test_surface_gap_is_zero_on_the_surface_and_counts_what_is_off():
+    points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+    triangles = [(0, 1, 2), (0, 2, 3)]
+    on = [(0.25, 0.5, 0), (0.9, 0.1, 0), (0.5, 0.5, 0)]
+    gap = topology.surface_gap(on, triangles, points, diagonal=2**0.5)
+    assert gap == {"over_2": 0.0, "over_10": 0, "worst": 0.0}
+    near = [(0.5, 0.5, 0.01), (2.0, 0.5, 0.0), (0.5, 0.5, 0.5)]  # 0.7% above, 1.0 beside (far), 0.5 above (far)
+    gap = topology.surface_gap(near, triangles, points, diagonal=2**0.5)
+    assert gap["over_10"] == 2 and abs(gap["over_2"] - 2 / 3) < 1e-9 and abs(gap["worst"] - 0.1) < 1e-9
+    edge = topology.surface_gap([(1.02, 0.5, 0)], triangles, points, diagonal=1.0)  # beside an edge: 2 cm out
+    assert abs(edge["worst"] - 0.02) < 1e-9
+
+
+def box(size=(1.0, 1.0, 1.0), faces=6):
+    """A closed box as 12 triangles (or the first ``faces`` sides only)."""
+    sx, sy, sz = size
+    points = [(x * sx, y * sy, z * sz) for x in (0, 1) for y in (0, 1) for z in (0, 1)]
+    quads = [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)][:faces]
+    return topology.Result(points, [t for a, b, c, d in quads for t in ((a, b, c), (a, c, d))])
+
+
+def test_surface_samples_cover_the_surface_by_area_the_same_every_time():
+    square = topology.Result([(0, 0, 0), (2, 0, 0), (2, 1, 0), (0, 1, 0)], [(0, 1, 2), (0, 2, 3)])
+    samples = topology.surface_samples(square.points, square.triangles, 400)
+    assert samples == topology.surface_samples(square.points, square.triangles, 400)
+    assert all(0 <= x <= 2 and 0 <= y <= 1 and z == 0 for x, y, z in samples)
+    left = sum(x < 1 for x, _y, _z in samples)
+    assert 180 <= left <= 220, "each half of the square gets about half the points"
+
+
+def test_a_fitted_copy_of_the_mesh_is_verified():
+    sent = box((0.4, 0.3, 0.3))
+    result = box((1.0, 0.75, 0.75))  # sent back 1 m long, as Tripo models do
+    scale, offset = topology.fit(result.points, sent.points)
+    check = topology.verify_fit(result, sent, scale, offset)
+    assert check["verified"] and check["over_2"] == 0 and check["over_10"] == 0
+
+
+def test_a_result_with_missing_sides_or_another_shape_is_not_verified():
+    sent = box()
+    open_box = box(faces=4)  # the same bounds, two sides gone: only the way back sees it
+    scale, offset = topology.fit(open_box.points, sent.points)
+    check = topology.verify_fit(open_box, sent, scale, offset)
+    assert not check["verified"] and check["over_10"] > 0
+    ball = topology.Result(*sphere())
+    scale, offset = topology.fit(ball.points, sent.points)
+    check = topology.verify_fit(ball, sent, scale, offset)
+    assert not check["verified"] and check["over_2"] > topology.FIT_SHARE
+
+
+def sphere(rings=12, segments=24):
+    import math
+
+    points = [
+        (math.sin(math.pi * j / rings) * math.cos(2 * math.pi * i / segments), math.cos(math.pi * j / rings), math.sin(math.pi * j / rings) * math.sin(2 * math.pi * i / segments))
+        for j in range(rings + 1)
+        for i in range(segments)
+    ]
+    triangles = []
+    for j in range(rings):
+        for i in range(segments):
+            a, b = j * segments + i, j * segments + (i + 1) % segments
+            triangles += [(a, a + segments, b), (b, a + segments, b + segments)]
+    return points, triangles

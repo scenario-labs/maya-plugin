@@ -72,6 +72,7 @@ def test_uv_unwrap_a_selected_mesh_then_import_it_over_the_mesh(panel, fake, cmd
 
     page.land(card.row, "model")
     assert page.message.text().startswith("Imported uv_unwrap_crate: 12 faces, over crate."), page.message.text()
+    assert "not the same shape" not in page.message.text(), "the fit is verified: no note"
     top = [t for t in cmds.ls(assemblies=True) if cmds.attributeQuery("scenario_job_id", node=t, exists=True)][0]
     meshes = cmds.listRelatives(top, allDescendents=True, type="mesh", fullPath=True)
     placed = cmds.exactWorldBoundingBox(meshes, ignoreInvisible=False)
@@ -94,6 +95,21 @@ def test_the_result_lands_over_the_mesh_where_it_is_now(panel, fake, cmds):  # n
     top = [t for t in cmds.ls(assemblies=True) if cmds.attributeQuery("scenario_job_id", node=t, exists=True)][0]
     meshes = cmds.listRelatives(top, allDescendents=True, type="mesh", fullPath=True)
     assert cmds.exactWorldBoundingBox(meshes) == pytest.approx(cmds.exactWorldBoundingBox(node), abs=1e-3)
+
+
+def test_a_result_that_is_not_the_same_shape_lands_with_a_note(panel, fake, cmds):  # noqa: F811
+    page = edit_page(panel, "remesh")
+    node = crate(cmds)
+    page.mesh.use_selection()
+    qt_pump_until(lambda: page.generate_button.isEnabled(), timeout=15)
+    page.generate()
+    qt_pump_until(lambda: ready(page), timeout=20)
+    page.land(next(iter(page.cards.values())).row, "model")  # the fake remesh drops half the faces
+    text = page.message.text()
+    assert ", over crate." in text and "not the same shape as crate (" in text and "placed by the bounds only, check the placement" in text, text
+    top = [t for t in cmds.ls(assemblies=True) if cmds.attributeQuery("scenario_job_id", node=t, exists=True)][0]
+    meshes = cmds.listRelatives(top, allDescendents=True, type="mesh", fullPath=True)
+    assert cmds.exactWorldBoundingBox(meshes) == pytest.approx(cmds.exactWorldBoundingBox(node), abs=1e-3), "still placed by the bounds"
 
 
 def test_a_mesh_over_the_model_cap_is_refused_before_it_is_sent(panel, fake, cmds):  # noqa: F811
