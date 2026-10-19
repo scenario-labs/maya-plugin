@@ -13,7 +13,7 @@
    "max_length": 4,
    "kind": "image",
    "array": true,
-   "array_note": "Pass an array, even for a single value — a bare value is ignored."
+   "array_note": "Pass an array, even for a single value: a bare value is ignored."
   },
   {
    "name": "geometryResolution",

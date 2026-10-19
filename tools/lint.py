@@ -1,6 +1,6 @@
 """Repository checks CI runs on every pull request (no dependencies).
 
-- No em dashes in tracked text files (house style).
+- No em dashes in text files, tracked or new (house style).
 - No credentials: API secrets, bearer tokens, signed URL query strings, private keys.
   A line that holds a deliberate fake value says so with ``# not a secret``.
 - Every JSON file parses.
@@ -27,7 +27,8 @@ ALLOWED_SECRET_FILES = ("tools/lint.py",)
 
 
 def tracked_files():
-    out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    # New files count too, so a local run before ``git add`` sees what CI will see.
+    out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
     return [line for line in out.splitlines() if line.endswith(TEXT) and not line.startswith(SKIP)]
 
 

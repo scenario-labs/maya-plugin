@@ -24,3 +24,7 @@
 - The prompt box follows the model: hidden when the model takes no prompt, marked optional when it only guides the texture.
 - A form that misses its image says "Add an image".
 - `tools/render_glb.py` renders a GLB in Viewport 2.0 without a window, through the plug-in's importer: stills or a turntable GIF for documentation.
+
+### Development
+
+- `tools/lint.py` also checks files not yet added to git, so a local run before a commit finds what CI finds.
