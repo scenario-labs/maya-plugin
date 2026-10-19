@@ -44,6 +44,8 @@ def _build(*_args) -> None:
     cmds.menuItem(label="Scenario Panel", annotation="Open or focus the Scenario panel.", command=_call("scenario_maya.ui.panel", "show"))
     cmds.menuItem(label="Jobs", annotation="Show your Scenario jobs.", command=_call("scenario_maya.ui.panel", "show", page="jobs"))
     cmds.menuItem(divider=True)
+    cmds.menuItem(label="Import GLB...", annotation="Import any GLB file as Maya meshes, materials, joints and animation in one undo step.", command=_call("scenario_maya.ui.panel", "import_glb"))
+    cmds.menuItem(divider=True)
     if signed_in:
         cmds.menuItem(label="Workspace...", annotation="Choose the Scenario team and project to work in.", command=_call("scenario_maya.ui.panel", "choose_workspace"))
         cmds.menuItem(label="Sign Out", annotation="Sign out of Scenario on this computer.", command=_call("scenario_maya.ui.panel", "sign_out"))

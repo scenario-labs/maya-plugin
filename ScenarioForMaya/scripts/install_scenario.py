@@ -49,10 +49,22 @@ def _prepend_env(name, value):
 
 
 def _unload():
+    """Unloads the plug-in; False when Maya keeps it in use.
+
+    Maya refuses while the undo queue holds one of the plug-in's import
+    steps. The files can still be replaced; the new version loads at the
+    next start.
+    """
     from maya import cmds
 
     if cmds.pluginInfo(PLUGIN, query=True, loaded=True):
-        cmds.unloadPlugin(PLUGIN)
+        try:
+            cmds.unloadPlugin(PLUGIN)
+        except RuntimeError as error:
+            if "in use" not in str(error):
+                raise
+            return False
+    return True
 
 
 def install(source=None, app_dir=None, load=True, open_panel=True, link=False):
@@ -64,7 +76,7 @@ def install(source=None, app_dir=None, load=True, open_panel=True, link=False):
     os.makedirs(modules, exist_ok=True)
     dest = os.path.join(modules, MODULE)
     version = read_version(source)
-    _unload()
+    unloaded = _unload()
     previous = ""
     if link or os.path.realpath(dest) == source:
         target = source
@@ -87,6 +99,9 @@ def install(source=None, app_dir=None, load=True, open_panel=True, link=False):
     icons = os.path.join(target, "icons")
     _prepend_env("XBMLANGPATH", os.path.join(icons, "%B") if sys.platform.startswith("linux") else icons)
 
+    if load and not unloaded:
+        cmds.pluginInfo(PLUGIN, edit=True, autoload=True)
+        return {"version": version, "module": target, "mod_file": mod_file, "previous": previous, "linked": target == source and not os.path.realpath(dest) == source, "restart_needed": True}
     if load:
         cmds.loadPlugin(os.path.join(target, "plug-ins", PLUGIN + ".py"))
         cmds.pluginInfo(PLUGIN, edit=True, autoload=True)
@@ -131,4 +146,7 @@ def onMayaDroppedPythonFile(*_args):
     except Exception as error:
         om.MGlobal.displayError(f"Scenario for Maya was not installed: {error}")
         raise
+    if result.get("restart_needed"):
+        om.MGlobal.displayWarning(f"Scenario for Maya {result['version']} is installed. Restart Maya to use it: Scenario imports in the undo history keep the previous version in use until then.")
+        return
     om.MGlobal.displayInfo(f"Scenario for Maya {result['version']} installed in {result['module']}. It loads automatically from now on.")

@@ -6,6 +6,7 @@ import struct
 import pytest
 
 from scenario_maya.core import errors, gltf
+from tests import glb_samples
 
 
 def glb(document: dict, binary: bytes) -> bytes:
@@ -104,3 +105,20 @@ def test_sniff_format_by_header(tmp_path, head, kind):
     path.write_bytes(head)
     assert gltf.sniff_format(str(path)) == kind
     assert gltf.sniff_format(str(tmp_path / "missing.bin")) == "missing"
+
+
+def test_extract_images_names_by_role_and_never_overwrites(tmp_path):
+    doc = gltf.Document.load(glb_samples.textured_quad(str(tmp_path / "crate.glb")))
+    first = gltf.extract_images(doc, str(tmp_path / "tex"), "crate")
+    assert [p.rsplit("/", 1)[-1] for p in first] == ["crate_base_color.png", "crate_metal_rough.png", "crate_normal.png"]
+    assert all(open(p, "rb").read(4) == b"\x89PNG" for p in first)
+    again = gltf.extract_images(doc, str(tmp_path / "tex"), "crate")
+    assert again[0].endswith("crate_base_color_2.png")
+
+
+def test_collapsed_triangles_are_counted():
+    writer = glb_samples.Writer()
+    position = writer.accessor("VEC3", [(0, 0, 0), (1, 0, 0), (2, 0, 0), (0, 1, 0)])
+    indices = writer.accessor("SCALAR", [0, 1, 2, 0, 1, 3], component=5123)
+    writer.add("meshes", {"primitives": [{"attributes": {"POSITION": position}, "indices": indices}]})
+    assert gltf.collapsed_triangles(gltf.Document.parse(writer.to_bytes())) == 1

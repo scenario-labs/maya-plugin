@@ -24,7 +24,7 @@ import os
 
 from maya import cmds
 
-from ..core import naming
+from ..core import errors, gltf, naming
 from . import scene
 
 SRGB = "sRGB Encoded Rec.709 (sRGB)"
@@ -86,14 +86,13 @@ def _hdr(path: str) -> bool:
     return os.path.splitext(path)[1].lower() in (".exr", ".hdr")
 
 
-def image_material(path: str, base: str, attributes: dict) -> dict:
-    """Shader, shading group, file and place2d nodes with the image as base colour."""
-    kind = surface_type()
-    shader = cmds.shadingNode(kind, asShader=True, name=f"{base}_mtl")
-    group = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=f"{base}_SG")
-    cmds.connectAttr(shader + ".outColor", group + ".surfaceShader")
-    texture = cmds.shadingNode("file", asTexture=True, isColorManaged=True, name=f"{base}_albedo_file")
-    place = cmds.shadingNode("place2dTexture", asUtility=True, name=f"{base}_place2d")
+def file_texture(path: str, name: str, colour_space: str) -> tuple:
+    """A colour-managed ``file`` node and its ``place2dTexture``, wired as Maya's own UI wires them.
+
+    ``ignoreColorSpaceFileRules`` keeps Maya's file rules from overriding the space chosen by role.
+    """
+    texture = cmds.shadingNode("file", asTexture=True, isColorManaged=True, name=f"{name}_file")
+    place = cmds.shadingNode("place2dTexture", asUtility=True, name=f"{name}_place2d")
     for out_attr, in_attr in (
         ("coverage", "coverage"),
         ("translateFrame", "translateFrame"),
@@ -109,7 +108,17 @@ def image_material(path: str, base: str, attributes: dict) -> dict:
         cmds.connectAttr(f"{place}.{out_attr}", f"{texture}.{in_attr}")
     cmds.setAttr(texture + ".fileTextureName", path, type="string")
     cmds.setAttr(texture + ".ignoreColorSpaceFileRules", 1)
-    cmds.setAttr(texture + ".colorSpace", LINEAR if _hdr(path) else SRGB, type="string")
+    cmds.setAttr(texture + ".colorSpace", colour_space, type="string")
+    return texture, place
+
+
+def image_material(path: str, base: str, attributes: dict) -> dict:
+    """Shader, shading group, file and place2d nodes with the image as base colour."""
+    kind = surface_type()
+    shader = cmds.shadingNode(kind, asShader=True, name=f"{base}_mtl")
+    group = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=f"{base}_SG")
+    cmds.connectAttr(shader + ".outColor", group + ".surfaceShader")
+    texture, place = file_texture(path, f"{base}_albedo", LINEAR if _hdr(path) else SRGB)
     cmds.connectAttr(texture + ".outColor", f"{shader}.{_BASE_COLOR[kind]}")
     has_alpha = bool(cmds.getAttr(texture + ".fileHasAlpha"))
     if has_alpha:
@@ -220,6 +229,51 @@ def _image_plane(path: str, base: str, attributes: dict, camera: tuple) -> dict:
         "image_plane": shape,
         "summary": f"Image plane on {scene.short(camera_transform)}",
     }
+
+
+def land_model(path: str, attributes: dict, *, texture_folder: str, label: str = "", select: bool = True) -> dict:
+    """Imports a 3D result (GLB) as a new group: one undo step, provenance on the group.
+
+    Embedded textures are written to ``texture_folder`` first (files stay after
+    an undo, spec 7.3). Returns what was made plus the import checks.
+    """
+    from . import glb_builder, import_command
+
+    kind = gltf.sniff_format(path)
+    if kind == "missing":
+        raise LandingError("Nothing was imported: the result file is missing. Download it again from Jobs.")
+    if kind != "glb":
+        raise LandingError(f"Nothing was imported: this result is a {kind.upper()} file, which this version cannot import yet.")
+    try:
+        doc = gltf.Document.load(path)
+    except (errors.ProtocolError, ValueError, KeyError) as error:
+        raise LandingError(f"Nothing was imported: the GLB file could not be read ({error}).") from error
+    if doc.unsupported:
+        raise LandingError("Nothing was imported: the file uses " + " and ".join(doc.unsupported) + ", which the importer cannot read yet.")
+    base = naming.slug(label or attributes.get("scenario_prompt") or os.path.splitext(os.path.basename(path))[0])
+    images = gltf.extract_images(doc, texture_folder, base)
+    namespace = free_namespace(f"scn_{base}")
+    chunk = f"Scenario: Import {base}"
+    with undo_chunk(chunk):
+        scene.scene_uuid()
+        with in_namespace(namespace) as ns:
+            made = import_command.run(lambda: glb_builder.build(doc, images, base))
+        if attributes:
+            add_provenance(made["top"], attributes)
+        if select:
+            cmds.select(made["top"], replace=True)
+    made["checks"] = glb_builder.inspect(made)
+    textures = not cmds.about(batch=True) and scene.show_textures()
+    checks = made["checks"]
+    made.update(
+        mode="model",
+        namespace=ns,
+        undo=chunk,
+        textures=images,
+        textures_turned_on=bool(textures),
+        summary=f"Imported {base}: {checks['faces']:,} faces" + (f", {checks['joints']} joints" if checks["joints"] else ""),
+    )
+    return made
 
 
 def landed_nodes() -> list:

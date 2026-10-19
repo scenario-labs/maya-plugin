@@ -32,7 +32,12 @@ this once in the Script Editor (Python), which links the checkout, loads the
 plug-in and turns on autoload; run it again to reload after a change:
 
 ```python
-import sys; sys.path.insert(0, "/path/to/maya-plugin/ScenarioForMaya/scripts"); import install_scenario; install_scenario.install(link=True)
+import sys
+
+sys.path.insert(0, "/path/to/maya-plugin/ScenarioForMaya/scripts")
+import install_scenario
+
+install_scenario.install(link=True)
 ```
 
 or set `MAYA_MODULE_PATH=/path/to/maya-plugin` (the repository's

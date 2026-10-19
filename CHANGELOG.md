@@ -11,3 +11,6 @@
 - Image lane: choose a model (search, team models, legacy), write a prompt, adjust the model's settings, see the exact price on Generate before sending. Results download into the project's `sourceimages/scenario` folder with a checksum and a `scenario.json` record, and land as a textured card facing the camera, a material on the selected meshes or faces, or an image plane, each removed by one Ctrl+Z.
 - Results that finish while Maya is closed are offered for download when the panel opens; interrupted downloads resume where they stopped.
 - Every landed node carries its Scenario provenance (asset, job, model, prompt, price) as plain attributes, so scenes open without the plug-in.
+- 3D results land through the plug-in's own GLB builder as one undo step: welded meshes with UVs and normals, PBR materials with textures written to the project, joints with rest orientation in `jointOrient`, skins, blend shapes and the first animation clip; import checks report faces, size, UV sets, non-manifold edges, missing textures, joints, clips and targets.
+- Scenario > Import GLB... brings any local GLB into the scene the same way, without signing in.
+- Updating the plug-in while a Scenario import sits in the undo history finishes after a Maya restart instead of failing.

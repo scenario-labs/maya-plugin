@@ -14,11 +14,12 @@ from __future__ import annotations
 
 import array
 import json
+import os
 import struct
 import sys
 from dataclasses import dataclass
 
-from . import errors
+from . import errors, naming
 
 COMPONENT = {5120: ("b", 1), 5121: ("B", 1), 5122: ("h", 2), 5123: ("H", 2), 5125: ("I", 4), 5126: ("f", 4)}
 WIDTH = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT2": 4, "MAT3": 9, "MAT4": 16}
@@ -216,6 +217,87 @@ class Document:
             "unsupported": list(self.unsupported),
             "generator": (data.get("asset") or {}).get("generator") or "",
         }
+
+
+def texture_roles(doc: Document) -> dict:
+    """Image index to the role it plays first (base_color, metal_rough, normal, emissive, occlusion)."""
+    roles: dict = {}
+    textures = doc.json.get("textures") or []
+
+    def note(info, role):
+        if not info or info.get("index") is None or info["index"] >= len(textures):
+            return
+        source = textures[info["index"]].get("source")
+        if source is not None:
+            roles.setdefault(source, role)
+
+    for material in doc.json.get("materials") or []:
+        pbr = material.get("pbrMetallicRoughness") or {}
+        note(pbr.get("baseColorTexture"), "base_color")
+        note(pbr.get("metallicRoughnessTexture"), "metal_rough")
+        note(material.get("normalTexture"), "normal")
+        note(material.get("emissiveTexture"), "emissive")
+        note(material.get("occlusionTexture"), "occlusion")
+    return roles
+
+
+def extract_images(doc: Document, folder: str, base: str) -> list:
+    """Writes each embedded image to ``folder`` under a new name; returns paths by image index.
+
+    Names come from the role (``chest_base_color.png``), the extension from the
+    bytes, never from the declared type. Existing files are never overwritten.
+    An external or unreadable image gives ``""`` at its index.
+    """
+    roles = texture_roles(doc)
+    paths = []
+    for index, _image in enumerate(doc.json.get("images") or []):
+        try:
+            raw, mime = doc.image_bytes(index)
+        except (errors.ProtocolError, KeyError, IndexError):
+            paths.append("")
+            continue
+        kind = _sniff_bytes(raw[:64])
+        ext = {"png": ".png", "jpg": ".jpg", "webp": ".webp", "exr": ".exr", "hdr": ".hdr"}.get(kind) or naming.extension_for(mime)
+        os.makedirs(folder, exist_ok=True)
+        path = naming.unique_path(folder, f"{base}_{roles.get(index, f'image_{index + 1}')}", ext)
+        with open(path, "wb") as handle:
+            handle.write(raw)
+        paths.append(path)
+    return paths
+
+
+def collapsed_triangles(doc: Document) -> int:
+    """Triangles with no area (repeated or collinear corners), counted from the file."""
+    total = 0
+    for mesh in doc.json.get("meshes") or []:
+        for primitive in mesh.get("primitives") or []:
+            position = (primitive.get("attributes") or {}).get("POSITION")
+            if position is None or primitive.get("mode", 4) != 4:
+                continue
+            points = doc.accessor(position).values
+            indices = doc.accessor(primitive["indices"]).values if "indices" in primitive else range(doc.accessor(position).count)
+            for start in range(0, len(indices) - 2, 3):
+                a, b, c = indices[start] * 3, indices[start + 1] * 3, indices[start + 2] * 3
+                ux, uy, uz = points[b] - points[a], points[b + 1] - points[a + 1], points[b + 2] - points[a + 2]
+                vx, vy, vz = points[c] - points[a], points[c + 1] - points[a + 1], points[c + 2] - points[a + 2]
+                cx, cy, cz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
+                if cx * cx + cy * cy + cz * cz < 1e-24:  # twice the area below 1e-12 m2
+                    total += 1
+    return total
+
+
+def _sniff_bytes(head: bytes) -> str:
+    if head.startswith(b"\x89PNG"):
+        return "png"
+    if head.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if head.startswith(b"RIFF") and head[8:12] == b"WEBP":
+        return "webp"
+    if head.startswith(b"v/1\x01"):
+        return "exr"
+    if head.startswith(b"#?RADIANCE") or head.startswith(b"#?RGBE"):
+        return "hdr"
+    return ""
 
 
 def _uint32_code() -> str:

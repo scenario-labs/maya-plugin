@@ -46,6 +46,8 @@ def plugin(cmds):
     cmds.loadPlugin(PLUGIN_PATH)
     yield fresh
     if cmds.pluginInfo(PLUGIN, query=True, loaded=True):
+        cmds.flushUndo()  # an import command in the undo queue keeps the plug-in in use
+        cmds.file(new=True, force=True)
         cmds.unloadPlugin(PLUGIN)
 
 

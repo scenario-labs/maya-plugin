@@ -255,7 +255,7 @@ def stage_install():
     record("panel docked", cmds.workspaceControl(CONTROL, exists=True) and not cmds.workspaceControl(CONTROL, query=True, floating=True))
     record("panel tab in front", cmds.workspaceControl(CONTROL, query=True, visible=True))
     items = [cmds.menuItem(item, query=True, label=True) for item in (cmds.menu("ScenarioMainMenu", query=True, itemArray=True) or []) if not cmds.menuItem(item, query=True, divider=True)]
-    record("Scenario menu", items[:3] == ["Scenario Panel", "Jobs", "Sign In..."], items)
+    record("Scenario menu", items[:3] == ["Scenario Panel", "Jobs", "Import GLB..."] and "Sign In..." in items, items)
     record("runtime commands", all(cmds.runTimeCommand(n, exists=True) for n in ("ScenarioOpenPanel", "ScenarioShowJobs")))
     shot("panel_after_install")
     shot("panel_signin_page", panel_module().current())

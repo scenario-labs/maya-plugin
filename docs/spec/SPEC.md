@@ -601,7 +601,7 @@ The prototype does not yet accept what GLB results usually look like: triangulat
 
 - Cartwheel refuses to price without a character [verified]. With a 3D character the motion was priced at 120 CU, with a character image at 1,560 CU [verified: Unity plug-in acceptance runs], so the plug-in captures the selected skinned mesh and sends it as the character, and says so.
 - For Cartwheel the plug-in asks for the Maya-targeted FBX, never `.ma` or `.mb`: importing a scene file goes through `cmds.file`, which would erase the user's undo history [verified].
-- Rest orientation: FBX rigs arrive with rest orientation in `jointOrient` and zero `rotate` [verified]; rigs whose rest sits in `rotate` break a direct key copy (71.9 cm error in the test). The GLB builder therefore writes rest orientation into `jointOrient` and converts keys accordingly, so GLB and FBX rigs land the same way [to build; the reader prototype kept `jointOrient` at zero].
+- Rest orientation: FBX rigs arrive with rest orientation in `jointOrient` and zero `rotate` [verified]; rigs whose rest sits in `rotate` break a direct key copy (71.9 cm error in the test). The GLB builder therefore writes rest orientation into `jointOrient` and converts keys accordingly, so GLB and FBX rigs land the same way [verified: Maya's joint matrix is rotate x jointOrient; keys converted as key x rest inverse land on the glTF pose to the centimetre, and a Khronos character matches the reader prototype at every checked frame].
 - Retargeting: exact joint names first, then a name map saved per rig, then HumanIK for bipeds (characterize both skeletons, lock, set input, bake, delete the HumanIK nodes; keys survive) [verified headless; HumanIK has no official scripting reference, so this path is covered by tests on every supported version]. Automatic HumanIK mapping covers the joint naming of the riggers Scenario offers and Maya's own Quick Rig in v1; a mapping UI for other skeletons is v1.1.
 - Clips that come as separate files of the same job (walk and run beside a rigged mesh) are offered as clips of that rig, not as new characters.
 - Landing: an override animation layer (default; an additive layer doubled absolute motion in the test) or a Time Editor clip at the current frame (option; its undo leaves Maya's single `timeEditor` node, which is harmless and stated). Never on the target's base curves without a confirm.
@@ -641,7 +641,9 @@ Maya has no splat format of its own and Viewport 2.0 does not draw splats; Arnol
 
 **Follow-ups inside Maya** ("Next step" chips on a landed mesh): Maya's own retopology (`polyRetopo`) and UV tools (automatic projection, Unfold3D unfold and layout) run headless on generated meshes [verified; Unfold3D refuses non-manifold UVs], MASH scatter of a prop on a selected surface (Later). They are Maya operations, free, each in its own undo step.
 
-**Import any glTF**: because Maya has no glTF importer, the builder is also offered as **Scenario > Import glTF or GLB...** for any local file. It needs no sign-in.
+**Import any GLB**: because Maya has no glTF importer, the builder is also offered as **Scenario > Import GLB...** for any local file. It needs no sign-in. JSON `.gltf` files with external buffers are not read in v1.
+
+**Welding**: glTF splits vertices along UV and normal seams; the builder welds them back by position so the mesh is one piece, keeping UVs and normals per face-vertex. Where separate shells touch, welding can create non-manifold edges (7 on the DamagedHelmet sample); the import checks report them [verified on four Khronos samples].
 
 ### 6.8 Materials
 
@@ -1157,6 +1159,7 @@ Open questions for Scenario (not blocking the start, each with a test in the mil
 - Local server prototype: token and Origin checks, main-thread dispatch, 8 parallel calls.
 - Undo: `cmds.file(i=True)` flushes the queue; `FBXImport` records nothing; `mayaUSDImport` undoes once; the recording import command undoes and redoes exactly over two cycles for every apply mode; a redo that re-imports crashed.
 - The glTF reader prototype on four Khronos samples, matched against Maya USD's import.
+- On 2026-10-19: the plug-in's GLB builder inside its recording import command: one undo removes meshes, materials, file nodes, skin, blend shapes and the namespace; redo restores the same nodes (same UUIDs). `MQuaternion` products follow matrix order. Maya refuses to unload a plug-in while its command sits in the undo queue ("still in use"); the installer then replaces the files and asks for a restart.
 - Importer traps in 6.7; material recipe and colour space names in 6.8; image plane, sound, MP3 decoding, sky dome and splat behaviour in 6.9 to 6.12; headless capture in 6.13.
 - macOS Keychain through ctypes from `mayapy`; `security -i` over stdin; `keyring` needs compiled code on Linux.
 - Module format, default module paths on macOS, Autodesk bundle layout and `PackageContents.xml` fields from Autodesk's own installed bundles; Marketplace and MCP publisher rules from Autodesk's pages.

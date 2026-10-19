@@ -46,6 +46,8 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
     and download its results into one folder with a `scenario.json` sidecar.
   - `downloads.py`: one file per call: fresh signed link per attempt, `.part`
     resume with range requests, SHA-256 receipt, delivery host allow-list.
+  - `gltf.py`: GLB reader (accessors, sparse, normalized), real file type
+    by header, embedded textures written by role.
   - `catalog.py` (models per workspace, cached 24 h), `lanes.py` (lane
     definitions), `provenance.py` (node attributes), `naming.py`.
   - `http.py`, `jsonutil.py`, `errors.py`, `paths.py`, `settings.py`,
@@ -53,8 +55,10 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
 - `scripts/scenario_maya/maya/`: Maya side. `dispatcher.py` (workers do the
   network, the main thread does the scene), `runtime.py` (one runtime per
   Maya process), `jobs.py` (quote to landed result, recovery),
-  `landing.py` (images as card, material or image plane, one undo step
-  each), `scene.py` (project folders, camera, selection, scene id),
+  `landing.py` (images as card, material or image plane, 3D models, one
+  undo step each), `import_command.py` (the recording `scenarioImport`
+  command that makes any import one undo step), `glb_builder.py` (GLB to
+  meshes, materials, joints, skins, blend shapes and keys; import checks), `scene.py` (project folders, camera, selection, scene id),
   `lifecycle.py` (load and unload), `compat.py`.
 - `scripts/scenario_maya/ui/`: PySide6. `panel.py` (the dockable
   `workspaceControl`), `lane.py` (a lane: model, prompt, settings, priced
@@ -65,7 +69,7 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
 - `scripts/scenario_maya/_vendor/`: `truststore`, unchanged, see
   `VENDORED.md`.
 
-`tests/`: `unit/` (core, any Python), `maya/` (mayapy, headless), `gui/`
+`tests/`: `glb_samples.py` (hand-written GLB fixtures), `unit/` (core, any Python), `maya/` (mayapy, headless), `gui/`
 (scripted GUI session), `fake_backend/` (a fake Scenario MCP and OAuth
 server), `fixtures/mcp/` (recorded replies, scrubbed).
 

@@ -111,6 +111,26 @@ def test_installer_copies_upgrades_and_uninstalls(cmds, tmp_path, scripts_on_pat
     assert not os.path.exists(dest) and not os.path.exists(first["mod_file"]) and len(removed) == 3
 
 
+def test_upgrade_while_an_import_is_in_the_undo_queue_asks_for_a_restart(cmds, tmp_path, scripts_on_path):
+    import importlib
+
+    from tests import glb_samples
+
+    installer = importlib.import_module("install_scenario")
+    app_dir = str(tmp_path / "maya_app")
+    installer.install(source=MODULE, app_dir=app_dir, open_panel=False)
+    cmds.file(new=True, force=True)
+    cmds.undoInfo(state=True, infinity=True)
+    fresh("scenario_maya.maya.landing").land_model(glb_samples.textured_quad(str(tmp_path / "crate.glb")), {}, texture_folder=str(tmp_path / "tex"))
+    again = installer.install(source=MODULE, app_dir=app_dir, open_panel=False)
+    assert again["restart_needed"] and cmds.pluginInfo(PLUGIN, query=True, loaded=True), "files replaced, old version stays loaded"
+    assert os.path.isdir(os.path.join(app_dir, "modules", "ScenarioForMaya"))
+    cmds.flushUndo()
+    cmds.file(new=True, force=True)
+    installer.uninstall(app_dir=app_dir)
+    assert not cmds.pluginInfo(PLUGIN, query=True, loaded=True)
+
+
 def test_repository_module_file_resolves_relative_path(tmp_path):
     """A fresh mayapy finds the module through the relative path in ScenarioForMaya.mod."""
     env = dict(os.environ, MAYA_MODULE_PATH=ROOT, MAYA_APP_DIR=str(tmp_path / "app"), MAYA_DISABLE_CER="1")

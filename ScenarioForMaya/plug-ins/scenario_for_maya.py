@@ -34,21 +34,24 @@ def _use_sibling_package():
 def initializePlugin(mobject):
     _use_sibling_package()
     import scenario_maya
-    from scenario_maya.maya import lifecycle
+    from scenario_maya.maya import import_command, lifecycle
 
-    om.MFnPlugin(mobject, VENDOR, scenario_maya.__version__, "Any")
+    plugin = om.MFnPlugin(mobject, VENDOR, scenario_maya.__version__, "Any")
+    import_command.register(plugin)
     try:
         lifecycle.load()
     except Exception:
         lifecycle.unload()
+        import_command.deregister(plugin)
         raise
 
 
 def uninitializePlugin(mobject):
-    om.MFnPlugin(mobject)
-    from scenario_maya.maya import lifecycle
+    plugin = om.MFnPlugin(mobject)
+    from scenario_maya.maya import import_command, lifecycle
 
     try:
         lifecycle.unload()
     finally:
+        import_command.deregister(plugin)
         lifecycle.purge_modules()

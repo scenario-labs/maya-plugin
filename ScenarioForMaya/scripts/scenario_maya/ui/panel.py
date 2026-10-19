@@ -297,6 +297,33 @@ def sign_out() -> None:
     runtime.background(runtime.session.sign_out, on_error=(panel.show_error if panel else None))
 
 
+def import_glb(path: str = "") -> dict | None:
+    """Scenario > Import GLB...: any local GLB through the plug-in's builder (spec 6.7). No sign-in needed."""
+    import os
+
+    from maya.api import OpenMaya as om
+
+    from ..core import naming
+    from ..maya import landing, scene
+
+    if not path:
+        chosen = cmds.fileDialog2(fileFilter="glTF binary (*.glb)", dialogStyle=2, fileMode=1, caption="Import GLB")
+        if not chosen:
+            return None
+        path = chosen[0]
+    base = naming.slug(os.path.splitext(os.path.basename(path))[0])
+    folder = naming.unique_folder(scene.folders()["images"], base)
+    try:
+        made = landing.land_model(path, {}, texture_folder=folder, label=base)
+    except landing.LandingError as error:
+        om.MGlobal.displayWarning(str(error))
+        cmds.confirmDialog(title="Import GLB", message=str(error), button=["OK"])
+        return None
+    notes = made["checks"]["notes"]
+    om.MGlobal.displayInfo(f"{made['summary']}. One Ctrl+Z removes it." + (f" Notes: {'; '.join(notes)}." if notes else ""))
+    return made
+
+
 def copy_diagnostics() -> None:
     runtime = _runtime()
     text = diagnostics.report(runtime.session, runtime.dispatcher, {"Maya": cmds.about(version=True)}) if runtime else diagnostics.report()
