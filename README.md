@@ -138,11 +138,12 @@ flowchart LR
    mesh itself, after a review of what changes, what is kept and what needs
    your confirmation. One Ctrl+Z undoes it.
 
-Edit models return the mesh resized and centred: on 2026-10-19, Tripo models
-returned it 1 m long and Meshy models 2 m long, never rotated. The plug-in
-keeps the file it sent and fits the result back onto it with one uniform scale
-and an offset from the bounding boxes, then applies the mesh's current
-transform.
+Most edit models return the mesh resized and centred: on 2026-10-19, Tripo
+models returned it 1 m long (also when it was sent 1.5 m off the origin),
+Meshy Remesh and Meshy 7 Retexture 2 m long, while Meshy UV Unwrap returned
+it in place; none rotated it. The plug-in keeps the file it sent and fits the
+result back onto it with one uniform scale and an offset from the bounding
+boxes, then applies the mesh's current transform.
 
 **What came back.** A bevelled crate of 1,052 triangles with the cube's
 default UVs, sent by the plug-in, one run per model:

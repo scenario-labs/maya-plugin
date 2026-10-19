@@ -83,15 +83,16 @@ PRICES = {
 THREE_D_MODELS = ("model_meshy-7-1-txt23d", "model_meshy-t2-5-smart-topology", "model_tripo-v3-1-image-to-3d", "model_meshy-7-1-img23d", "model_tripo-p2-image-to-3d")
 IMAGE_INPUT_MODELS = ("model_tripo-v3-1-image-to-3d", "model_meshy-7-1-img23d", "model_tripo-p2-image-to-3d")
 
-# Edit models (3d23d): task, mesh field, longest side of the result in metres. On 2026-10-19
-# Tripo models returned the sent mesh 1 m long and Meshy models 2 m long, centred, unrotated;
-# the Tencent model was not run live, so its size here is a guess.
+# Edit models (3d23d): task, mesh field, longest side of the result in metres (0: returned in
+# place). On 2026-10-19 Tripo models returned the sent mesh 1 m long and centred, Meshy Remesh
+# and Meshy 7 Retexture 2 m long and centred, Meshy UV Unwrap in place, none rotated; the
+# Tencent model was not run live, so its size here is a guess.
 EDIT_MODELS = {
     "model_tripo-retopology-v3": ("remesh", "model", 1.0, "Tripo Retopology v3"),
     "model_meshy-remesh": ("remesh", "model", 2.0, "Meshy Remesh"),
     "model_tripo-smart-uv": ("uv", "model", 1.0, "Tripo Smart UV"),
     "model_tencent-uv-unwrapping": ("uv", "file3d", 1.0, "Tencent UV Unwrapping"),
-    "model_meshy-uv-unwrap": ("uv", "model", 2.0, "Meshy UV Unwrap"),
+    "model_meshy-uv-unwrap": ("uv", "model", 0.0, "Meshy UV Unwrap"),
     "model_meshy-7-retexture": ("retexture", "model", 2.0, "Meshy 7 Retexture"),
     "model_tripo-v3-0-texturing": ("retexture", "model", 1.0, "Tripo 3.0 Texturing"),
 }
@@ -125,7 +126,7 @@ def _glb() -> bytes:
 
 def _edited_glb(task: str, side: float, source: bytes) -> tuple:
     """(GLB bytes, triangles, dimensions): the sent mesh as the edit models returned it on
-    2026-10-19, rescaled to ``side`` metres and centred, no rotation. A UV task gets a new
+    2026-10-19, rescaled to ``side`` metres and centred (in place when 0), no rotation. A UV task gets a new
     layout (a planar projection, one UV per vertex position), a retexture keeps the sent
     UVs and adds a base colour texture, a remesh keeps half the triangles."""
     from scenario_maya.core import gltf, gltf_write, topology
@@ -133,8 +134,8 @@ def _edited_glb(task: str, side: float, source: bytes) -> tuple:
     mesh = topology.result_from_document(gltf.Document.parse(source))
     lo, hi = topology.bounds(mesh.points)
     size = max(max(hi[k] - lo[k] for k in range(3)), 1e-9)
-    scale = side / size
-    centre = [(lo[k] + hi[k]) / 2 for k in range(3)]
+    scale = side / size if side else 1.0
+    centre = [(lo[k] + hi[k]) / 2 for k in range(3)] if side else [0.0, 0.0, 0.0]
     points = [(scale * (x - centre[0]), scale * (y - centre[1]), scale * (z - centre[2])) for x, y, z in mesh.points]
     triangles = mesh.triangles
     uvs = mesh.uvs

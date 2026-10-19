@@ -1,10 +1,11 @@
 """Edit results back on the user's meshes (spec 6.4). Main thread.
 
-Every edit model seen so far returns the sent mesh rescaled and centred
-(Tripo: 1 m long, Meshy: 2 m long), so a result is never placed by its own
-coordinates: it is fitted onto the mesh that was sent (one uniform scale and
-an offset from the bounds, no rotation), then put in that mesh's object
-space. The sent file stays in the captures folder; the target is found again
+Most edit models return the sent mesh resized and centred (on 2026-10-19:
+Tripo models 1 m long, Meshy Remesh and Meshy 7 Retexture 2 m long), while
+Meshy UV Unwrap returns it where and as large as it was sent. So a result is
+never placed by its own coordinates: it is fitted onto the mesh that was sent
+(one uniform scale and an offset from the bounds, no rotation), then put in
+that mesh's object space. The sent file stays in the captures folder; the target is found again
 by its UUID, never by name or selection.
 """
 
@@ -189,7 +190,7 @@ def compare(gathered: dict, result_path: str) -> Review:
         review.refusal = "The result has no UVs, so there is nothing exact to write."
         return review
     if found.corner_uvs is None:
-        review.refusal = f"{found.reason} Its UVs cannot be written exactly onto {name}."
+        review.refusal = f"{found.reason} Its UVs cannot be written exactly onto {name}'s faces. Import places it over {name} instead."
         return review
     current = gathered.get("current_uvs")
     differs = current is None or any(

@@ -1,8 +1,10 @@
 """Is an edit result the same surface as the mesh that was sent? (spec 6.4)
 
 Edit models return GLBs that are triangulated, split at UV seams and
-rescaled: on 2026-10-19 Tripo models returned the sent mesh 1 m long and
-Meshy models 2 m long, centred, with no rotation. Before UVs or textures can
+usually rescaled: on 2026-10-19 Tripo models returned the sent mesh 1 m long
+and centred (also when it was sent 1.5 m off the origin), Meshy Remesh and
+Meshy 7 Retexture 2 m long and centred, Meshy UV Unwrap in place; never
+rotated. Before UVs or textures can
 go back onto the user's mesh exactly, the result has to be proven to be that
 mesh:
 
