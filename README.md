@@ -22,7 +22,7 @@ what comes next.
 | --- | --- | --- |
 | Sign-in | Browser (OAuth), a code on another device, or an API key; secrets in the system keychain | |
 | Panel | Docked beside the Channel Box and restored with the workspace; team and project picker; model picker; job list | Studio window, quick composer over the viewport |
-| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it; GLB import with PBR materials, skins, blend shapes and animation; import checks | Apply an edit onto the mesh itself (new UV set, new material, new geometry, one Ctrl+Z); multi-view captures; rig, animate, split into parts |
+| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs or a new material, reviewed first, one Ctrl+Z); GLB import with PBR materials, skins, blend shapes and animation; import checks | Replace geometry with a remesh; multi-view captures; rig, animate, split into parts |
 | Image | Text to image with Scenario's image models; lands as a card, a material or an image plane | Image editing, upscale, LoRAs |
 | Jobs | One job list for every Maya session; downloads resume; results that finish while Maya is closed are offered on the next start | Results history, an "In this scene" view |
 | Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
@@ -104,7 +104,8 @@ run each:
 ## Edit a mesh of the scene
 
 The **Edit selection** mode of the 3D tab sends one of your meshes to an
-edit model and brings the result back over it.
+edit model and brings the result back: over the mesh as a new object, or
+onto the mesh itself.
 
 ```mermaid
 flowchart LR
@@ -113,7 +114,10 @@ flowchart LR
     check --> send["Sent to your project<br/>once per unchanged mesh"]
     send --> model["Edit model<br/>remesh, UV unwrap, retexture"]
     model --> fit["Fitted onto the sent mesh<br/>one uniform scale and an offset"]
-    fit --> land["Imported over the mesh<br/>a new group, one Ctrl+Z"]
+    fit --> land["Import<br/>a new group over the mesh, one Ctrl+Z"]
+    fit --> proof["Same surface?<br/>vertices, faces, winding, UVs"]
+    proof --> review["Review<br/>what changes, what is kept"]
+    review --> apply["Apply onto the mesh<br/>new UVs or new material, one Ctrl+Z"]
 ```
 
 1. Select one mesh (the object, or some of its faces) and open **3D**,
@@ -130,6 +134,9 @@ flowchart LR
 4. Retexture needs a prompt. The price shows on **Generate**.
 5. **Import** places the result over the mesh it came from, as a new group,
    even if you moved the mesh after sending it. Your mesh is not changed.
+6. **Apply...** (UV unwrap and Retexture results) writes the result onto the
+   mesh itself, after a review of what changes, what is kept and what needs
+   your confirmation. One Ctrl+Z undoes it.
 
 Edit models return the mesh resized and centred: on 2026-10-19, Tripo models
 returned it 1 m long and Meshy models 2 m long, never rotated. The plug-in
@@ -155,14 +162,23 @@ and Tripo Retopology v3 gave 560 (70 CU). *Stills rendered headless in
 Maya's Viewport 2.0 with `tools/render_glb.py` (`--checker 6` for the UV
 pair).*
 
-**Next: Apply**, to write the new UV set or material onto the mesh itself
-(the old UV set kept as a backup) and to replace geometry for remeshes (the
-old shape kept hidden), each in one Ctrl+Z. The check it needs is built and
-tested (`core/topology.py`): a result is the same surface as the mesh sent
-when every result vertex sits on a sent vertex after the fit, every triangle
-lies inside one face with the same winding, every face is covered exactly,
-and each face corner gets one UV. The three results above pass it; the
-remeshes do not, as expected.
+**Apply.** Before anything changes, the plug-in proves the result is the
+same surface as your mesh (`core/topology.py`): every result vertex sits on
+a vertex of the mesh after the fit, every triangle lies inside one face with
+the same winding, every face is covered exactly, and each face corner gets
+one UV. Then:
+
+| Task | What Apply changes | What it keeps |
+| --- | --- | --- |
+| UV unwrap | The current UV set gets the result's UVs | The old layout as `<set>_scnPrev`, geometry, other UV sets, materials |
+| Retexture | A new material from the result's maps (base colour, metal and roughness, normal) is assigned to the mesh; UVs too if the model changed them | The old material, unassigned; Maya's default material is never edited |
+
+The three results above apply onto the crate exactly; the remeshes are
+refused (different surface) and stay on Import. Apply asks before deleting
+the mesh's construction history (history would overwrite new UVs) and when
+a mesh with several materials would get one; it refuses deformed (skinned),
+referenced and locked meshes in this version. **Next:** Replace geometry for
+remeshes, with the old shape kept hidden.
 
 ## Generate an image
 

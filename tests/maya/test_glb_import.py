@@ -159,3 +159,20 @@ def test_import_glb_menu_action_writes_textures_in_the_project(cmds, land, tmp_p
     folder = os.path.join(str(tmp_path), "sourceimages", "scenario", "old_crate")
     assert sorted(os.listdir(folder)) == ["old_crate_base_color.png", "old_crate_metal_rough.png", "old_crate_normal.png"]
     assert made["checks"]["faces"] == 2 and not cmds.attributeQuery("scenario_asset_id", node=made["top"], exists=True)
+
+
+def test_an_undone_import_freed_from_the_undo_queue_leaves_maya_stable(plugin, cmds, tmp_path):
+    """Maya 2027.2 crashed on the next polyCube after an API modifier that deleted shading nodes, and no DAG node,
+    was freed (spec 6.7). An import's undo deletes its top group too; this keeps that path covered."""
+    from tests import glb_samples
+
+    landing = plugin("scenario_maya.maya.landing")
+    cmds.file(new=True, force=True)
+    cmds.undoInfo(state=True, infinity=True)
+    path = glb_samples.textured_quad(str(tmp_path / "quad.glb"))
+    landing.land_model(path, {}, texture_folder=str(tmp_path / "tex"), label="quad")
+    cmds.undo()
+    cmds.flushUndo()
+    cmds.polyCube(name="after")
+    cmds.file(new=True, force=True)
+    assert cmds.polyCube(name="still_fine")

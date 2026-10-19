@@ -164,3 +164,49 @@ def test_rerun_restores_the_mesh_without_sending_it_again(panel, fake, cmds):  #
     qt_pump_until(lambda: page.generate_button.isEnabled(), timeout=15)
     assert page.mesh.asset_id() == row["params"]["model"] and page.mesh.name() == "crate"
     assert len(fake.state.uploads) == 1, "a re-run sends nothing"
+
+
+def card_button(card, text):
+    from PySide6 import QtWidgets
+
+    return next(w for w in card.findChildren(QtWidgets.QPushButton) if w.text() == text)
+
+
+def test_apply_writes_the_uvs_after_a_review(panel, fake, cmds):  # noqa: F811
+    page = edit_page(panel)
+    node = crate(cmds)
+    shape = cmds.listRelatives(node, shapes=True, fullPath=True)[0]
+    page.mesh.use_selection()
+    qt_pump_until(lambda: page.generate_button.isEnabled(), timeout=15)
+    page.generate()
+    qt_pump_until(lambda: ready(page), timeout=20)
+    card = next(iter(page.cards.values()))
+    assert "backup" in card_button(card, "Apply...").toolTip()
+    card_button(card, "Apply...").click()
+    qt_pump_until(lambda: page.review_dialog is not None and page.review_dialog.isVisible(), timeout=15)
+    dialog = page.review_dialog
+    assert dialog.windowTitle() == "Replace UVs on crate"
+    assert not dialog.apply_button.isEnabled(), "the history deletion needs a tick first"
+    assert dialog.checks[0].text().startswith("Delete the construction history of crate")
+    dialog.confirm_all()
+    assert dialog.apply_button.isEnabled()
+    dialog.apply_button.click()
+    qt_pump_until(lambda: page.message.text().startswith("Replace UVs on crate"), timeout=10)
+    assert page.message.text() == "Replace UVs on crate. One Ctrl+Z undoes it."
+    assert cmds.polyUVSet(shape, query=True, allUVSets=True) == ["map1", "map1_scnPrev"]
+    assert card.row["state"] == "applied" or page.cards[card.row["local_id"]].row["state"] == "applied"
+    cmds.undo()
+    assert cmds.polyUVSet(shape, query=True, allUVSets=True) == ["map1"]
+
+
+def test_apply_on_a_remesh_result_is_not_offered(panel, fake, cmds):  # noqa: F811
+    page = edit_page(panel, "remesh")
+    crate(cmds)
+    page.mesh.use_selection()
+    qt_pump_until(lambda: page.generate_button.isEnabled(), timeout=15)
+    page.generate()
+    qt_pump_until(lambda: ready(page), timeout=20)
+    card = next(iter(page.cards.values()))
+    from PySide6 import QtWidgets
+
+    assert [w.text() for w in card.findChildren(QtWidgets.QPushButton)] == ["Import"]

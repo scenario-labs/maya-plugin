@@ -165,12 +165,17 @@ class ResultCard(QtWidgets.QFrame):
             if item.widget():
                 item.widget().deleteLater()
         state = self.row.get("state")
+        edit = ((self.row.get("origin") or {}).get("edit") or {}).get("task") or ""
         if state in ("ready", "applied", "apply_failed") and self._files() and self.page.lane.results == "model":
             self._button(
                 "Import",
-                "Import as a new group at real-world size, on the ground at the camera's centre of interest. One Ctrl+Z removes it.",
+                "Import as a new group fitted over the mesh it came from. The mesh is not changed. One Ctrl+Z removes it."
+                if edit
+                else "Import as a new group at real-world size, on the ground at the camera's centre of interest. One Ctrl+Z removes it.",
                 lambda: self.page.land(self.row, "model"),
             )
+            if edit in APPLY_TIPS:
+                self._button("Apply...", APPLY_TIPS[edit], lambda: self.page.review_apply(self.row))
         elif state in ("ready", "applied", "apply_failed") and self._files():
             self._button("Card", "Import as a textured card at the camera's centre of interest. One Ctrl+Z removes it.", lambda: self.page.land(self.row, "card"))
             self._button("Material", "Put the image as base colour of a new material on the selected meshes or faces.", lambda: self.page.land(self.row, "material"))
@@ -228,6 +233,12 @@ class ResultCard(QtWidgets.QFrame):
         self.runtime.background(decode, on_done=show)
 
 
+APPLY_TIPS = {
+    "uv": "Write these UVs into the mesh they came from; its current UV set is kept as a backup. Shows what changes first; one Ctrl+Z undoes it.",
+    "retexture": "Put the result's textures on the mesh it came from, as a new material. Shows what changes first; one Ctrl+Z undoes it.",
+}
+
+
 def _same_tab(row: dict, lane: lanes.Lane) -> bool:
     other = lanes.BY_ID.get((row.get("origin") or {}).get("lane") or "")
     return other is not None and other.tab_id == lane.tab_id
@@ -249,6 +260,7 @@ class LanePage(QtWidgets.QWidget):
         self._busy = False
         self._forms: dict = {}
         self.cards: dict = {}
+        self.review_dialog = None  # the last Apply review shown
 
         self.model_name = _bold(QtWidgets.QLabel())
         self.model_line = _muted(QtWidgets.QLabel())
@@ -649,6 +661,38 @@ class LanePage(QtWidgets.QWidget):
             note = f" {checks_line(checks)}." + note
         attention = checks.get("missing_textures") or checks.get("notes")
         show_message(self.message, f"{made.get('summary', 'Done')}. One Ctrl+Z removes it.{note}", "warning" if attention else "ok")
+
+    def review_apply(self, row: dict) -> None:
+        """Apply... on an edit result: proves the result against the mesh, then shows the review (spec 4.7)."""
+        from .apply_review import ApplyReview
+
+        def show(review) -> None:
+            show_message(self.message, "")
+            dialog = ApplyReview(review, parent=self)
+            self.review_dialog = dialog
+            dialog.accepted.connect(lambda: self.apply_review(row, review))
+            dialog.open()
+
+        def failed(error) -> None:
+            show_message(self.message, error.args[0] if isinstance(error, landing.LandingError) and error.args else error_text(error), "error")
+
+        try:
+            self.runtime.jobs.review_apply(row["local_id"], on_done=show, on_error=failed)
+        except landing.LandingError as error:
+            show_message(self.message, str(error), "warning")
+            return
+        show_message(self.message, "Checking the result against the mesh...")
+
+    def apply_review(self, row: dict, review) -> None:
+        try:
+            made = self.runtime.jobs.apply_edit(row["local_id"], review)
+        except landing.LandingError as error:
+            show_message(self.message, str(error), "warning")
+            return
+        except errors.ScenarioError as error:
+            show_message(self.message, error_text(error), "error")
+            return
+        show_message(self.message, f"{made['summary']}. One Ctrl+Z undoes it.", "ok")
 
     def reuse(self, row: dict) -> None:
         """Re-run: fills the form with that job's settings. Sends nothing."""

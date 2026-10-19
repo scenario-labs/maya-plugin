@@ -188,3 +188,48 @@ class JobRunner:
         done = self.ledger.set_state(local_id, "applied", made.get("summary", mode), result_json=result, error="")
         self._announce(done, made.get("summary", ""))
         return made
+
+    def review_apply(self, local_id: str, mode: str = "", on_done=None, on_error=None) -> None:
+        """Main thread: reads the target now, then proves the result on a worker; ``on_done(review)`` on the main thread."""
+        from . import apply
+
+        row = self.ledger.get(local_id)
+        if row is None:
+            raise errors.NotFound(f"No local job {local_id}.")
+        files = (row.get("result") or {}).get("files") or []
+        if row["state"] not in ("ready", "applied", "apply_failed") or not files:
+            raise landing.LandingError("Nothing was applied: this result is not downloaded yet.")
+        gathered = apply.gather(row, mode)
+        path = files[0]["path"]
+        self.runtime.background(lambda: apply.compare(gathered, path), on_done=on_done, on_error=on_error)
+
+    def apply_edit(self, local_id: str, review) -> dict:
+        """Main thread: the reviewed edit onto the mesh, one undo step; the job row records it."""
+        from . import apply
+
+        row = self.ledger.get(local_id)
+        if row is None:
+            raise errors.NotFound(f"No local job {local_id}.")
+        files = (row.get("result") or {}).get("files") or []
+        attrs = provenance.attributes(
+            row,
+            (files[0] if files else {}).get("asset_id", ""),
+            maya_version=compat.maya_version(),
+            apply=review.mode.lower(),
+            store_prompt=bool(self.runtime.settings.get("store_prompts_on_nodes", True)),
+        )
+        folder = naming.unique_folder(scene.folders()["images"], naming.slug(f"{review.name}_retexture")) if review.mode == "RETEXTURE" else ""
+        self.ledger.set_state(local_id, "applying", review.mode)
+        try:
+            made = apply.run(review, attrs, texture_folder=folder)
+        except Exception as error:
+            message = error.args[0] if isinstance(error, landing.LandingError) and error.args else f"{type(error).__name__}: {error}"
+            failed = self.ledger.set_state(local_id, "apply_failed", message, error=message)
+            self._announce(failed, message)
+            raise
+        landed = list((row.get("result") or {}).get("landed") or [])
+        landed.insert(0, {"mode": review.mode.lower(), "index": 0, "top": review.target, "material": made.get("material"), "scene_uuid": scene.scene_uuid()})
+        result = dict(row.get("result") or {}, landed=landed[:20])
+        done = self.ledger.set_state(local_id, "applied", made["summary"], result_json=result, error="")
+        self._announce(done, made["summary"])
+        return made

@@ -371,6 +371,8 @@ Every change to existing scene content goes through a review that says exactly w
 
 Imports of new content use a shorter review in the result card (what lands, where, in which namespace); an explicit setting ("Import new results without review") skips it for people. Agents always prepare first.
 
+**Built (2026-10-19), first version:** **Apply...** on an edit result card proves the result against the mesh on a worker, then opens the review with three lists: what changes, what is kept, and what must be confirmed (one checkbox each; Apply stays off until all are ticked). A refused apply shows the reason and Close only. The mode follows the job's task (UV unwrap: Replace UVs; Retexture: Replace textures); the mode switch and the keep-original checkbox of the mock-up above are not built (the original is always kept).
+
 ### 4.8 Keyboard
 
 Global actions are runtime commands without default bindings (default hotkey sets cannot be changed, and taking keys from users breaks muscle memory). Suggested bindings in the docs, checked against Maya's default set in M2:
@@ -541,7 +543,7 @@ Every mesh task starts with **Capture selected meshes**: the plug-in exports the
 
 ### 6.4 Apply modes: results on the user's own meshes
 
-A 3D result can land as a new object (the default, always available) or be applied to an existing mesh, rig or head in the scene. Each apply mode below was prototyped headless in `mayapy` 2027.2 on purpose-built fixtures, with full scene snapshots compared before the apply, after undo and after redo [verified, unless tagged]. Five real edit results were analysed on 2026-10-19 (Topology matching, below); the apply modes themselves are not built in the plug-in yet. What is built: **Import** of an edit result places it over the mesh it came from, as a new group, by the fit described under Placement.
+A 3D result can land as a new object (the default, always available) or be applied to an existing mesh, rig or head in the scene. Each apply mode below was prototyped headless in `mayapy` 2027.2 on purpose-built fixtures, with full scene snapshots compared before the apply, after undo and after redo [verified, unless tagged]. Five real edit results were analysed on 2026-10-19 (Topology matching, below). **Built on 2026-10-19:** Import of an edit result places it over the mesh it came from, as a new group, by the fit described under Placement; **Replace UVs** and **Replace textures** apply onto the mesh itself (`maya/apply.py`, review in 4.7). Applied to the real results [verified, headless]: Tripo Smart UV's layout written into `map1` of the sent crate (1,848 face corners, no split corner) with the old set kept as `map1_scnPrev`; Meshy 7 Retexture and Tripo 3.0 Texturing each assigned as a new material with base colour, metal and roughness, and normal maps, UVs untouched; two undo and redo cycles exact for each. This version refuses deformed, referenced and locked targets and asks before deleting construction history (a UV write under live history is overwritten); Replace geometry and the other modes come later.
 
 **Rules for every apply** (shared with the Blender plug-in's contract):
 - Download and apply are separate. Only images land by themselves on request; every 3D result waits at **Ready to apply**.
@@ -648,6 +650,7 @@ Maya has no splat format of its own and Viewport 2.0 does not draw splats; Arnol
 | `preferredMaterial` marks data textures sRGB | Colour spaces set by role after import |
 | Importers change the playback range | Range, current frame and rate captured and restored |
 | FBX and OBJ create several top-level nodes | New assemblies found by diff, grouped under one transform |
+| An `MDGModifier` that deleted a shading node (lambert, openPBR, place2dTexture), once freed, made the next `polyCube` crash Maya 2027.2, with or without a new scene in between (plain API repro, no plug-in). It did not happen when a DAG node was deleted in the same session, which every import's undo does (its top group) | Imports keep their undo by modifiers (regression test: import, undo, `flushUndo`, `polyCube`); Replace textures builds its material with plain undoable `cmds` instead |
 | `cmds` takes distances in the scene's unit, the API (mesh points, matrices, anim curve keys) in centimetres: a builder that scaled API values by the scene unit landed 1 m models 1 cm wide in a metre scene | Two factors in the GLB builder; tested in metre and millimetre scenes on a skinned, a morphing and a moving sample |
 | Leading digits dropped, non-ASCII becomes `?`, `-` becomes `FBXASC045` | Names slugified first; FBX names cleaned after import |
 | FBX embedded media extract beside the FBX, with no extension sometimes | FBX copied into the asset folder first; textures renamed by format |
@@ -1189,7 +1192,7 @@ Open questions for Scenario (not blocking the start, each with a test in the mil
 - Module format, default module paths on macOS, Autodesk bundle layout and `PackageContents.xml` fields from Autodesk's own installed bundles; Marketplace and MCP publisher rules from Autodesk's pages.
 - Scenario: catalog counts, model inputs and options, dry-run prices, conversion formats, upload flow, job fields, signed link expiry, OAuth metadata, and the Blender plug-in's apply and recovery contracts (behaviour only).
 - Apply modes in 6.4 and 6.5: method, exactness, refusals and undo for replace geometry, UVs, textures, attach rig, apply animation (including headless HumanIK retargeting), face shapes and parts, on fixtures; native retopology and UV tools headless.
-- On 2026-10-19, edits of a mesh sent by the plug-in (6.3, 6.4): kind `3d` upload, dry-run prices of seven edit models, five live results, their outputs, their resize and centring, and the matcher's verdict on each.
+- On 2026-10-19, edits of a mesh sent by the plug-in (6.3, 6.4): kind `3d` upload, dry-run prices of seven edit models, five live results, their outputs, their resize and centring, and the matcher's verdict on each; Replace UVs and Replace textures applied to the three same-surface results with exact undo and redo; `scenarioSetUVs` undo and redo with history deletion and a backup set, then save and reopen; the shading-node modifier crash in 6.7.
 
 **Not verified yet** (each has a test or a decision point):
 - Anything in the Maya GUI: panel docking and restore, menus and shelf, the composer over the viewport, the Attribute Editor hook, undo in the GUI, secure plug-in loading prompt, keychain prompts between Maya and `mayapy`, UI scaling, sky dome and splat display in the viewport.

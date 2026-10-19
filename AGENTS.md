@@ -74,13 +74,15 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
   `capture.py` (a viewport still for a model input, outside the undo queue),
   `mesh_export.py` (a selected mesh to the GLB sent for an edit, with the
   record kept to find and fit the result), `apply.py` (edit results back
-  over the mesh: target by UUID, fit against the kept sent file),
+  on the mesh: target by UUID, fit against the kept sent file; Apply as
+  gather, compare, run with a review), `uv_command.py` (the undoable
+  `scenarioSetUVs` command),
   `lifecycle.py` (load and unload), `compat.py`.
 - `scripts/scenario_maya/ui/`: PySide6. `panel.py` (the dockable
   `workspaceControl`), `lane.py` (a lane: model, prompt, settings, priced
   Generate, result cards), `inputs.py` (the image row: file, viewport
   capture, Image results), `mesh_input.py` (the Edit selection row: task,
-  Use selection, checks, send), `fields.py` (settings from a model schema),
+  Use selection, checks, send), `apply_review.py` (the Apply review), `fields.py` (settings from a model schema),
   `picker.py`, `signin.py`, `workspace.py`, `jobs.py`, `menu.py`,
   `commands.py` (runtime commands), `common.py`, `qt.py`.
 - `scripts/scenario_maya/agent/`: the local MCP server (milestone M5).

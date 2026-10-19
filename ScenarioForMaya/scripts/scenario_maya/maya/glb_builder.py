@@ -52,6 +52,18 @@ def build(doc, images: list, base: str) -> dict:
     return _Builder(doc, images, base).run()
 
 
+def build_materials(doc, images: list, base: str, name: str = "") -> dict:
+    """Only the document's materials (Replace textures, spec 6.4): ``{shaders, shading_groups, notes}``.
+
+    ``name`` replaces the file's material names (the first gets it as is, the others a number)."""
+    if name:
+        for index, material in enumerate(doc.json.get("materials") or []):
+            material["name"] = name if index == 0 else f"{name}_{index + 1}"
+    builder = _Builder(doc, images, base)
+    builder._materials()
+    return {"shaders": builder.shaders, "shading_groups": builder.shading_groups, "textured": sorted(builder.textured), "notes": builder.notes}
+
+
 def _row_quaternion(values) -> om.MQuaternion:
     x, y, z, w = values
     return om.MQuaternion(x, y, z, w)

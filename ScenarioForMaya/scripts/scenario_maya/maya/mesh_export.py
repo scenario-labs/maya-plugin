@@ -200,6 +200,43 @@ def read_mesh(shape: str, up_z: bool = False) -> dict:
     }
 
 
+def shape_fingerprint(shape: str) -> str:
+    """The same fingerprint ``read_mesh`` records, from the shape as it is now: any edit of points, faces or UVs changes it."""
+    fn = _fn(shape)
+    counts, connects = fn.getVertices()
+    uv_set = fn.currentUVSetName()
+    has_uvs = bool(uv_set) and fn.numUVs(uv_set) > 0
+    us, vs = fn.getUVs(uv_set) if has_uvs else ([], [])
+    uv_counts, uv_ids = fn.getAssignedUVs(uv_set) if has_uvs else ([], [])
+    flat_points = [value for point in fn.getPoints(om.MSpace.kObject) for value in (point.x, point.y, point.z)]
+    return edits.fingerprint(flat_points, counts, connects, list(us) + list(vs), uv_counts, uv_ids)
+
+
+def corner_uvs(shape: str, uv_set: str) -> list | None:
+    """(u, v) per face corner of ``uv_set`` in Maya's convention, None on a face without UVs; None when the set is empty."""
+    fn = _fn(shape)
+    if not fn.numUVs(uv_set):
+        return None
+    us, vs = fn.getUVs(uv_set)
+    uv_counts, uv_ids = fn.getAssignedUVs(uv_set)
+    counts, _connects = fn.getVertices()
+    out: list = []
+    cursor = 0
+    for face, count in enumerate(counts):
+        if uv_counts[face]:
+            out.extend((us[i], vs[i]) for i in uv_ids[cursor : cursor + count])
+            cursor += count
+        else:
+            out.extend([None] * count)
+    return out
+
+
+def _fn(shape: str) -> om.MFnMesh:
+    selection = om.MSelectionList()
+    selection.add(shape)
+    return om.MFnMesh(selection.getDagPath(0))
+
+
 def polygon_target(shape: str, up_z: bool | None = None):
     """The shape as the sent file saw it (object space, metres, Y-up), for ``core.topology.match``."""
     from ..core import topology
