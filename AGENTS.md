@@ -54,9 +54,10 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
   - `edits.py`: Edit selection tasks (Remesh, UV unwrap, Retexture), each
     edit model's mesh field, formats and triangle cap, the checks made
     before a mesh is sent, mesh fingerprints.
-  - `topology.py`: fit (uniform scale and offset from bounds) and the
+  - `topology.py`: fit (uniform scale and offset from bounds), the
     matcher that proves an edit result is the sent surface (vertices,
-    triangles tiling each face, one UV per face corner).
+    triangles tiling each face, one UV per face corner), and the sampled
+    surface-distance check that a fitted result is the same shape.
   - `uploads.py`: a local file to a Scenario asset id: type read from the
     bytes, parts PUT to Scenario's links as given (no checksum headers), the
     same bytes reused within a session and workspace.
@@ -75,7 +76,7 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
   `mesh_export.py` (a selected mesh to the GLB sent for an edit, with the
   record kept to find and fit the result), `apply.py` (edit results back
   on the mesh: target by UUID, fit against the kept sent file; Apply as
-  gather, compare, run with a review), `uv_command.py` (the undoable
+  gather, compare, run with a review: Replace UVs, textures or geometry), `uv_command.py` (the undoable
   `scenarioSetUVs` command),
   `lifecycle.py` (load and unload), `compat.py`.
 - `scripts/scenario_maya/ui/`: PySide6. `panel.py` (the dockable

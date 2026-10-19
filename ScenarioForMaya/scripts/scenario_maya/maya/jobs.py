@@ -220,7 +220,8 @@ class JobRunner:
             apply=review.mode.lower(),
             store_prompt=bool(self.runtime.settings.get("store_prompts_on_nodes", True)),
         )
-        folder = naming.unique_folder(scene.folders()["images"], naming.slug(f"{review.name}_retexture")) if review.mode == "RETEXTURE" else ""
+        suffix = {"RETEXTURE": "retexture", "REMESH": "remesh"}.get(review.mode)
+        folder = naming.unique_folder(scene.folders()["images"], naming.slug(f"{review.name}_{suffix}")) if suffix else ""
         self.ledger.set_state(local_id, "applying", review.mode)
         try:
             made = apply.run(review, attrs, texture_folder=folder)

@@ -247,6 +247,17 @@ def verify_fit(result: Result, sent: Result, scale: float, offset: tuple) -> dic
     return dict(gap, verified=_close(gap))
 
 
+def triangulated(target: Target) -> Result:
+    """A polygon mesh as triangle fans over its own points, for ``verify_fit``."""
+    triangles = []
+    cursor = 0
+    for count in target.counts:
+        ring = target.connects[cursor : cursor + count]
+        triangles.extend((ring[0], ring[k], ring[k + 1]) for k in range(1, count - 1))
+        cursor += count
+    return Result(target.points, triangles)
+
+
 def surface_samples(points: list, triangles: list, count: int = 1500) -> list:
     """``count`` points spread over the triangles by area, the same every time (no random numbers)."""
     areas = []

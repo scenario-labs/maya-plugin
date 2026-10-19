@@ -236,6 +236,7 @@ class ResultCard(QtWidgets.QFrame):
 APPLY_TIPS = {
     "uv": "Write these UVs into the mesh they came from; its current UV set is kept as a backup. Shows what changes first; one Ctrl+Z undoes it.",
     "retexture": "Put the result's textures on the mesh it came from, as a new material. Shows what changes first; one Ctrl+Z undoes it.",
+    "remesh": "Replace the geometry of the mesh it came from; the old shape stays, hidden. Shows what changes first; one Ctrl+Z undoes it.",
 }
 
 

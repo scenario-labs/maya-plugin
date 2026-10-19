@@ -100,10 +100,14 @@ def import_over_target(row: dict, result_path: str) -> dict:
 
 def fit_note(name: str, gap: dict) -> str:
     """Why a fitted result may not sit on the mesh, for the import message."""
-    far = f"{gap['over_2']:.0%} of the points checked are more than 2% of its size away"
+    return f"not the same shape as {name} ({_far(name, gap)}): placed by the bounds only, check the placement"
+
+
+def _far(name: str, gap: dict) -> str:
+    far = f"{gap['over_2']:.0%} of the points checked are more than 2% of {name}'s size away"
     if gap["over_10"]:
         far += f", {gap['over_10']:,} more than 10%"
-    return f"not the same shape as {name} ({far}): placed by the bounds only, check the placement"
+    return far
 
 
 # -- Apply: the result written onto the mesh itself (spec 6.4) ---------------------------------------
@@ -111,8 +115,8 @@ def fit_note(name: str, gap: dict) -> str:
 # Three steps, as in the spec's apply contract. ``gather`` (main thread) reads
 # the target as it is now and runs the preflight; ``compare`` (any thread, no
 # Maya) proves the result is that surface and writes the review; ``run`` (main
-# thread) rechecks the target and makes the edits in one undo chunk. This
-# version applies UV unwrap and Retexture results; Replace geometry comes later.
+# thread) rechecks the target and makes the edits in one undo chunk: UV unwrap
+# and Retexture results write onto the shape, Remesh results replace it.
 
 TITLES = {"UV": "Replace UVs", "RETEXTURE": "Replace textures", "REMESH": "Replace geometry"}
 BACKUP_SUFFIX = "_scnPrev"
@@ -151,9 +155,7 @@ def gather(row: dict, mode: str = "") -> dict:
     out = {"mode": mode, "name": name, "transform": transform, "shape": shape, "refusal": "", "notes": []}
     if not transform or not shape:
         return dict(out, refusal=f"{name} is no longer in the scene, so there is nothing to apply to. Import places the result where it was.")
-    if mode == "REMESH":
-        return dict(out, refusal=f"Replacing the geometry comes in a later version. Import places the remeshed result over {name}.")
-    if mode not in ("UV", "RETEXTURE"):
+    if mode not in ("UV", "RETEXTURE", "REMESH"):
         return dict(out, refusal=f"{TITLES.get(mode, mode)} is not available in this version.")
     if cmds.referenceQuery(shape, isNodeReferenced=True):
         return dict(out, refusal=f"{name} comes from a referenced file; apply the result in the file it comes from.")
@@ -164,15 +166,21 @@ def gather(row: dict, mode: str = "") -> dict:
     if deformers:
         return dict(out, refusal=f"{name} is deformed ({', '.join(deformers[:3])}). Applying onto a deformed mesh comes in a later version; Import places the result over it.")
     up_z = record.get("up_axis") == "z"
+    selection = om.MSelectionList()
+    selection.add(shape)
+    instanced = selection.getDagPath(0).isInstanced()
+    if mode == "REMESH" and instanced:
+        return dict(out, refusal=f"{name} is instanced. Replacing the geometry of an instanced mesh comes in a later version; Import places the result over it.")
     uv_set = cmds.polyUVSet(shape, query=True, currentUVSet=True) or ["map1"]
     uv_set = uv_set[0]
     sets = cmds.polyUVSet(shape, query=True, allUVSets=True) or []
     backup, number = uv_set + BACKUP_SUFFIX, 1
     while backup in sets:
         backup, number = f"{uv_set}{BACKUP_SUFFIX}{number}", number + 1
-    selection = om.MSelectionList()
-    selection.add(shape)
-    engines, _faces = om.MFnMesh(selection.getDagPath(0)).getConnectedShaders(0)
+    engines, faces = om.MFnMesh(selection.getDagPath(0)).getConnectedShaders(0)
+    used = [list(faces).count(index) for index in range(len(engines))]
+    engine = om.MFnDependencyNode(engines[used.index(max(used))]).name() if engines else ""
+    shader = (cmds.listConnections(engine + ".surfaceShader", source=True, destination=False) or [""])[0] if engine else ""
     sent = (record.get("meshes") or [{}])[0].get("fingerprint", "")
     fingerprint = mesh_export.shape_fingerprint(shape)
     if sent and sent != fingerprint:
@@ -184,8 +192,13 @@ def gather(row: dict, mode: str = "") -> dict:
         backup=backup,
         current_uvs=mesh_export.corner_uvs(shape, uv_set),
         history=[node for node in history if node != shape][:4] if cmds.listConnections(shape + ".inMesh", source=True, destination=False) else [],
-        instanced=selection.getDagPath(0).isInstanced(),
+        instanced=instanced,
         engines=len(engines),
+        engine=engine,
+        shader=shader,
+        engine_textured=bool(engine and cmds.ls(cmds.listHistory(engine) or [], type="file")),
+        previous=_free_name(shape.split("|")[-1] + BACKUP_SUFFIX),
+        up_z=up_z,
         fingerprint=fingerprint,
         model=str(row.get("model_name") or row.get("target_id") or "the model"),
     )
@@ -201,6 +214,8 @@ def compare(gathered: dict, result_path: str) -> Review:
     review.fingerprint, review.uv_set, review.backup = gathered["fingerprint"], gathered["uv_set"], gathered["backup"]
     doc = gltf.Document.load(result_path)
     result = topology.result_from_document(doc)
+    if mode == "REMESH":
+        return _compare_geometry(gathered, review, doc, result)
     found = topology.match(gathered["target"], result)
     review.facts = dict(found.facts, uv_disagreements=found.uv_disagreements)
     if not found.same_surface:
@@ -255,6 +270,45 @@ def compare(gathered: dict, result_path: str) -> Review:
     return review
 
 
+def _compare_geometry(gathered: dict, review: Review, doc, result: topology.Result) -> Review:
+    """Replace geometry: the result must be one plain mesh, and the same shape as the target by the fit check."""
+    name, model, target = gathered["name"], gathered.get("model") or "the model", gathered["target"]
+    meshes = [node for node in doc.json.get("nodes") or [] if "mesh" in node]
+    if len(meshes) != 1:
+        review.refusal = f"The result has {len(meshes)} meshes; Replace geometry takes one. Import places it over {name} instead."
+        return review
+    primitives = (doc.json.get("meshes") or [])[meshes[0]["mesh"]].get("primitives") or []
+    if "skin" in meshes[0] or any(primitive.get("targets") for primitive in primitives):
+        review.refusal = f"The result is skinned or has blend shapes; Replace geometry takes a plain mesh. Import places it over {name} instead."
+        return review
+    scale, offset = topology.fit(result.points, target.points)
+    gap = topology.verify_fit(result, topology.triangulated(target), scale, offset)
+    review.facts = {"scale": scale, "offset": list(offset), "up_z": bool(gathered.get("up_z")), "engine": gathered.get("engine") or "", "fit": gap, "triangles": len(result.triangles)}
+    if not gap["verified"]:
+        review.refusal = f"The result is not the same shape as {name} ({_far(name, gap)}). Import places it over {name} instead."
+        return review
+    review.backup = gathered["previous"]
+    review.changes.append(f"Replaces the geometry of {name} ({len(target.counts):,} faces) with {model}'s result ({len(result.triangles):,} triangles).")
+    roles = sorted(set(gltf.texture_roles(doc).values()))
+    shader = gathered.get("shader") or "the default material"
+    if roles:
+        review.material = 0
+        maps = ", ".join(role.replace("_", " ") for role in roles)
+        review.changes.append(f"Assigns the result's material ({maps}) to the new mesh; {shader} stays on the old shape.")
+    else:
+        review.kept.append(f"The new mesh keeps {name}'s material ({shader}).")
+        if gathered.get("engine_textured"):
+            review.changes.append(f"{shader}'s textures follow the result's UVs, not those they were made for: check how they look.")
+        if gathered.get("engines", 0) > 1:
+            review.confirms.append(f"{name} has {gathered['engines']} materials on its faces; the new mesh gets {shader} only.")
+    review.kept.append(f"The transform {name}: its place, attributes, parent, sets and connections.")
+    history = " with its construction history" if gathered.get("history") else ""
+    review.kept.append(f"The old shape, hidden, as {review.backup}{history}.")
+    review.kept.append(f"Checked by surface distance: the farthest point is {gap['worst']:.1%} of {name}'s size away.")
+    review.kept.extend(gathered.get("notes") or [])
+    return review
+
+
 def run(review: Review, attributes: dict | None = None, texture_folder: str = "") -> dict:
     """Main thread: the edits of a review, in one undo chunk. Raises ApplyError before changing anything."""
     from . import glb_builder, uv_command
@@ -268,6 +322,8 @@ def run(review: Review, attributes: dict | None = None, texture_folder: str = ""
     shape = shapes[0]
     if mesh_export.shape_fingerprint(shape) != review.fingerprint:
         raise ApplyError(f"{review.name} changed after the review. Open Apply again.")
+    if review.mode == "REMESH":
+        return _replace_geometry(review, shape, attributes, texture_folder)
     made: dict = {}
     doc = gltf.Document.load(review.result_path) if review.mode == "RETEXTURE" else None
     images = gltf.extract_images(doc, texture_folder, naming.slug(review.name + "_retexture")) if doc is not None and texture_folder else []
@@ -292,6 +348,84 @@ def run(review: Review, attributes: dict | None = None, texture_folder: str = ""
                 add_provenance(made["shaders"][index], attributes)
     summary = f"{review.title}" + (f": {made['shaders'][review.material or 0]} assigned" if made else "")
     return {"summary": summary, "undo": chunk, "shape": shape, "material": (made.get("shaders") or [""])[review.material or 0] if made else "", "notes": made.get("notes", []) if made else []}
+
+
+def _replace_geometry(review: Review, shape: str, attributes: dict | None, texture_folder: str) -> dict:
+    """The result's mesh becomes the target's shape; the old shape stays, hidden, as ``review.backup``.
+
+    The mesh is staged with the recording import command (materials left out),
+    its points baked into the target's object space by the fit, then the shape
+    is parented under the target's transform and takes the old shape's name,
+    material and outgoing connections. One undo chunk.
+    """
+    from . import glb_builder, import_command
+    from .landing import add_provenance, free_namespace, in_namespace, undo_chunk
+
+    transform = cmds.listRelatives(shape, parent=True, fullPath=True)[0]
+    short = shape.split("|")[-1]
+    base = naming.slug(review.name + "_remesh")
+    facts = review.facts
+    local = placement_matrix(facts["scale"], facts["offset"], {"up_axis": "z" if facts["up_z"] else "y"}, list(om.MMatrix()))
+    mesh_only = gltf.Document.load(review.result_path)
+    mesh_only.json.pop("materials", None)
+    for mesh in mesh_only.json.get("meshes") or []:
+        for primitive in mesh.get("primitives") or []:
+            primitive.pop("material", None)
+    outgoing = [
+        (source.split(".", 1)[1], destination)
+        for source, destination in _pairs(cmds.listConnections(shape, source=False, destination=True, plugs=True, connections=True) or [])
+        if source.split(".", 1)[1].split("[")[0] in ("outMesh", "worldMesh")
+    ]
+    made: dict = {}
+    chunk = f"Scenario: {review.title}"
+    with undo_chunk(chunk):
+        namespace = free_namespace("scn_stage")
+        with in_namespace(namespace):
+            staged = import_command.run(lambda: glb_builder.build(mesh_only, [], base))
+        top = cmds.ls(cmds.parent(staged["top"], transform, relative=True)[0], long=True)[0]
+        cmds.xform(top, matrix=local, objectSpace=True)
+        cmds.makeIdentity(top, apply=True, translate=True, rotate=True, scale=True, normal=0, preserveNormals=True)
+        new_shape = cmds.listRelatives(top, allDescendents=True, type="mesh", fullPath=True)[0]
+        new_shape = cmds.ls(cmds.parent(new_shape, transform, shape=True, relative=True)[0], long=True)[0]
+        cmds.delete(top)
+        old = f"{transform}|{cmds.rename(shape, review.backup)}"
+        cmds.setAttr(old + ".intermediateObject", True)
+        new = f"{transform}|{cmds.rename(new_shape, ':' + short)}"
+        for attribute, destination in outgoing:
+            cmds.connectAttr(f"{new}.{attribute}", destination, force=True)
+        if review.material is not None:
+            doc = gltf.Document.load(review.result_path)
+            images = gltf.extract_images(doc, texture_folder, base) if texture_folder else []
+            # Plain undoable commands, as for Replace textures (spec 6.7).
+            made = glb_builder.build_materials(doc, images, base, name=base)
+            engine = made["shading_groups"][0]
+        else:
+            engine = facts.get("engine") or "initialShadingGroup"
+        cmds.sets(new, edit=True, forceElement=engine)
+        if attributes:
+            add_provenance(new, attributes)
+        if cmds.namespace(exists=":" + namespace) and not cmds.namespaceInfo(":" + namespace, listNamespace=True):
+            cmds.namespace(removeNamespace=":" + namespace)
+    material = (made.get("shaders") or [""])[0]
+    return {
+        "summary": f"{review.title}: {facts['triangles']:,} triangles" + (f", {material} assigned" if material else ""),
+        "undo": chunk,
+        "shape": new,
+        "previous": old,
+        "material": material,
+        "notes": made.get("notes", []),
+    }
+
+
+def _pairs(flat: list) -> list:
+    return list(zip(flat[::2], flat[1::2], strict=True))
+
+
+def _free_name(name: str) -> str:
+    candidate, number = name, 1
+    while cmds.objExists(candidate):
+        candidate, number = f"{name}{number}", number + 1
+    return candidate
 
 
 def _welded(corner_uvs: list, connects: list, counts: list) -> tuple:

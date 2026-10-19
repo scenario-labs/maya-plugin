@@ -97,14 +97,17 @@ def test_the_result_lands_over_the_mesh_where_it_is_now(panel, fake, cmds):  # n
     assert cmds.exactWorldBoundingBox(meshes) == pytest.approx(cmds.exactWorldBoundingBox(node), abs=1e-3)
 
 
-def test_a_result_that_is_not_the_same_shape_lands_with_a_note(panel, fake, cmds):  # noqa: F811
+def test_a_result_that_is_not_the_same_shape_lands_with_a_note(panel, fake, cmds, monkeypatch):  # noqa: F811
+    from tests.fake_backend import fake_scenario
+
+    monkeypatch.setattr(fake_scenario, "_split_in_four", lambda points, triangles, uvs: (points, triangles[: len(triangles) // 2], uvs))
     page = edit_page(panel, "remesh")
     node = crate(cmds)
     page.mesh.use_selection()
     qt_pump_until(lambda: page.generate_button.isEnabled(), timeout=15)
     page.generate()
     qt_pump_until(lambda: ready(page), timeout=20)
-    page.land(next(iter(page.cards.values())).row, "model")  # the fake remesh drops half the faces
+    page.land(next(iter(page.cards.values())).row, "model")  # a remesh that lost half the faces
     text = page.message.text()
     assert ", over crate." in text and "not the same shape as crate (" in text and "placed by the bounds only, check the placement" in text, text
     top = [t for t in cmds.ls(assemblies=True) if cmds.attributeQuery("scenario_job_id", node=t, exists=True)][0]
@@ -175,7 +178,8 @@ def test_rerun_restores_the_mesh_without_sending_it_again(panel, fake, cmds):  #
     qt_pump_until(lambda: ready(page), timeout=20)
     row = next(iter(page.cards.values())).row
     page.mesh.clear()
-    assert page.generate_button.text() == "Select a mesh to edit"
+    # The button keeps "Waiting for Scenario..." for 2 s after Generate, however fast the job is.
+    qt_pump_until(lambda: page.generate_button.text() == "Select a mesh to edit", timeout=5)
     page.reuse(row)
     qt_pump_until(lambda: page.generate_button.isEnabled(), timeout=15)
     assert page.mesh.asset_id() == row["params"]["model"] and page.mesh.name() == "crate"
@@ -215,14 +219,23 @@ def test_apply_writes_the_uvs_after_a_review(panel, fake, cmds):  # noqa: F811
     assert cmds.polyUVSet(shape, query=True, allUVSets=True) == ["map1"]
 
 
-def test_apply_on_a_remesh_result_is_not_offered(panel, fake, cmds):  # noqa: F811
+def test_apply_replaces_the_geometry_after_a_review(panel, fake, cmds):  # noqa: F811
     page = edit_page(panel, "remesh")
-    crate(cmds)
+    node = crate(cmds)
     page.mesh.use_selection()
     qt_pump_until(lambda: page.generate_button.isEnabled(), timeout=15)
     page.generate()
     qt_pump_until(lambda: ready(page), timeout=20)
     card = next(iter(page.cards.values()))
-    from PySide6 import QtWidgets
-
-    assert [w.text() for w in card.findChildren(QtWidgets.QPushButton)] == ["Import"]
+    assert "old shape stays" in card_button(card, "Apply...").toolTip()
+    card_button(card, "Apply...").click()
+    qt_pump_until(lambda: page.review_dialog is not None and page.review_dialog.isVisible(), timeout=15)
+    dialog = page.review_dialog
+    assert dialog.windowTitle() == "Replace geometry on crate" and dialog.apply_button.isEnabled() and not dialog.checks
+    dialog.apply_button.click()
+    qt_pump_until(lambda: page.message.text().startswith("Replace geometry on crate"), timeout=10)
+    assert page.message.text() == "Replace geometry on crate: 48 triangles. One Ctrl+Z undoes it."
+    shapes = cmds.listRelatives(node, shapes=True, fullPath=True)
+    assert sorted(s.split("|")[-1] for s in shapes) == ["crateShape", "crateShape_scnPrev"] and cmds.polyEvaluate(node, face=True) == 48
+    cmds.undo()
+    assert [s.split("|")[-1] for s in cmds.listRelatives(node, shapes=True)] == ["crateShape"] and cmds.polyEvaluate(node, face=True) == 6

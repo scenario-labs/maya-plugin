@@ -151,15 +151,111 @@ def test_per_face_materials_become_one_after_a_confirm(scene, cmds):
     assert not cmds.objExists(made["material"])
 
 
-def test_a_remeshed_result_is_refused_with_the_reason(scene, cmds):
+def test_a_remeshed_result_is_refused_for_uvs_with_the_reason(scene, cmds):
     node = crate(cmds)
     row = sent(cmds, node, "uv")
     seen = review(row, result(row, scene, "remesh"))
-    assert seen.refusal == "The result is not the same surface as crate: The result has 10 triangles; the mesh splits into 20. Import places it over crate instead."
+    assert seen.refusal == "The result is not the same surface as crate: The result has 80 triangles; the mesh splits into 20. Import places it over crate instead."
     with pytest.raises(fresh("scenario_maya.maya.apply").ApplyError):
         fresh("scenario_maya.maya.apply").run(seen)
-    remesh = review(sent(cmds, node, "remesh"), result(row, scene, "remesh"))
-    assert remesh.refusal == "Replacing the geometry comes in a later version. Import places the remeshed result over crate."
+
+
+def names(cmds, node):
+    return sorted(shape.split("|")[-1] for shape in cmds.listRelatives(node, shapes=True, fullPath=True) or [])
+
+
+def default_material(cmds):
+    return cmds.listConnections("initialShadingGroup.surfaceShader")[0]  # openPBR_shader1 in Maya 2027
+
+
+def test_replace_geometry_swaps_the_shape_and_one_undo_restores_it(scene, cmds):
+    node = crate(cmds)
+    uuid = cmds.ls(node, uuid=True)[0]
+    shape = cmds.listRelatives(node, shapes=True, fullPath=True)[0]
+    probe = cmds.createNode("closestPointOnMesh", name="probe")
+    cmds.connectAttr(shape + ".worldMesh[0]", probe + ".inMesh")
+    box, history = cmds.exactWorldBoundingBox(node), cmds.listHistory(shape, pruneDagObjects=True)
+    row = sent(cmds, node, "remesh")
+    seen = review(row, result(row, scene, "remesh"))
+    assert not seen.refusal and not seen.confirms, (seen.refusal, seen.confirms)
+    assert seen.title == "Replace geometry on crate"
+    assert seen.changes == ["Replaces the geometry of crate (10 faces) with Test model's result (80 triangles)."]
+    assert seen.kept[:3] == [
+        f"The new mesh keeps crate's material ({default_material(cmds)}).",
+        "The transform crate: its place, attributes, parent, sets and connections.",
+        "The old shape, hidden, as crateShape_scnPrev with its construction history.",
+    ]
+    assert seen.kept[3].startswith("Checked by surface distance: the farthest point is 0.0% of crate's size away.")
+    made = fresh("scenario_maya.maya.apply").run(seen, {"scenario_job_id": "job_test"})
+    assert made["summary"] == "Replace geometry on crate: 80 triangles"
+
+    def replaced():
+        assert names(cmds, node) == ["crateShape", "crateShape_scnPrev"] and cmds.ls(node, uuid=True)[0] == uuid
+        new, old = (f"|{node}|{name}" for name in names(cmds, node))
+        assert cmds.polyEvaluate(new, face=True) == 80 and cmds.getAttr(old + ".intermediateObject")
+        assert cmds.exactWorldBoundingBox(new) == pytest.approx(box, abs=1e-3), "the new mesh sits where the old one was"
+        assert cmds.listConnections(probe + ".inMesh", plugs=True) == ["crateShape.worldMesh"], "the probe follows the new shape"
+        assert cmds.listConnections(new, type="shadingEngine") == ["initialShadingGroup"]
+        assert cmds.getAttr(new + ".scenario_job_id") == "job_test" and not cmds.listHistory(new, pruneDagObjects=True)
+        assert cmds.listHistory(old, pruneDagObjects=True) == history, "the old shape keeps its history"
+        assert not cmds.namespace(exists=":scn_stage"), "the staging namespace is gone"
+
+    replaced()
+    for _cycle in range(2):
+        cmds.undo()
+        assert names(cmds, node) == ["crateShape"] and not cmds.getAttr(shape + ".intermediateObject")
+        assert cmds.polyEvaluate(node, face=True) == 10 and cmds.listHistory(shape, pruneDagObjects=True) == history
+        assert cmds.listConnections(probe + ".inMesh", plugs=True) == ["crateShape.worldMesh"] and cmds.exactWorldBoundingBox(node) == pytest.approx(box, abs=1e-3)
+        assert not cmds.namespace(exists=":scn_stage") and cmds.ls(type="mesh") == ["crateShape"]
+        cmds.redo()
+        replaced()
+
+
+@pytest.mark.parametrize("up, unit", [("z", "cm"), ("y", "m"), ("z", "mm")])
+def test_replace_geometry_in_other_up_axes_and_units(scene, cmds, up, unit):
+    cmds.upAxis(axis=up)
+    cmds.currentUnit(linear=unit)
+    try:
+        node = crate(cmds)
+        cmds.move(25, 0, -10, f"{node}.vtx[*]", relative=True, objectSpace=True)  # off-centre in object space: the fit's offset counts
+        cmds.delete(node, constructionHistory=True)
+        box = cmds.exactWorldBoundingBox(node)
+        row = sent(cmds, node, "remesh")
+        seen = review(row, result(row, scene, "remesh", side=2.0))
+        assert not seen.refusal, seen.refusal
+        fresh("scenario_maya.maya.apply").run(seen)
+        assert cmds.polyEvaluate(node, face=True) == 80
+        assert cmds.exactWorldBoundingBox(f"|{node}|crateShape") == pytest.approx(box, abs=1e-3 * max(abs(v) for v in box))
+    finally:
+        cmds.currentUnit(linear="cm")
+
+
+def test_replace_geometry_with_a_textured_result_assigns_its_material(scene, cmds):
+    node = crate(cmds)
+    row = sent(cmds, node, "remesh")
+    folder = str(scene / "project" / "sourceimages" / "scenario" / "crate_remesh")
+    seen = review(row, result(row, scene, "retexture", side=2.0), mode="REMESH")  # same shape, with a texture
+    assert seen.changes[1] == f"Assigns the result's material (base color) to the new mesh; {default_material(cmds)} stays on the old shape."
+    made = fresh("scenario_maya.maya.apply").run(seen, texture_folder=folder)
+    assert made["material"] == "crate_remesh_mtl" and os.listdir(folder)
+    assert cmds.listConnections(f"|{node}|crateShape", type="shadingEngine") == ["crate_remesh_SG"]
+    cmds.undo()
+    assert not cmds.objExists("crate_remesh_mtl") and names(cmds, node) == ["crateShape"]
+    cmds.flushUndo()  # regression: freeing the undone build must leave Maya stable (spec 6.7)
+    cmds.polyCube(name="after")
+    cmds.file(new=True, force=True)
+    assert cmds.polyCube(name="still_fine")
+
+
+def test_replace_geometry_refuses_another_shape_and_instances(scene, cmds):
+    node = crate(cmds)
+    ball = cmds.polySphere(name="ball", subdivisionsAxis=24, subdivisionsHeight=12)[0]
+    other = sent(cmds, ball, "remesh")
+    seen = review(sent(cmds, node, "remesh"), result(other, scene, "remesh"))
+    assert seen.refusal.startswith("The result is not the same shape as crate (") and seen.refusal.endswith(". Import places it over crate instead."), seen.refusal
+    cmds.instance(node, name="crate_twin")
+    seen = review(sent(cmds, node, "remesh"), result(other, scene, "remesh"))
+    assert seen.refusal.startswith("crate is instanced.")
 
 
 def test_the_same_uvs_are_not_written_again(scene, cmds):

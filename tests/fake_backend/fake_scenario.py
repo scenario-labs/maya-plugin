@@ -128,7 +128,8 @@ def _edited_glb(task: str, side: float, source: bytes) -> tuple:
     """(GLB bytes, triangles, dimensions): the sent mesh as the edit models returned it on
     2026-10-19, rescaled to ``side`` metres and centred (in place when 0), no rotation. A UV task gets a new
     layout (a planar projection, one UV per vertex position), a retexture keeps the sent
-    UVs and adds a base colour texture, a remesh keeps half the triangles."""
+    UVs and adds a base colour texture, a remesh returns the same surface with its own
+    triangles (each split in four at its edge midpoints, as a stand-in for a new topology)."""
     from scenario_maya.core import gltf, gltf_write, topology
 
     mesh = topology.result_from_document(gltf.Document.parse(source))
@@ -143,7 +144,7 @@ def _edited_glb(task: str, side: float, source: bytes) -> tuple:
     if task == "uv" or (task == "retexture" and uvs is None):
         uvs = [((x - lo[0]) / size, (z - lo[2]) / size) for x, _y, z in mesh.points]
     if task == "remesh":
-        triangles = triangles[: max(1, len(triangles) // 2)]
+        points, triangles, uvs = _split_in_four(points, triangles, uvs)
     if task == "retexture":
         materials = [gltf_write.MaterialPart("retextured", image=_png(8, 8, (60, 110, 200)), image_mime="image/png")]
     part = gltf_write.MeshPart(
@@ -154,6 +155,27 @@ def _edited_glb(task: str, side: float, source: bytes) -> tuple:
     )
     dims = [round(scale * (hi[k] - lo[k]), 6) for k in range(3)]
     return gltf_write.to_bytes([part], materials, generator="fake edit model"), len(triangles), dims
+
+
+def _split_in_four(points: list, triangles: list, uvs: list | None) -> tuple:
+    """Each triangle split in four at its edge midpoints: the same surface, another topology."""
+    points, uvs = list(points), list(uvs) if uvs is not None else None
+    middle: dict = {}
+
+    def mid(a: int, b: int) -> int:
+        key = (min(a, b), max(a, b))
+        if key not in middle:
+            middle[key] = len(points)
+            points.append(tuple((points[a][k] + points[b][k]) / 2 for k in range(3)))
+            if uvs is not None:
+                uvs.append(((uvs[a][0] + uvs[b][0]) / 2, (uvs[a][1] + uvs[b][1]) / 2))
+        return middle[key]
+
+    out = []
+    for a, b, c in triangles:
+        ab, bc, ca = mid(a, b), mid(b, c), mid(c, a)
+        out += [(a, ab, ca), (ab, b, bc), (ca, bc, c), (ab, bc, ca)]
+    return points, out, uvs
 
 
 def _load_fixture(name: str) -> dict:

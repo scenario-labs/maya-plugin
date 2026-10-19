@@ -22,7 +22,7 @@ what comes next.
 | --- | --- | --- |
 | Sign-in | Browser (OAuth), a code on another device, or an API key; secrets in the system keychain | |
 | Panel | Docked beside the Channel Box and restored with the workspace; team and project picker; model picker; job list | Studio window, quick composer over the viewport |
-| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs or a new material, reviewed first, one Ctrl+Z); GLB import with PBR materials, skins, blend shapes and animation; import checks | Replace geometry with a remesh; multi-view captures; rig, animate, split into parts |
+| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs, a new material or new geometry, reviewed first, one Ctrl+Z); GLB import with PBR materials, skins, blend shapes and animation; import checks | Multi-view captures; rig, animate, split into parts; FBX results |
 | Image | Text to image with Scenario's image models; lands as a card, a material or an image plane | Image editing, upscale, LoRAs |
 | Jobs | One job list for every Maya session; downloads resume; results that finish while Maya is closed are offered on the next start | Results history, an "In this scene" view |
 | Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
@@ -115,9 +115,9 @@ flowchart LR
     send --> model["Edit model<br/>remesh, UV unwrap, retexture"]
     model --> fit["Fitted onto the sent mesh<br/>one uniform scale and an offset,<br/>checked by surface distance"]
     fit --> land["Import<br/>a new group over the mesh, one Ctrl+Z"]
-    fit --> proof["Same surface?<br/>vertices, faces, winding, UVs"]
+    fit --> proof["Same surface?<br/>vertices, faces, winding, UVs<br/>(remesh: same shape)"]
     proof --> review["Review<br/>what changes, what is kept"]
-    review --> apply["Apply onto the mesh<br/>new UVs or new material, one Ctrl+Z"]
+    review --> apply["Apply onto the mesh<br/>new UVs, new material or<br/>new geometry, one Ctrl+Z"]
 ```
 
 1. Select one mesh (the object, or some of its faces) and open **3D**,
@@ -134,9 +134,9 @@ flowchart LR
 4. Retexture needs a prompt. The price shows on **Generate**.
 5. **Import** places the result over the mesh it came from, as a new group,
    even if you moved the mesh after sending it. Your mesh is not changed.
-6. **Apply...** (UV unwrap and Retexture results) writes the result onto the
-   mesh itself, after a review of what changes, what is kept and what needs
-   your confirmation. One Ctrl+Z undoes it.
+6. **Apply...** writes the result onto the mesh itself, after a review of
+   what changes, what is kept and what needs your confirmation. One Ctrl+Z
+   undoes it.
 
 Most edit models return the mesh resized and centred: on 2026-10-19, Tripo
 models returned it 1 m long (also when it was sent 1.5 m off the origin),
@@ -161,28 +161,34 @@ default UVs, sent by the plug-in, one run per model:
 | ![The crate with its default UVs on a checker: large squares, stretched on the bevels](docs/media/edit-uv-input.jpg) | ![The crate with Tripo Smart UV's layout on the same checker: even squares across the faces](docs/media/edit-uv-smart.jpg) |
 | The cube's default layout | A new layout on the same triangles; 40 CU |
 
-Remesh models return a new surface: Meshy Remesh gave 522 triangles (20 CU)
-and Tripo Retopology v3 gave 560 (70 CU). *Stills rendered headless in
-Maya's Viewport 2.0 with `tools/render_glb.py` (`--checker 6` for the UV
-pair).*
+| What was sent | Meshy Remesh | Tripo Retopology v3 |
+| --- | --- | --- |
+| ![The crate as sent, every edge drawn: an even grid of bevelled panels split in triangles](docs/media/edit-remesh-sent.jpg) | ![The crate remeshed by Meshy: larger, irregular triangles over the same shape](docs/media/edit-remesh-meshy.jpg) | ![The crate remeshed by Tripo: larger triangles in a more regular pattern over the same shape](docs/media/edit-remesh-tripo.jpg) |
+| 1,052 triangles (398 faces in Maya) | 522 triangles, new UVs, base colour and metal-roughness maps baked; 20 CU | 560 triangles, a baked normal map; 70 CU |
+
+*Stills rendered headless in Maya's Viewport 2.0 with `tools/render_glb.py`
+(`--checker 6` for the UV pair, `--wire` for the remeshes).*
 
 **Apply.** Before anything changes, the plug-in proves the result is the
 same surface as your mesh (`core/topology.py`): every result vertex sits on
 a vertex of the mesh after the fit, every triangle lies inside one face with
 the same winding, every face is covered exactly, and each face corner gets
-one UV. Then:
+one UV. A remesh has new triangles by design, so Replace geometry asks for
+the same shape instead, by the surface-distance check above. Then:
 
 | Task | What Apply changes | What it keeps |
 | --- | --- | --- |
 | UV unwrap | The current UV set gets the result's UVs | The old layout as `<set>_scnPrev`, geometry, other UV sets, materials |
 | Retexture | A new material from the result's maps (base colour, metal and roughness, normal) is assigned to the mesh; UVs too if the model changed them | The old material, unassigned; Maya's default material is never edited |
+| Remesh | The mesh's shape is replaced by the result's mesh, under your transform and with your shape's name; it gets the result's material when the result has textures, otherwise keeps yours | The transform (name, place, attributes, parent, sets, connections); the old shape, hidden, as `<shape>_scnPrev` with its history; connections from the old shape move to the new one |
 
-The three results above apply onto the crate exactly; the remeshes are
-refused (different surface) and stay on Import. Apply asks before deleting
+All five results above apply onto the crate: the texture and UV results
+exactly, the two remeshes as Replace geometry (farthest point 0.4% and 0.5%
+of the crate's size from the original surface). Apply asks before deleting
 the mesh's construction history (history would overwrite new UVs) and when
 a mesh with several materials would get one; it refuses deformed (skinned),
-referenced and locked meshes in this version. **Next:** Replace geometry for
-remeshes, with the old shape kept hidden.
+referenced and locked meshes, and Replace geometry refuses instanced ones,
+in this version.
 
 ## Generate an image
 

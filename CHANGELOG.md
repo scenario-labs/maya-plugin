@@ -28,6 +28,8 @@
 - Import of an edit result places it over the mesh it came from, as a new group, fitted with one uniform scale and an offset (most edit models return the mesh resized and centred), even when the mesh moved after it was sent. The mesh itself is not changed. The fit is checked by surface distance both ways; a result that is not the same shape still lands, and the import message says so.
 - Apply... on UV unwrap and Retexture results writes them onto the mesh itself after a review (what changes, what is kept, what needs a tick): Replace UVs fills the current UV set and keeps the old one as `<set>_scnPrev`; Replace textures assigns a new material built from the result's maps. The result is first proven to be the same surface as the mesh (vertices, faces, winding, one UV per face corner). One Ctrl+Z undoes the whole apply; deformed, referenced and locked meshes are refused in this version.
 - `tools/render_glb.py --checker N` shows the UV layout with a checker instead of the materials.
+- Apply... on Remesh results replaces the mesh's geometry after a review: the result's mesh becomes the shape under your transform, with your shape's name and outgoing connections; it gets the result's material when the result has textures, otherwise keeps yours. The old shape stays, hidden, as `<shape>_scnPrev` with its history. The result must be the same shape by the surface-distance check; instanced meshes are refused in this version. One Ctrl+Z undoes it.
+- `tools/render_glb.py --wire` draws every edge, to show a topology.
 
 ### Fixes
 
@@ -36,4 +38,4 @@
 ### Development
 
 - `tools/lint.py` also checks files not yet added to git, so a local run before a commit finds what CI finds.
-- The fake Scenario server answers the edit models like the live ones (the sent mesh back resized and centred, with new UVs, a texture or fewer triangles), so Edit selection is tested end to end without spending.
+- The fake Scenario server answers the edit models like the live ones (the sent mesh back resized and centred, with new UVs, a texture or other triangles over the same shape), so Edit selection is tested end to end without spending.

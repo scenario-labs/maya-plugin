@@ -82,7 +82,7 @@ def test_fingerprint_follows_every_value():
 
 
 def test_the_fake_servers_edit_replies_match_like_the_live_ones():
-    """The fake answers like the live models did: a UV or retexture result is the sent surface, a remesh is not."""
+    """The fake answers like the live models did: a UV or retexture result is the sent surface, a remesh is the same shape with other triangles."""
     from scenario_maya.core import topology
     from tests.fake_backend.fake_scenario import _edited_glb
 
@@ -101,7 +101,8 @@ def test_the_fake_servers_edit_replies_match_like_the_live_ones():
         found = topology.match(target, result)
         assert max(dims) == pytest.approx(side)
         if task == "remesh":
-            assert not found.same_surface and triangles == 6
+            assert not found.same_surface and triangles == 48
+            assert topology.verify_fit(result, sent_mesh, found.scale, found.offset)["verified"]
             continue
         assert found.same_surface and found.scale == pytest.approx(0.4 / side), found.reason
         kept = [(round(u, 6), round(1 - v, 6)) for u, v in sent_mesh.uvs]

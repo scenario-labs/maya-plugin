@@ -190,3 +190,9 @@ def sphere(rings=12, segments=24):
             a, b = j * segments + i, j * segments + (i + 1) % segments
             triangles += [(a, a + segments, b), (b, a + segments, b + segments)]
     return points, triangles
+
+
+def test_triangulated_fans_each_face_over_the_same_points():
+    mesh = topology.triangulated(target())
+    assert mesh.points == POINTS and mesh.triangles == [(0, 1, 4), (0, 4, 3), (1, 2, 5), (1, 5, 4), (2, 6, 7), (2, 7, 8), (2, 8, 5)]
+    assert topology.verify_fit(mesh, mesh, 1.0, (0.0, 0.0, 0.0))["verified"]

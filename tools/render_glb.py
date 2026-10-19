@@ -4,7 +4,9 @@ Used for README pictures of 3D results: the model is landed exactly as the
 Import button lands it, lit by a key, a rim and a fill light in front of a
 grey backdrop, and rendered with ``ogsRender`` (Viewport 2.0, works headless).
 Stills at the given angles, or a full turn; ``--gif`` also writes a looping
-GIF with ffmpeg; ``--checker`` shows the UV layout instead of the materials.
+GIF with ffmpeg; ``--checker`` shows the UV layout instead of the materials;
+``--wire`` draws every edge as a thin tube, so the topology shows (batch
+Viewport 2.0 draws no wireframe).
 0 CU: nothing is sent to Scenario.
 
 Usage (mayapy, headless):
@@ -32,6 +34,7 @@ def main():
     parser.add_argument("--gif", help="also write a looping GIF here (needs ffmpeg)")
     parser.add_argument("--fps", type=int, default=16)
     parser.add_argument("--checker", type=int, default=0, help="replace the materials by a checker repeated this many times across UV space")
+    parser.add_argument("--wire", action="store_true", help="draw every edge over the model")
     args = parser.parse_args()
     glb, out = os.path.abspath(args.glb), os.path.abspath(args.out)
     os.makedirs(out, exist_ok=True)
@@ -62,8 +65,12 @@ def main():
         cmds.select(cmds.listRelatives(made["top"], allDescendents=True, type="mesh", fullPath=True))
         cmds.hyperShade(assign=shader)
 
-    # Batch mode draws no background colour, so a grey cyclorama stands behind and under the model.
     box = cmds.exactWorldBoundingBox(made["top"])
+    parts = [made["top"]]
+    if args.wire:
+        diagonal = sum((box[i + 3] - box[i]) ** 2 for i in range(3)) ** 0.5
+        parts.append(wireframe(cmds.listRelatives(made["top"], allDescendents=True, type="mesh", fullPath=True), diagonal * 0.0012))
+    # Batch mode draws no background colour, so a grey cyclorama stands behind and under the model.
     span = max(box[3] - box[0], box[4] - box[1], box[5] - box[2]) * 14
     floor = cmds.polyPlane(width=span, height=span, subdivisionsX=1, subdivisionsY=1, name="backdrop_floor")[0]
     wall = cmds.polyPlane(width=span, height=span, subdivisionsX=1, subdivisionsY=1, axis=(0, 0, 1), name="backdrop_wall")[0]
@@ -87,7 +94,7 @@ def main():
     cmds.colorManagementPrefs(edit=True, outputTarget="renderer", outputTransformEnabled=True)
     cmds.colorManagementPrefs(edit=True, outputTarget="renderer", outputUseViewTransform=True)
 
-    spin = cmds.group(made["top"], name="spin")
+    spin = cmds.group(*parts, name="spin")
     cmds.xform(spin, pivots=(0, 0, 0), worldSpace=True)
     cmds.setAttr("persp.rotate", -15, 30, 0, type="double3")
     cmds.setAttr("perspShape.focalLength", 50)
@@ -106,6 +113,42 @@ def main():
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(args.fps), "-i", pattern, "-filter_complex", palette, "-loop", "0", args.gif], check=True)
         print("GIF", args.gif, flush=True)
     os._exit(0)  # Maya 2027 can stall in uninitialize() after rendering
+
+
+def wireframe(meshes: list, width: float) -> str:
+    """One mesh of thin square tubes, one per edge of ``meshes`` (world space), in a dark material."""
+    from maya import cmds
+    from maya.api import OpenMaya as om
+
+    points, counts, connects = om.MPointArray(), [], []
+    for mesh in meshes:
+        selection = om.MSelectionList()
+        selection.add(mesh)
+        edges = om.MItMeshEdge(selection.getDagPath(0))
+        while not edges.isDone():
+            a, b = edges.point(0, om.MSpace.kWorld), edges.point(1, om.MSpace.kWorld)
+            axis = om.MVector(b - a)
+            if axis.length() > 0:
+                axis.normalize()
+                helper = om.MVector(0, 1, 0) if abs(axis.y) < 0.9 else om.MVector(1, 0, 0)
+                u = (axis ^ helper).normal() * width
+                v = (axis ^ u).normal() * width
+                base = len(points)
+                for point in (a, b):
+                    for offset in (u + v, u - v, -u - v, -u + v):
+                        points.append(point + offset)
+                for k in range(4):
+                    counts.append(4)
+                    connects += [base + k, base + (k + 1) % 4, base + 4 + (k + 1) % 4, base + 4 + k]
+            edges.next()
+    transform = om.MFnDagNode(om.MFnMesh().create(points, counts, connects)).fullPathName()
+    transform = cmds.rename(transform, "wire")
+    ink = cmds.shadingNode("lambert", asShader=True, name="wire_ink")
+    cmds.setAttr(ink + ".color", 0.03, 0.04, 0.06, type="double3")
+    group = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name="wire_inkSG")
+    cmds.connectAttr(ink + ".outColor", group + ".surfaceShader")
+    cmds.sets(transform, edit=True, forceElement=group)
+    return transform
 
 
 if __name__ == "__main__":
