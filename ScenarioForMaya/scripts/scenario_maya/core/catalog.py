@@ -1,7 +1,8 @@
 """The model catalog behind the picker (spec 4.3).
 
-Cached per workspace for 24 h in ``<user dir>/catalog.json`` and refreshed in
-the background, so the picker opens at once. Rows are compact: id, name, one
+Cached per workspace and modality for 24 h in ``<user dir>/catalog.json``
+and refreshed in the background, so the picker opens at once. Refreshing one
+modality keeps the rows of the others. Rows are compact: id, name, one
 line, capabilities, tags, privacy, creation date. Legacy and deprecated models
 are hidden unless asked for.
 """
@@ -51,9 +52,13 @@ class Catalog:
     def models(self, workspace: str) -> list:
         return list(self._entry(workspace).get("models") or [])
 
-    def fresh(self, workspace: str) -> bool:
+    def fresh(self, workspace: str, modality: str = "image") -> bool:
         entry = self._entry(workspace)
-        return bool(entry.get("models")) and time.time() - float(entry.get("fetched") or 0) < TTL
+        fetched = entry.get("fetched")
+        # Caches written before modalities were tracked hold image models only.
+        when = fetched.get(modality) if isinstance(fetched, dict) else (fetched if modality == "image" else 0)
+        has_rows = any(row.get("modality", "image") == modality for row in entry.get("models") or [])
+        return has_rows and time.time() - float(when or 0) < TTL
 
     def refresh(self, backend, workspace: str, modalities=("image",), pages: int = 10) -> list:
         """Reads public and team models for the modalities, then saves. Blocks: run on a worker."""
@@ -66,12 +71,16 @@ class Catalog:
                     for row in page:
                         if row.get("id") and row["id"] not in seen and str(row.get("status") or "trained") == "trained":
                             seen.add(row["id"])
-                            rows.append(dict(compact(row), team=privacy == "private"))
+                            rows.append(dict(compact(row), team=privacy == "private", modality=modality))
                     if not token:
                         break
         with self._lock:
             workspaces = self._data.setdefault("workspaces", {})
-            workspaces[workspace] = {"fetched": time.time(), "models": rows}
+            entry = workspaces.get(workspace) or {}
+            fetched = entry.get("fetched") if isinstance(entry.get("fetched"), dict) else {"image": entry.get("fetched") or 0}
+            kept = [row for row in entry.get("models") or [] if row.get("modality", "image") not in modalities and row["id"] not in seen]
+            now = time.time()
+            workspaces[workspace] = {"fetched": dict(fetched, **{modality: now for modality in modalities}), "models": kept + rows}
             data = json.loads(json.dumps(self._data))
         tmp = self.path + ".tmp"
         with open(tmp, "w", encoding="utf-8") as handle:

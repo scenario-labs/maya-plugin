@@ -12,9 +12,10 @@ server inside Maya.
 
 **Status:** in development, not released. In place: sign-in (browser,
 another device or API key), the Scenario panel, the job list and its crash
-recovery, the installer, and the Image lane (generate, download, land as a
-card, a material or an image plane). The other lanes, 3D edits and the agent
-server follow. Tested on Maya 2027.2 on macOS.
+recovery, the installer, the Image lane (generate, download, land as a
+card, a material or an image plane) and the 3D lane from a prompt (generate,
+download the GLB, import as a textured group). Image to 3D, the other lanes,
+3D edits and the agent server follow. Tested on Maya 2027.2 on macOS.
 
 ## Install from a checkout
 
@@ -52,6 +53,20 @@ it (free); one click sends the request. The result card then offers **Card**
 (a textured plane facing the camera), **Material** (on the selected meshes or
 faces) and **Image plane** (on the current camera). One Ctrl+Z removes what
 was added. Files go to `sourceimages/scenario/` in the current Maya project.
+
+## Generate a 3D model
+
+Pick the **3D** tab. The default model is Meshy 7.1 Text-to-3D, set to a
+30,000-face game mesh (the raw mesh is about a million triangles for the
+same price); Meshy T2.5 Smart Topology is the low-cost choice in Change.
+Before Generate, the card says what came back (format, faces, size in
+metres). **Import** adds the model as a new group at real-world size, its
+bottom centre on the ground below the camera's centre of interest, with
+openPBR materials and its textures written to `sourceimages/scenario/`.
+One Ctrl+Z removes it. The GLB itself and its `scenario.json` record go to
+`scenario/<date>/` in the project; Scenario's OBJ and texture copies of the
+same result are not downloaded. Any local GLB can be imported the same way
+with Scenario > Import GLB..., without signing in.
 
 ## Sign in
 

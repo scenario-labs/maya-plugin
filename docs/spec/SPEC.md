@@ -512,6 +512,8 @@ One real run per 3D operation, made the same day by the Scenario Unity plug-in's
 
 The panel shows, before Generate, what a model returns (formats, PBR, rig, quads, typical face count) from the catalog and the asset records, so the user knows what will land.
 
+A 3D job returns several assets: the GLB, an OBJ and MTL of the same model, and texture images. The plug-in reads each asset record and downloads only the lane's preferred format (GLB first), choosing by the record's `metadata.format` (else its MIME type), never by position; with no match it keeps every file so the import can say what arrived. The record's face count and dimensions show on the result card before import, and its thumbnail becomes the card's picture [verified 2026-10-19].
+
 ### 6.3 Sending a Maya mesh (edit inputs)
 
 Every mesh task starts with **Capture selected meshes**: the plug-in exports the selection, checks it against the chosen model's limits, uploads it and keeps a local record of exactly what was sent (node paths, a geometry and attribute fingerprint, transforms, the export's hash), so the result can be mapped back.
@@ -1160,6 +1162,7 @@ Open questions for Scenario (not blocking the start, each with a test in the mil
 - Undo: `cmds.file(i=True)` flushes the queue; `FBXImport` records nothing; `mayaUSDImport` undoes once; the recording import command undoes and redoes exactly over two cycles for every apply mode; a redo that re-imports crashed.
 - The glTF reader prototype on four Khronos samples, matched against Maya USD's import.
 - On 2026-10-19: the plug-in's GLB builder inside its recording import command: one undo removes meshes, materials, file nodes, skin, blend shapes and the namespace; redo restores the same nodes (same UUIDs). `MQuaternion` products follow matrix order. Maya refuses to unload a plug-in while its command sits in the undo queue ("still in use"); the installer then replaces the files and asks for a restart.
+- On 2026-10-19, in the hosted Scenario MCP (free reads and dry runs): a Meshy 7.1 Text-to-3D job lists seven assets, the GLB first (`mimeType` `model/gltf-binary`, `metadata.format` `glb`), then an OBJ (`model/obj`) and an MTL (`model/mtl`) whose `parentId` is the GLB, then textures; GLB and OBJ records carry `faceCount`, `vertexCount` and `dimensions` in metres, plus a thumbnail. Meshy 7.1 leaves `shouldRemesh` off by default; a 30,000 target polycount prices the same (120 CU). Meshy T2.5 Smart Topology prices 20 CU untextured and 60 CU textured.
 - Importer traps in 6.7; material recipe and colour space names in 6.8; image plane, sound, MP3 decoding, sky dome and splat behaviour in 6.9 to 6.12; headless capture in 6.13.
 - macOS Keychain through ctypes from `mayapy`; `security -i` over stdin; `keyring` needs compiled code on Linux.
 - Module format, default module paths on macOS, Autodesk bundle layout and `PackageContents.xml` fields from Autodesk's own installed bundles; Marketplace and MCP publisher rules from Autodesk's pages.

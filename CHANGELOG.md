@@ -14,3 +14,5 @@
 - 3D results land through the plug-in's own GLB builder as one undo step: welded meshes with UVs and normals, PBR materials with textures written to the project, joints with rest orientation in `jointOrient`, skins, blend shapes and the first animation clip; import checks report faces, size, UV sets, non-manifold edges, missing textures, joints, clips and targets.
 - Scenario > Import GLB... brings any local GLB into the scene the same way, without signing in.
 - Updating the plug-in while a Scenario import sits in the undo history finishes after a Maya restart instead of failing.
+- 3D lane: text to 3D with Meshy 7.1 (preset to a 30,000-face game mesh), Meshy T2.5 Smart Topology, Tripo P2 or Rodin Gen-2.5. Only the GLB of each result is downloaded (chosen by the asset's format, not its position), with its preview picture for the card; Import places the model on the ground below the camera's centre of interest and reports the import checks.
+- The model catalog is cached per kind of model, so refreshing the 3D list keeps the image list.

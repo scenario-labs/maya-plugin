@@ -231,11 +231,14 @@ def _image_plane(path: str, base: str, attributes: dict, camera: tuple) -> dict:
     }
 
 
-def land_model(path: str, attributes: dict, *, texture_folder: str, label: str = "", select: bool = True) -> dict:
+def land_model(path: str, attributes: dict, *, texture_folder: str, label: str = "", select: bool = True, place: tuple | None = None) -> dict:
     """Imports a 3D result (GLB) as a new group: one undo step, provenance on the group.
 
     Embedded textures are written to ``texture_folder`` first (files stay after
-    an undo, spec 7.3). Returns what was made plus the import checks.
+    an undo, spec 7.3). With ``place`` (a world point) the group is moved so
+    the model's bottom centre sits on the ground plane below that point (spec
+    10.4); without it, the file's own origin is kept. Returns what was made
+    plus the import checks.
     """
     from . import glb_builder, import_command
 
@@ -258,6 +261,8 @@ def land_model(path: str, attributes: dict, *, texture_folder: str, label: str =
         scene.scene_uuid()
         with in_namespace(namespace) as ns:
             made = import_command.run(lambda: glb_builder.build(doc, images, base))
+        if place is not None and made["meshes"]:
+            _on_ground(made["top"], made["meshes"], place)
         if attributes:
             add_provenance(made["top"], attributes)
         if select:
@@ -271,9 +276,23 @@ def land_model(path: str, attributes: dict, *, texture_folder: str, label: str =
         undo=chunk,
         textures=images,
         textures_turned_on=bool(textures),
-        summary=f"Imported {base}: {checks['faces']:,} faces" + (f", {checks['joints']} joints" if checks["joints"] else ""),
+        summary=f"Imported {base}: {checks['faces']:,} faces"
+        + (f", {checks['joints']} joints" if checks["joints"] else "")
+        + (", on the ground at the camera's centre of interest" if place is not None and made["meshes"] else ""),
     )
     return made
+
+
+def _on_ground(top: str, meshes: list, point: tuple) -> None:
+    """Moves ``top`` so the meshes' bottom centre sits at ``point`` projected on the ground (y or z = 0)."""
+    box = cmds.exactWorldBoundingBox(meshes)
+    centre = [(box[i] + box[i + 3]) / 2.0 for i in range(3)]
+    up = 2 if cmds.upAxis(query=True, axis=True) == "z" else 1
+    target = list(point)
+    target[up] = 0.0
+    bottom = list(centre)
+    bottom[up] = box[up]
+    cmds.move(*(target[i] - bottom[i] for i in range(3)), top, relative=True, worldSpace=True)
 
 
 def landed_nodes() -> list:

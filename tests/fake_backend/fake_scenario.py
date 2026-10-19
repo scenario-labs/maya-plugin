@@ -39,6 +39,17 @@ IMAGE_MODEL = {
     "tags": ["Image"],
     "createdAt": "2026-09-01T00:00:00.000Z",
 }
+THREE_D_MODEL = {
+    "id": "model_meshy-7-1-txt23d",
+    "name": "Meshy 7.1 - Text-to-3D",
+    "shortDescription": "Textured 3D models from a prompt.",
+    "type": "custom",
+    "privacy": "public",
+    "capabilities": ["txt23d"],
+    "status": "trained",
+    "tags": ["3d"],
+    "createdAt": "2026-09-22T00:00:00.000Z",
+}
 PROJECT = {"id": "proj_fake0000000000000001", "name": "Test project"}
 
 PRICES = {
@@ -49,6 +60,21 @@ PRICES = {
     "model_tripo-v3-1-image-to-3d": 45,
     "model_spark-test": 2.75,
 }
+
+
+THREE_D_MODELS = ("model_meshy-7-1-txt23d", "model_meshy-t2-5-smart-topology", "model_tripo-v3-1-image-to-3d")
+
+
+def _glb() -> bytes:
+    """A textured quad GLB, the shape of a real 3D result at test size."""
+    import tempfile
+
+    from tests import glb_samples
+
+    with tempfile.TemporaryDirectory() as folder:
+        path = glb_samples.textured_quad(os.path.join(folder, "result.glb"))
+        with open(path, "rb") as handle:
+            return handle.read()
 
 
 def _load_fixture(name: str) -> dict:
@@ -454,8 +480,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def _tool_models_list(self, args):
         data = _load_fixture("models_list.json")
-        if (args.get("filters") or {}).get("modality") == "image" and (args.get("filters") or {}).get("privacy") == "public":
+        filters = args.get("filters") or {}
+        if filters.get("modality") == "image" and filters.get("privacy") == "public":
             data["models"] = data["models"] + [IMAGE_MODEL]
+        if filters.get("modality") == "3d" and filters.get("privacy") == "public":
+            data["models"] = data["models"] + [THREE_D_MODEL]
         return data
 
     def _tool_model_schema_get(self, args):
@@ -475,6 +504,8 @@ class Handler(BaseHTTPRequestHandler):
             return {"dry_run": True, "model_id": model_id, "job": {}, "creativeUnitsCost": cost, "creativeUnitsDiscount": 0}
         job_id = "job_fake" + secrets.token_hex(8)
         asset_id = "asset_fake" + secrets.token_hex(8)
+        if model_id in THREE_D_MODELS:
+            return self._run_3d(model_id, job_id, cost)
         with self.state.lock:
             self.state.jobs[job_id] = {
                 "jobId": job_id,
@@ -486,10 +517,39 @@ class Handler(BaseHTTPRequestHandler):
                 "cuCost": cost,
                 "createdAt": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
                 "polls": 0,
-                "result_asset": asset_id,
+                "result_assets": [asset_id],
             }
             self.state.files[asset_id + ".png"] = _png()
             self.state.assets[asset_id] = {"id": asset_id, "mimeType": "image/png", "kind": "image", "file": asset_id + ".png"}
+        return {"model_id": model_id, "job_id": job_id, "status": "queued"}
+
+    def _run_3d(self, model_id: str, job_id: str, cost) -> dict:
+        """Like the hosted service: a GLB, its OBJ and MTL siblings and a texture. The OBJ comes
+        first here (the service lists the GLB first) so tests prove the pick is by format."""
+        glb, obj, mtl, png = ("asset_fake" + secrets.token_hex(8) for _ in range(4))
+        meta = {"kind": "3d", "faceCount": 2, "dimensions": [1.0, 1.0, 0.0]}
+        with self.state.lock:
+            self.state.jobs[job_id] = {
+                "jobId": job_id,
+                "jobType": "custom",
+                "status": "queued",
+                "progress": 0,
+                "modelId": model_id,
+                "assetIds": [],
+                "cuCost": cost,
+                "createdAt": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
+                "polls": 0,
+                "result_assets": [obj, glb, mtl, png],
+            }
+            self.state.files[glb + ".glb"] = _glb()
+            self.state.files[glb + "_thumb.png"] = _png(16, 16, (90, 160, 90))
+            self.state.files[obj + ".obj"] = b"v 0 0 0\nv 1 0 0\nv 1 1 0\nf 1 2 3\n"
+            self.state.files[mtl + ".mtl"] = b"newmtl m\n"
+            self.state.files[png + ".png"] = _png()
+            self.state.assets[glb] = {"id": glb, "mimeType": "model/gltf-binary", "kind": "3d", "file": glb + ".glb", "metadata": dict(meta, format="glb"), "thumbnail": glb + "_thumb.png"}
+            self.state.assets[obj] = {"id": obj, "mimeType": "model/obj", "kind": "3d", "file": obj + ".obj", "metadata": dict(meta, format="obj", parentId=glb)}
+            self.state.assets[mtl] = {"id": mtl, "mimeType": "model/mtl", "kind": "3d", "file": mtl + ".mtl", "metadata": {"type": "3d-texture-mtl", "parentId": glb}}
+            self.state.assets[png] = {"id": png, "mimeType": "image/png", "kind": "image", "file": png + ".png", "metadata": {"type": "3d-texture-albedo", "parentId": glb}}
         return {"model_id": model_id, "job_id": job_id, "status": "queued"}
 
     def _job_row(self, job_id: str, advance: bool = True) -> dict:
@@ -502,11 +562,11 @@ class Handler(BaseHTTPRequestHandler):
                 if job["polls"] >= self.state.polls_to_finish:
                     job["status"] = "success"
                     job["progress"] = 1
-                    job["assetIds"] = [job["result_asset"]]
+                    job["assetIds"] = list(job["result_assets"])
                 else:
                     job["status"] = "in-progress"
                     job["progress"] = 0.5
-            return {k: v for k, v in job.items() if k not in ("polls", "result_asset")}
+            return {k: v for k, v in job.items() if k not in ("polls", "result_assets")}
 
     def _tool_job_get(self, args):
         row = self._job_row(args.get("job_id", ""))
@@ -519,13 +579,20 @@ class Handler(BaseHTTPRequestHandler):
 
     def _tool_jobs_list(self, args):
         with self.state.lock:
-            rows = [{k: v for k, v in job.items() if k not in ("polls", "result_asset")} for job in self.state.jobs.values()]
+            rows = [{k: v for k, v in job.items() if k not in ("polls", "result_assets")} for job in self.state.jobs.values()]
         rows.sort(key=lambda r: r["createdAt"], reverse=True)
         return {"jobs": rows[: int(args.get("limit") or 20)]}
 
     def _tool_asset_get(self, args):
         asset = self.state.assets.get(args.get("asset_id"))
-        return {"asset": {"id": asset["id"], "mimeType": asset["mimeType"], "kind": asset["kind"], "status": "success"}} if asset else {}
+        if not asset:
+            return {}
+        out = {"id": asset["id"], "mimeType": asset["mimeType"], "kind": asset["kind"], "status": "success"}
+        if asset.get("metadata"):
+            out["metadata"] = dict(asset["metadata"])
+        if asset.get("thumbnail"):
+            out["thumbnail"] = {"assetId": asset["id"] + "_thumb", "url": f"{self.base}/files/{asset['thumbnail']}"}
+        return {"asset": out}
 
     def _tool_asset_download(self, args):
         asset = self.state.assets.get(args.get("asset_id"))

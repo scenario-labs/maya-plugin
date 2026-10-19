@@ -10,6 +10,7 @@ from scenario_maya.core import catalog, delivery, downloads, errors, lanes, nami
 from tests.fake_backend import API_KEY, API_SECRET
 
 FLARE = "model_openai-gpt-image-2-5-flare"
+MESHY = "model_meshy-7-1-txt23d"
 
 
 @pytest.fixture
@@ -185,6 +186,42 @@ def test_failed_download_can_resume(signed_in, fake, tmp_path):
     assert ready["state"] == "ready" and ready["result"]["folder"] == failed["result"]["folder"]
 
 
+def sent_3d_job(session, prompt="a mossy stone well"):
+    params = {"prompt": prompt}
+    quote = session.price(MESHY, params, origin={"lane": "3d"})
+    return session.submit(quote.quote_id, approved_cost=quote.cu_cost_exact, params=params, model_name="Meshy 7.1", origin={"lane": "3d"})
+
+
+def test_3d_results_download_only_the_glb_and_its_thumbnail(signed_in, fake, tmp_path):
+    row = delivery.follow(signed_in, sent_3d_job(signed_in)["local_id"], sleep=lambda s: None)
+    assert len(row["result"]["asset_ids"]) == 4, "the job returned GLB, OBJ, MTL and a texture"
+    ready = delivery.download_results(signed_in, row["local_id"], str(tmp_path), formats=lanes.THREE_D.formats)
+    files = ready["result"]["files"]
+    assert len(files) == 1 and files[0]["path"].endswith(".glb")
+    assert files[0]["format"] == "glb" and files[0]["faces"] == 2 and files[0]["size_m"] == [1.0, 1.0, 0.0]
+    assert ready["result"]["picked"] == [files[0]["asset_id"]] and row["result"]["asset_ids"][0] != files[0]["asset_id"], "picked by format, not position"
+    assert os.path.exists(ready["result"]["thumbnail"])
+    downloaded = sorted(os.listdir(ready["result"]["folder"]))
+    assert downloaded == sorted([os.path.basename(files[0]["path"]), os.path.basename(ready["result"]["thumbnail"]), "scenario.json"])
+    sidecar = json.load(open(os.path.join(ready["result"]["folder"], "scenario.json")))
+    assert "http" not in json.dumps(sidecar), "no signed links in the sidecar"
+    reads = len(fake.state.tool_calls("asset_get"))
+    again = delivery.download_results(signed_in, row["local_id"], str(tmp_path), formats=lanes.THREE_D.formats)
+    assert again["state"] == "ready" and len(fake.state.tool_calls("asset_get")) == reads, "the pick is kept on the job"
+
+
+def test_asset_format_reads_metadata_then_mime_type():
+    assert delivery.asset_format({"metadata": {"format": "GLB"}, "mimeType": "model/obj"}) == "glb"
+    assert delivery.asset_format({"mimeType": "application/vnd.autodesk.fbx"}) == "fbx"
+    assert delivery.asset_format({"mimeType": "image/png"}) == ""
+
+
+def test_with_no_preferred_format_every_file_is_kept(signed_in, fake, tmp_path):
+    row = delivery.follow(signed_in, sent_3d_job(signed_in)["local_id"], sleep=lambda s: None)
+    ready = delivery.download_results(signed_in, row["local_id"], str(tmp_path), formats=("usdz",))
+    assert len(ready["result"]["files"]) == 4
+
+
 class _FlakySession:
     """``refresh_job`` fails the way a lost connection does, then answers."""
 
@@ -261,8 +298,26 @@ def test_catalog_orders_quick_picks_first_and_hides_legacy(tmp_path):
 def test_catalog_refresh_saves_per_workspace(signed_in, tmp_path):
     cache = catalog.Catalog(str(tmp_path / "catalog.json"))
     rows = cache.refresh(signed_in.backend(), "team/proj", modalities=("3d",))
-    assert rows and cache.fresh("team/proj") and not cache.fresh("other")
+    assert rows and cache.fresh("team/proj", "3d") and not cache.fresh("other", "3d")
+    assert not cache.fresh("team/proj", "image"), "each modality has its own freshness"
     assert catalog.Catalog(str(tmp_path / "catalog.json")).models("team/proj") == rows
+
+
+def test_catalog_refresh_of_one_modality_keeps_the_others(signed_in, tmp_path):
+    cache = catalog.Catalog(str(tmp_path / "catalog.json"))
+    backend = signed_in.backend()
+    images = cache.refresh(backend, "w", modalities=("image",))
+    cache.refresh(backend, "w", modalities=("3d",))
+    ids = {row["id"] for row in cache.models("w")}
+    assert {row["id"] for row in images} <= ids and MESHY in ids
+    assert cache.fresh("w", "image") and cache.fresh("w", "3d")
+    assert [row["id"] for row in cache.for_lane("w", lanes.THREE_D)][0] == MESHY
+
+
+def test_old_catalog_caches_count_as_image_only(tmp_path):
+    cache = catalog.Catalog(str(tmp_path / "catalog.json"))
+    cache._data = {"workspaces": {"w": {"fetched": __import__("time").time(), "models": [{"id": FLARE, "capabilities": ["txt2img"]}]}}}
+    assert cache.fresh("w", "image") and not cache.fresh("w", "3d")
 
 
 def test_provenance_has_inputs_and_no_secrets():

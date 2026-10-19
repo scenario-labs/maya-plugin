@@ -43,13 +43,14 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
     Windows Credential Manager, Secret Service, owner-only file).
   - `schema.py`: model schema to form fields, validation, payloads.
   - `delivery.py`: follow a sent job (2 s reads, back-off, pause for review)
-    and download its results into one folder with a `scenario.json` sidecar.
+    and download its results into one folder with a `scenario.json` sidecar;
+    for 3D, only the GLB, picked by the asset record's format.
   - `downloads.py`: one file per call: fresh signed link per attempt, `.part`
     resume with range requests, SHA-256 receipt, delivery host allow-list.
   - `gltf.py`: GLB reader (accessors, sparse, normalized), real file type
     by header, embedded textures written by role.
-  - `catalog.py` (models per workspace, cached 24 h), `lanes.py` (lane
-    definitions), `provenance.py` (node attributes), `naming.py`.
+  - `catalog.py` (models per workspace and modality, cached 24 h),
+    `lanes.py` (lane definitions: Image, 3D; quick picks, presets), `provenance.py` (node attributes), `naming.py`.
   - `http.py`, `jsonutil.py`, `errors.py`, `paths.py`, `settings.py`,
     `status.py`, `workspaces.py`, `log.py`, `diagnostics.py`, `links.py`.
 - `scripts/scenario_maya/maya/`: Maya side. `dispatcher.py` (workers do the

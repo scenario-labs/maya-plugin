@@ -15,14 +15,24 @@ results that finished while Maya was closed.
 
 from __future__ import annotations
 
+import os
 import threading
 import time
 
-from ..core import delivery, errors, provenance
+from ..core import delivery, errors, lanes, naming, provenance
 from . import compat, landing, scene
 
 CONVERT = {"image/webp": "png", "image/avif": "png", "image/heif": "png"}
 _PROGRESS_EVERY = 0.2
+
+
+def lane_of(row: dict) -> lanes.Lane:
+    return lanes.BY_ID.get((row.get("origin") or {}).get("lane") or "", lanes.IMAGE)
+
+
+def result_root(lane: lanes.Lane) -> str:
+    """Images go where textures live; 3D originals under ``scenario/<date>`` (spec 10.1)."""
+    return scene.folders()["originals" if lane.results == "model" else "images"]
 
 
 class JobRunner:
@@ -48,7 +58,7 @@ class JobRunner:
 
     def generate(self, quote_id: str, *, approved_cost: str, params: dict, origin: dict, model_name: str, label: str = "", driver: str = "person", on_sent=None, on_error=None):
         """Spends the quote on a worker; on success the job is tracked. Callbacks run on the main thread."""
-        root = scene.folders()["images"]
+        root = result_root(lanes.BY_ID.get(origin.get("lane") or "", lanes.IMAGE))
 
         def send():
             return self.session.submit(quote_id, approved_cost=approved_cost, params=params, origin=origin, driver=driver, label=label, model_name=model_name)
@@ -65,7 +75,8 @@ class JobRunner:
 
     def track(self, local_id: str, root: str | None = None) -> bool:
         """Follows and downloads one job on a worker. False when it is already tracked."""
-        root = root or scene.folders()["images"]
+        lane = lane_of(self.ledger.get(local_id) or {})
+        root = root or result_root(lane)
         info = {"scene_uuid": scene.scene_uuid(create=False), "maya_version": compat.maya_version()}
         with self._lock:
             if local_id in self._active:
@@ -75,7 +86,7 @@ class JobRunner:
 
         def work():
             try:
-                return self._deliver(local_id, root, info, cancel)
+                return self._deliver(local_id, root, info, cancel, lane.formats)
             finally:
                 with self._lock:
                     self._active.pop(local_id, None)
@@ -88,7 +99,7 @@ class JobRunner:
         self.runtime.background(work, on_error=failed)
         return True
 
-    def _deliver(self, local_id: str, root: str, info: dict, cancel: threading.Event) -> dict:
+    def _deliver(self, local_id: str, root: str, info: dict, cancel: threading.Event, formats: tuple = ()) -> dict:
         row = delivery.follow(self.session, local_id, on_update=lambda r, note: self._announce(r, note), cancel=cancel)
         if cancel.is_set() or row["state"] not in ("succeeded", "downloading", "download_failed"):
             return row
@@ -100,7 +111,7 @@ class JobRunner:
                 last[0] = now
                 self._announce(dict(row, state="downloading"), f"file {index + 1}", received / total)
 
-        row = delivery.download_results(self.session, local_id, root, provenance=info, convert=CONVERT, progress=progress, cancel=cancel)
+        row = delivery.download_results(self.session, local_id, root, provenance=info, convert=CONVERT, formats=formats, progress=progress, cancel=cancel)
         self._announce(row, "Ready")
         return row
 
@@ -123,7 +134,12 @@ class JobRunner:
     # -- landing ---------------------------------------------------------
 
     def land(self, local_id: str, mode: str, index: int = 0, *, select: bool = True, camera=None, targets=None) -> dict:
-        """Main thread. Lands one downloaded file; the job row records it."""
+        """Main thread. Lands one downloaded file; the job row records it.
+
+        ``mode`` is ``card``, ``material`` or ``image_plane`` for images and
+        ``model`` for 3D results (a new group on the ground at the camera's
+        centre of interest; textures under ``sourceimages/scenario``).
+        """
         row = self.ledger.get(local_id)
         if row is None:
             raise errors.NotFound(f"No local job {local_id}.")
@@ -135,7 +151,7 @@ class JobRunner:
             row,
             item.get("asset_id", ""),
             maya_version=compat.maya_version(),
-            apply=mode,
+            apply="import" if mode == "model" else mode,
             store_prompt=bool(self.runtime.settings.get("store_prompts_on_nodes", True)),
         )
         label = str((row.get("params") or {}).get("prompt") or row.get("label") or "")
@@ -145,7 +161,12 @@ class JobRunner:
                 raise landing.LandingError("Nothing was applied: select a mesh or faces first.")
         self.ledger.set_state(local_id, "applying", mode)
         try:
-            made = landing.land(item["path"], attrs, mode, label=label, camera=camera, targets=targets, select=select)
+            if mode == "model":
+                folder = (row.get("result") or {}).get("folder") or item["path"]
+                textures = naming.unique_folder(scene.folders()["images"], os.path.basename(folder.rstrip(os.sep)))
+                made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, place=scene.interest_point(camera))
+            else:
+                made = landing.land(item["path"], attrs, mode, label=label, camera=camera, targets=targets, select=select)
         except Exception as error:
             message = error.args[0] if isinstance(error, landing.LandingError) and error.args else f"{type(error).__name__}: {error}"
             failed = self.ledger.set_state(local_id, "apply_failed", message, error=message)

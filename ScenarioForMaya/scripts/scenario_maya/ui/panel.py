@@ -25,6 +25,11 @@ PLUGIN = "scenario_for_maya"
 UI_SCRIPT = "import scenario_maya.ui.panel as _scn; _scn.restore()"
 DOCK_BESIDE = "ChannelBoxLayerEditor"
 
+LANE_TIPS = {
+    "image": "Image lane: generate images, then land them as a card, a material or an image plane.",
+    "3d": "3D lane: generate a 3D model from a prompt and import it as a textured group.",
+}
+
 _PANEL: ScenarioPanel | None = None
 
 
@@ -65,17 +70,24 @@ class ScenarioPanel(QtWidgets.QWidget):
         self.lanes = QtWidgets.QHBoxLayout()
         self.lanes.setSpacing(dpi(2))
         self.lane_buttons = QtWidgets.QButtonGroup(self)
+        self.lane_button: dict = {}
+        self.lane_pages: dict = {}
+        self.lane_stack = QtWidgets.QStackedWidget()
         for lane in LANES:
             button = QtWidgets.QToolButton()
             button.setText(lane.label)
             button.setCheckable(True)
             button.setAutoRaise(True)
-            button.setToolTip(f"{lane.label} lane")
+            button.setToolTip(LANE_TIPS.get(lane.id, f"{lane.label} lane"))
+            button.clicked.connect(lambda _=False, lane_id=lane.id: self.select_lane(lane_id))
             self.lane_buttons.addButton(button)
             self.lanes.addWidget(button)
-            button.setChecked(lane is IMAGE)
+            self.lane_button[lane.id] = button
+            page = LanePage(runtime, lane)
+            self.lane_pages[lane.id] = page
+            self.lane_stack.addWidget(page)
         self.lanes.addStretch(1)
-        self.lane = LanePage(runtime, IMAGE)
+        self.lane = self.lane_pages[IMAGE.id]
         self.banner = QtWidgets.QFrame()
         self.banner.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.banner_text = QtWidgets.QLabel()
@@ -99,7 +111,7 @@ class ScenarioPanel(QtWidgets.QWidget):
         home_layout.setSpacing(dpi(6))
         home_layout.addLayout(self.lanes)
         home_layout.addWidget(self.banner)
-        home_layout.addWidget(self.lane)
+        home_layout.addWidget(self.lane_stack)
         home_layout.addSpacing(dpi(6))
         home_layout.addWidget(jobs_title)
         home_layout.addWidget(self.jobs)
@@ -124,6 +136,7 @@ class ScenarioPanel(QtWidgets.QWidget):
         layout.addWidget(self.pages, 1)
         self._unsubscribe = runtime.subscribe(self._on_event)
         self.destroyed.connect(lambda *_: self._detach())
+        self.select_lane(runtime.session.settings.get("lane") or IMAGE.id, save=False)
         self.refresh()
         QtCore.QTimer.singleShot(0, self.resume)
 
@@ -156,6 +169,18 @@ class ScenarioPanel(QtWidgets.QWidget):
             self.workspace_button.setText(label + "  ▾")
         self.jobs.refresh()
 
+    def select_lane(self, lane_id: str, save: bool = True) -> None:
+        page = self.lane_pages.get(lane_id) or self.lane_pages[IMAGE.id]
+        for other in self.lane_pages.values():
+            # A hidden page must not size the stack, or the shorter lane shows a gap.
+            policy = QtWidgets.QSizePolicy.Policy.Preferred if other is page else QtWidgets.QSizePolicy.Policy.Ignored
+            other.setSizePolicy(policy, policy)
+        self.lane = page
+        self.lane_stack.setCurrentWidget(page)
+        self.lane_button[page.lane.id].setChecked(True)
+        if save:
+            self.runtime.session.settings.update(lane=page.lane.id)
+
     def show_page(self, page: str | None) -> None:
         if page == "jobs" and self.runtime.session.signed_in:
             self.pages.setCurrentWidget(self.home)
@@ -168,11 +193,13 @@ class ScenarioPanel(QtWidgets.QWidget):
         if event in ("signed_in", "signed_out", "workspace"):
             show_message(self.message, "")
             self.refresh()
-            self.lane.refresh()
+            for page in self.lane_pages.values():
+                page.refresh()
             self.resume()
         elif event == "job":
             row = data.get("row") or {}
-            self.lane.on_job(data)
+            for page in self.lane_pages.values():
+                page.on_job(data)
             if self._states.get(row.get("local_id")) != row.get("state"):
                 self._states[row.get("local_id")] = row.get("state")
                 self.jobs.refresh()

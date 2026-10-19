@@ -41,6 +41,39 @@ def _muted(label: QtWidgets.QLabel) -> QtWidgets.QLabel:
     return label
 
 
+def model_facts(files: list) -> str:
+    """``GLB . 39,691 faces . 1.70 x 1.06 x 1.30 m`` from the downloaded file's record, before any import."""
+    if not files:
+        return ""
+    item = files[0]
+    parts = [str(item.get("format") or "").upper()]
+    if item.get("faces"):
+        parts.append(f"{item['faces']:,} faces")
+    if item.get("size_m"):
+        parts.append(" x ".join(f"{value:.2f}" for value in item["size_m"]) + " m")
+    return "  .  ".join(part for part in parts if part)
+
+
+def checks_line(checks: dict) -> str:
+    """The import checks in one line (spec 6.7): size, materials, and anything to look at."""
+    if not checks:
+        return ""
+    parts = []
+    if checks.get("size_metres"):
+        parts.append(" x ".join(f"{value:.2f}" for value in checks["size_metres"]) + " m")
+    parts.append(f"{checks.get('materials', 0)} material(s), {checks.get('textures', 0)} texture(s)")
+    if checks.get("missing_textures"):
+        parts.append(f"{len(checks['missing_textures'])} missing texture(s)")
+    if checks.get("non_manifold_edges"):
+        parts.append(f"{checks['non_manifold_edges']} non-manifold edge(s)")
+    if checks.get("collapsed_triangles"):
+        parts.append(f"{checks['collapsed_triangles']} collapsed triangle(s) left out")
+    if checks.get("clip"):
+        parts.append(f"clip {checks['clip'].get('name') or ''} keyed".replace("  ", " "))
+    parts.extend(checks.get("notes") or [])
+    return "; ".join(parts)
+
+
 class ResultCard(QtWidgets.QFrame):
     """One job of this lane: thumbnail, status, price, and the actions valid now."""
 
@@ -99,6 +132,8 @@ class ResultCard(QtWidgets.QFrame):
         message = note if note and not note.startswith(("Sent", "Ready")) else ""
         if row.get("state") in ("failed", "download_failed", "apply_failed", "uncertain") or (row.get("hint") or "").startswith("Delivery paused"):
             message = " ".join(part for part in (row.get("error"), row.get("hint")) if part) or message
+        elif not message and self.page.lane.results == "model":
+            message = model_facts(self._files())
         self.note.setText(message)
         self.note.setVisible(bool(message))
         if changed_state:
@@ -120,7 +155,13 @@ class ResultCard(QtWidgets.QFrame):
             if item.widget():
                 item.widget().deleteLater()
         state = self.row.get("state")
-        if state in ("ready", "applied", "apply_failed") and self._files():
+        if state in ("ready", "applied", "apply_failed") and self._files() and self.page.lane.results == "model":
+            self._button(
+                "Import",
+                "Import as a new group at real-world size, on the ground at the camera's centre of interest. One Ctrl+Z removes it.",
+                lambda: self.page.land(self.row, "model"),
+            )
+        elif state in ("ready", "applied", "apply_failed") and self._files():
             self._button("Card", "Import as a textured card at the camera's centre of interest. One Ctrl+Z removes it.", lambda: self.page.land(self.row, "card"))
             self._button("Material", "Put the image as base colour of a new material on the selected meshes or faces.", lambda: self.page.land(self.row, "material"))
             self._button("Image plane", "Add the image as an image plane on the current camera.", lambda: self.page.land(self.row, "image_plane"))
@@ -147,11 +188,11 @@ class ResultCard(QtWidgets.QFrame):
 
     def _load_thumb(self) -> None:
         files = self._files()
-        if not files or not os.path.exists(files[0].get("path", "")):
-            self.thumb.setText("")
+        path = (self.row.get("result") or {}).get("thumbnail") or (files[0].get("path", "") if files else "")
+        if not path or not os.path.exists(path) or path.lower().endswith((".glb", ".gltf", ".fbx", ".obj")):
+            self.thumb.setText("3D" if files and self.page.lane.results == "model" else "")
             self.thumb.setPixmap(QtGui.QPixmap())
             return
-        path = files[0]["path"]
         size = dpi(72)
         if path in _THUMBS:
             self.thumb.setPixmap(_THUMBS[path])
@@ -292,7 +333,7 @@ class LanePage(QtWidgets.QWidget):
         self._forms[model_id] = form
         if not self.model_name.text() or self.model_name.text() == model_id.replace("model_", ""):
             self.model_name.setText(form.name or self.model_name.text())
-        saved = self.session.settings.get(f"lane_{self.lane.id}_values_{model_id}") or {}
+        saved = self.session.settings.get(f"lane_{self.lane.id}_values_{model_id}") or dict(self.lane.presets.get(model_id) or {})
         self._set_fields(FieldsForm(form, saved))
         self.form = form
         self._edited()
@@ -484,7 +525,11 @@ class LanePage(QtWidgets.QWidget):
             show_message(self.message, error_text(error), "error")
             return
         note = " Textured display turned on in the viewport (key 6)." if made.get("textures_turned_on") else ""
-        show_message(self.message, f"{made.get('summary', 'Done')}. One Ctrl+Z removes it.{note}", "ok")
+        checks = made.get("checks") or {}
+        if checks:
+            note = f" {checks_line(checks)}." + note
+        attention = checks.get("missing_textures") or checks.get("notes")
+        show_message(self.message, f"{made.get('summary', 'Done')}. One Ctrl+Z removes it.{note}", "warning" if attention else "ok")
 
     def reuse(self, row: dict) -> None:
         """Re-run: fills the form with that job's settings. Sends nothing."""

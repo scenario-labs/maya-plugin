@@ -9,7 +9,9 @@ pauses for review: the job keeps its state and nothing is sent again.
 ``download_results`` moves a finished job to ``downloading`` then ``ready``,
 with one receipt per file (``downloads.py``) and a ``scenario.json`` sidecar
 holding the provenance and receipts. Files that are already there with the
-same hash are kept, never downloaded twice.
+same hash are kept, never downloaded twice. A 3D job returns several files
+(GLB, OBJ, MTL, textures): with ``formats`` only the preferred format is
+downloaded, chosen by each asset record's format, never by its position.
 
 Both block; the Maya layer runs them on workers. Neither touches Maya.
 """
@@ -76,6 +78,54 @@ def follow(
     return row
 
 
+MIME_FORMATS = {
+    "model/gltf-binary": "glb",
+    "model/gltf+json": "gltf",
+    "model/obj": "obj",
+    "model/mtl": "mtl",
+    "application/vnd.autodesk.fbx": "fbx",
+    "application/x-fbx": "fbx",
+    "model/x-fbx": "fbx",
+}
+
+
+def asset_format(record: dict) -> str:
+    """``glb``, ``obj``, ``fbx``... from an asset record (``metadata.format``, else its MIME type)."""
+    for source in (record.get("metadata"), record.get("properties"), record):
+        if isinstance(source, dict) and source.get("format"):
+            return str(source["format"]).lower()
+    return MIME_FORMATS.get(str(record.get("mimeType") or "").split(";", 1)[0].strip().lower(), "")
+
+
+def _facts(record: dict) -> dict:
+    """What the card shows before an import: format, faces, size in metres."""
+    meta = record.get("metadata") if isinstance(record.get("metadata"), dict) else {}
+    out = {"format": asset_format(record)}
+    if isinstance(meta.get("faceCount"), (int, float)):
+        out["faces"] = int(meta["faceCount"])
+    dims = meta.get("dimensions")
+    if isinstance(dims, list) and len(dims) == 3 and all(isinstance(v, (int, float)) for v in dims):
+        out["size_m"] = [round(float(v), 4) for v in dims]
+    return out
+
+
+def pick_assets(backend, asset_ids: list, formats: tuple) -> tuple:
+    """``(chosen ids, facts by id, thumbnail url)``: the assets of the first format in ``formats`` that the job returned.
+
+    With no match every asset is kept, so the files are still saved and the
+    import can say what it received.
+    """
+    records = {asset_id: backend.asset(asset_id) or {} for asset_id in asset_ids}
+    chosen = list(asset_ids)
+    for fmt in formats:
+        matching = [asset_id for asset_id in asset_ids if asset_format(records[asset_id]) == fmt]
+        if matching:
+            chosen = matching
+            break
+    thumb = (records[chosen[0]].get("thumbnail") or {}).get("url") if chosen else ""
+    return chosen, {asset_id: _facts(records[asset_id]) for asset_id in chosen}, thumb or ""
+
+
 def _utc_now() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -94,6 +144,7 @@ def download_results(
     *,
     provenance: dict | None = None,
     convert: dict | None = None,
+    formats: tuple = (),
     progress: Callable[[int, int, int], None] | None = None,
     cancel: threading.Event | None = None,
     sleep: Callable[[float], None] = time.sleep,
@@ -102,6 +153,8 @@ def download_results(
 
     ``convert`` maps a delivered MIME type to a format Scenario converts to
     (``{"image/webp": "png"}``: Maya's file node cannot read WebP).
+    ``formats`` (``("glb",)``) downloads only the assets of the first format
+    the job returned, plus the result's thumbnail; the choice is kept on the job.
     ``progress(index, received, total)`` reports per file. Returns the ``ready`` row.
     """
     row = session.ledger.get(local_id)
@@ -110,16 +163,23 @@ def download_results(
     if row["state"] not in ("succeeded", "download_failed", "ready", "applied"):
         raise errors.Refused(f"Job {local_id} has no finished result to download ({row['state']}).")
     result = dict(row.get("result") or {})
-    asset_ids = list(result.get("asset_ids") or [])
-    if not asset_ids:
+    if not result.get("asset_ids"):
         raise errors.ProtocolError("Scenario finished the job without a result file.")
+    backend = session.backend()
+    thumb = ""
+    if formats and "picked" not in result:
+        picked, facts, thumb = pick_assets(backend, list(result["asset_ids"]), formats)
+        result.update(picked=picked, facts=facts)
+    asset_ids = list(result.get("picked") or result["asset_ids"])
+    facts = result.get("facts") or {}
     kept = {item["asset_id"]: item for item in result.get("files") or [] if downloads.verify(item)}
     if row["state"] in ("ready", "applied") and len(kept) == len(asset_ids):
         return row
+    if formats and not thumb and not result.get("thumbnail"):
+        thumb = _thumbnail_url(backend, asset_ids[0])  # signed links expire: read again, never stored
     folder = result.get("folder") or naming.unique_folder(*os.path.split(result_folder(root, row, asset_ids[0])))
     os.makedirs(folder, exist_ok=True)
     row = session.ledger.set_state(local_id, "downloading", f"{len(asset_ids)} file(s)", result_json=dict(result, folder=folder))
-    backend = session.backend()
     files = []
     stem = os.path.basename(folder)
     try:
@@ -146,6 +206,7 @@ def download_results(
                 sleep=sleep,
             )
             receipt["asset_id"] = asset_id
+            receipt.update(facts.get(asset_id) or {})
             files.append(receipt)
     except downloads.Cancelled:
         session.ledger.set_state(local_id, "download_failed", "stopped", result_json=dict(result, folder=folder, files=files), error="Download stopped.")
@@ -154,8 +215,27 @@ def download_results(
         session.ledger.set_state(local_id, "download_failed", error.message, result_json=dict(result, folder=folder, files=files), error=error.message, hint=error.hint)
         raise
     result.update(folder=folder, files=files)
+    if thumb and not result.get("thumbnail"):
+        result["thumbnail"] = _thumbnail(thumb, folder, stem, cancel, sleep)
     write_sidecar(folder, row, files, provenance or {})
     return session.ledger.set_state(local_id, "ready", "downloaded", result_json=result, error="", hint="")
+
+
+def _thumbnail_url(backend, asset_id: str) -> str:
+    try:
+        return ((backend.asset(asset_id) or {}).get("thumbnail") or {}).get("url") or ""
+    except errors.ScenarioError:
+        return ""
+
+
+def _thumbnail(url: str, folder: str, stem: str, cancel, sleep) -> str:
+    """The result's preview picture for the card. Best effort: a failure leaves the card without one."""
+    path = _part_or_new(folder, stem + "_thumb", ".jpg")
+    try:
+        downloads.download(lambda: {"url": url, "mime_type": "image/jpeg"}, path, cancel=cancel, attempts=2, sleep=sleep)
+    except (errors.ScenarioError, downloads.Cancelled, OSError):
+        return ""
+    return path
 
 
 def _part_or_new(folder: str, name: str, ext: str) -> str:

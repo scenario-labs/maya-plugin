@@ -72,7 +72,7 @@ class ModelPicker(QtWidgets.QDialog):
         self.refresh_button.clicked.connect(self.refresh)
         self._current = current
         self.fill()
-        if not runtime.catalog.fresh(runtime.session.workspace()):
+        if not runtime.catalog.fresh(runtime.session.workspace(), lane.modality):
             self.refresh()
 
     def _workspace(self) -> str:

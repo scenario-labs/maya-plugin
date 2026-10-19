@@ -82,6 +82,15 @@ def active_camera() -> tuple:
     return _camera_pair(cmds.modelPanel(panel, query=True, camera=True) if panel else "persp")
 
 
+def interest_point(camera: tuple | None = None) -> tuple:
+    """The camera's centre of interest in world space (where new results are placed)."""
+    _transform, shape = camera or active_camera()
+    try:
+        return tuple(cmds.camera(shape, query=True, worldCenterOfInterest=True))
+    except RuntimeError:
+        return (0.0, 0.0, 0.0)
+
+
 def show_textures() -> bool:
     """Turns on textured display (key 6) in the active viewport; True when it was off.
 
