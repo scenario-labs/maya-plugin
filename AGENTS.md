@@ -42,13 +42,24 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
     PKCE on a loopback port, device code), credential stores (macOS Keychain,
     Windows Credential Manager, Secret Service, owner-only file).
   - `schema.py`: model schema to form fields, validation, payloads.
+  - `delivery.py`: follow a sent job (2 s reads, back-off, pause for review)
+    and download its results into one folder with a `scenario.json` sidecar.
+  - `downloads.py`: one file per call: fresh signed link per attempt, `.part`
+    resume with range requests, SHA-256 receipt, delivery host allow-list.
+  - `catalog.py` (models per workspace, cached 24 h), `lanes.py` (lane
+    definitions), `provenance.py` (node attributes), `naming.py`.
   - `http.py`, `jsonutil.py`, `errors.py`, `paths.py`, `settings.py`,
     `status.py`, `workspaces.py`, `log.py`, `diagnostics.py`, `links.py`.
 - `scripts/scenario_maya/maya/`: Maya side. `dispatcher.py` (workers do the
   network, the main thread does the scene), `runtime.py` (one runtime per
-  Maya process), `lifecycle.py` (load and unload), `compat.py`.
+  Maya process), `jobs.py` (quote to landed result, recovery),
+  `landing.py` (images as card, material or image plane, one undo step
+  each), `scene.py` (project folders, camera, selection, scene id),
+  `lifecycle.py` (load and unload), `compat.py`.
 - `scripts/scenario_maya/ui/`: PySide6. `panel.py` (the dockable
-  `workspaceControl`), `signin.py`, `workspace.py`, `jobs.py`, `menu.py`,
+  `workspaceControl`), `lane.py` (a lane: model, prompt, settings, priced
+  Generate, result cards), `fields.py` (settings from a model schema),
+  `picker.py`, `signin.py`, `workspace.py`, `jobs.py`, `menu.py`,
   `commands.py` (runtime commands), `common.py`, `qt.py`.
 - `scripts/scenario_maya/agent/`: the local MCP server (milestone M5).
 - `scripts/scenario_maya/_vendor/`: `truststore`, unchanged, see
@@ -86,7 +97,7 @@ Every change keeps them. They are enforced in `core/session.py`,
 ```sh
 uv run --python 3.13 --with pytest pytest -q   # core unit tests, fake server, 0 CU (also 3.11)
 tools/test_maya.sh                             # mayapy tests, headless (needs a licensed Maya)
-tools/test_maya_gui.sh [install restart oauth] # scripted GUI session with screenshots; opens Maya windows
+tools/test_maya_gui.sh [install generate restart oauth] # scripted GUI session with screenshots; opens Maya windows; generate spends a few CU
 python3 tools/lint.py                          # no em dashes, no secrets, JSON parses
 uvx ruff check . && uvx ruff format --check .
 python3 tools/contract_check.py                # free live check, needs a test key

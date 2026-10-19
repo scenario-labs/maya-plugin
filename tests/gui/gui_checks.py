@@ -366,7 +366,97 @@ def stage_oauth():
     record("sign out revokes and forgets", done == [True] and not keychain_has("oauth_refresh_token"), done)
 
 
-STAGES = {"install": stage_install, "restart": stage_restart, "oauth": stage_oauth}
+def viewport_shot(name):
+    """Viewport 2.0 through a playblast (a widget grab of the Metal viewport is noise)."""
+    path = os.path.join(OUT, f"{STAGE}_{name}")
+    cmds.refresh(force=True)
+    return cmds.playblast(
+        frame=[cmds.currentTime(query=True)],
+        format="image",
+        compression="png",
+        completeFilename=path + ".png",
+        viewer=False,
+        showOrnaments=False,
+        widthHeight=(960, 540),
+        percent=100,
+        forceOverwrite=True,
+    )
+
+
+def card_button(card, text):
+    for index in range(card.actions.count()):
+        widget = card.actions.itemAt(index).widget()
+        if widget is not None and widget.text() == text:
+            return widget
+    return None
+
+
+def stage_generate():
+    """One live generation with a cheap model (paid), clicked through the panel."""
+    yield (lambda: panel_module().current() is not None and runtime_now() is not None and runtime_now().session.signed_in), 60
+    panel = panel_module().current()
+    runtime = runtime_now()
+    lane = panel.lane
+    record("panel opens on the Image lane", lane.lane.id == "image", lane.model_name.text())
+    yield (lambda: lane.generate_button.isEnabled()), 60
+    record("price on the button", lane.generate_button.text().startswith("Generate . "), lane.generate_button.text())
+    shot("panel_priced", panel)
+    cmds.file(new=True, force=True)
+    cmds.undoInfo(state=True, infinity=True)
+    project = os.path.join(OUT, "project")  # never the project the copied prefs last opened
+    os.makedirs(project, exist_ok=True)
+    cmds.workspace(project, openWorkspace=True)
+    yield (lambda: lane.generate_button.isEnabled()), 30
+    before = set(lane.cards)
+    runtime.dispatcher.reset_timing()
+    started = time.time()
+    lane.generate_button.click()
+    yield (lambda: any(card.row.get("state") in ("ready", "failed", "download_failed", "uncertain") for key, card in lane.cards.items() if key not in before)), 300
+    card = next((card for key, card in lane.cards.items() if key not in before), None)
+    state = card.row.get("state") if card else "no card"
+    record("generation ready in Maya", state == "ready", f"{time.time() - started:.1f} s from the click; {state}; {card.note.text() if card else ''}")
+    name, took = runtime.dispatcher.longest_call
+    record(
+        "main-thread slices under 16 ms while polling and downloading",
+        runtime.dispatcher.longest_slice_ms < 16.0,
+        f"{runtime.dispatcher.longest_slice_ms:.1f} ms over {runtime.dispatcher.slices}; slowest {name} {took:.1f} ms",
+    )
+    if state != "ready":
+        shot("panel_failed", panel)
+        return
+    row = card.row
+    record("charged as quoted", row.get("charged_exact") == row.get("cost_exact"), f"quoted {row.get('cost_exact')}, charged {row.get('charged_exact')}")
+    path = row["result"]["files"][0]["path"]
+    record("file in the project's sourceimages/scenario", os.sep + os.path.join("sourceimages", "scenario") + os.sep in path, os.path.basename(path))
+    yield 1.5
+    shot("panel_result", panel)
+    card_button(card, "Card").click()
+    yield 0.5
+    cards = cmds.ls("*.scenario_asset_id", recursive=True, objectsOnly=True) or []
+    record("Card lands with provenance", bool(cards), cards[:3])
+    landed_step = cmds.undoInfo(query=True, undoName=True)
+    viewport_shot("viewport_card")
+    shot_step = cmds.undoInfo(query=True, undoName=True)
+    cmds.undo()
+    left = cmds.ls("*.scenario_asset_id", recursive=True, objectsOnly=True) or []
+    record("one undo removes the card", not left, f"undo step after landing {landed_step!r}, after the playblast {shot_step!r}; left {left[:3]}")
+    cube = cmds.polyCube(name="userCrate")[0]
+    cmds.select(cube)
+    card_button(card, "Material").click()
+    yield 0.5
+    shape = cmds.listRelatives(cube, shapes=True)[0]
+    engine = (cmds.listConnections(shape, type="shadingEngine") or [""])[0]
+    record("Material on the selected mesh", engine.startswith("scn_"), engine)
+    card_button(card, "Image plane").click()
+    yield 0.5
+    planes = cmds.ls(type="imagePlane") or []
+    record("Image plane on the camera", bool(planes), planes)
+    cmds.viewFit(cube)
+    viewport_shot("viewport_material_and_plane")
+    shot("panel_after_landing", panel)
+
+
+STAGES = {"install": stage_install, "generate": stage_generate, "restart": stage_restart, "oauth": stage_oauth}
 os.makedirs(OUT, exist_ok=True)
 _runner = Runner(STAGES[STAGE]())
 # runpy drops this module's namespace when it returns: keep the runner alive.

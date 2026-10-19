@@ -2,7 +2,8 @@
 # Scripted checks in a real Maya GUI session (spec 13, layer 3). 0 CU.
 # Opens Maya windows on screen: run it from an interactive session, never from a background agent.
 # Maya runs with a throwaway prefs folder copied from your Maya 2027 prefs; your own prefs are never written.
-# Usage: tools/test_maya_gui.sh [stage...]   stages: install restart oauth (default: install restart)
+# Usage: tools/test_maya_gui.sh [stage...]   stages: install generate restart oauth (default: install restart)
+#        generate runs one live generation with a cheap image model: it spends a few CU.
 #        oauth opens your browser and waits up to 5 minutes for you to approve the sign-in.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -22,7 +23,7 @@ for STAGE in $STAGES; do
     "$MAYA_BIN" -command "python(\"import runpy, os; runpy.run_path(os.path.join(os.environ['SCENARIO_GUI_REPO'], 'tests', 'gui', 'gui_checks.py'))\")" \
     > "$OUT/maya_$STAGE.log" 2>&1 &
   PID=$!
-  LIMIT=$([ "$STAGE" = oauth ] && echo 600 || echo 300)
+  LIMIT=300; case "$STAGE" in oauth|generate) LIMIT=600 ;; esac
   for _ in $(seq 1 "$LIMIT"); do
     if ! kill -0 "$PID" 2>/dev/null; then break; fi
     sleep 1

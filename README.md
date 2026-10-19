@@ -10,10 +10,11 @@ split into parts) to your own meshes as undoable steps. Agents such as Claude
 Code, Codex or Cursor drive the same actions through a local Scenario MCP
 server inside Maya.
 
-**Status:** in development, not released. The foundations are in place:
-sign-in (browser, another device or API key), the Scenario panel, the job list
-and its crash recovery, and the installer. The generation lanes, 3D edits and
-the agent server follow. Tested on Maya 2027.2 on macOS.
+**Status:** in development, not released. In place: sign-in (browser,
+another device or API key), the Scenario panel, the job list and its crash
+recovery, the installer, and the Image lane (generate, download, land as a
+card, a material or an image plane). The other lanes, 3D edits and the agent
+server follow. Tested on Maya 2027.2 on macOS.
 
 ## Install from a checkout
 
@@ -26,10 +27,26 @@ the agent server follow. Tested on Maya 2027.2 on macOS.
    yet. Choose **Allow**; tick "Apply to all plugins in this location" to stop
    it asking again.
 
-For development, point Maya at the checkout instead of copying it:
-`MAYA_MODULE_PATH=/path/to/maya-plugin` (the repository's
-`ScenarioForMaya.mod` uses a relative path), then load `scenario_for_maya` in
+For development, point Maya at the checkout instead of copying it. Either run
+this once in the Script Editor (Python), which links the checkout, loads the
+plug-in and turns on autoload; run it again to reload after a change:
+
+```python
+import sys; sys.path.insert(0, "/path/to/maya-plugin/ScenarioForMaya/scripts"); import install_scenario; install_scenario.install(link=True)
+```
+
+or set `MAYA_MODULE_PATH=/path/to/maya-plugin` (the repository's
+`ScenarioForMaya.mod` uses a relative path) and load `scenario_for_maya` in
 Windows > Settings/Preferences > Plug-in Manager.
+
+## Generate an image
+
+The panel opens on the Image lane with a fast, low-cost model and a starter
+prompt. The Generate button shows the exact price once Scenario has checked
+it (free); one click sends the request. The result card then offers **Card**
+(a textured plane facing the camera), **Material** (on the selected meshes or
+faces) and **Image plane** (on the current camera). One Ctrl+Z removes what
+was added. Files go to `sourceimages/scenario/` in the current Maya project.
 
 ## Sign in
 
