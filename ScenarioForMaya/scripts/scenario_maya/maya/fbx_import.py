@@ -22,6 +22,13 @@ result's namespace, with the names the FBX SDK escaped (``FBXASC045`` for
 ``-``) cleaned, and its top nodes are grouped under ``<base>_grp``. The
 importer's materials stay (Phong for Scenario's FBX), with every texture but
 colour set to Raw and normal maps read as tangent-space normals.
+
+Rigs land like the GLB builder's: a skinned mesh's transform stops
+inheriting from its parents (its world position kept), so turning, moving
+or scaling the group moves the joints and the skin follows once, instead of
+twice. The clip's keys are moved so it starts on the scene's start frame,
+at the times the file gives them; when the file's rate differs from the
+scene's, the keys fall between frames and the import checks say so.
 """
 
 from __future__ import annotations
@@ -32,7 +39,7 @@ import shutil
 
 from maya import cmds, mel
 
-from .landing import SRGB, LandingError
+from .landing import SRGB, TIME_CURVES, LandingError
 
 PLUGIN = "fbxmaya"
 RAW = "Raw"
@@ -103,6 +110,7 @@ def build(path: str, base: str, texture_folder: str) -> dict:
     _into_namespace(new, namespace)
     root = cmds.group(empty=True, name=f"{base}_grp", world=True)
     cmds.parent(cmds.ls(tops, long=True), root)
+    _skins_follow_joints(new)  # before the group turns
     if up == "z":
         cmds.setAttr(root + ".rotateX", 90)
     root = cmds.ls(root, long=True)[0]
@@ -114,6 +122,7 @@ def build(path: str, base: str, texture_folder: str) -> dict:
     groups = [group for group in groups if group in made_here]  # never initialShadingGroup
     shaders = _shaders(groups)
     _texture_roles(groups)
+    clip = _clip(alive)
     return {
         "top": root,
         "meshes": meshes,
@@ -122,7 +131,7 @@ def build(path: str, base: str, texture_folder: str) -> dict:
         "joints": cmds.ls(alive, type="joint", long=True),
         "skin_clusters": cmds.ls(alive, type="skinCluster", long=True),
         "blend_shapes": cmds.ls(alive, type="blendShape", long=True),
-        "clip": _clip(alive),
+        "clip": clip,
         "other_clips": [],
         "collapsed_triangles": 0,
         "notes": [],
@@ -187,10 +196,24 @@ def _texture_roles(groups: list) -> None:
                 cmds.setAttr(bump + ".bumpInterp", 1)
 
 
+def _skins_follow_joints(uuids: list) -> None:
+    """Each skinned mesh's transform stops inheriting, its world matrix kept: the group then moves the joints only, and the skin follows them once."""
+    for cluster in cmds.ls(uuids, type="skinCluster"):
+        for shape in cmds.skinCluster(cluster, query=True, geometry=True) or []:
+            for transform in cmds.listRelatives(shape, parent=True, fullPath=True) or []:
+                if cmds.getAttr(transform + ".inheritsTransform"):
+                    cmds.inheritTransform(transform, off=True, preserve=True)
+
+
 def _clip(uuids: list) -> dict | None:
-    curves = cmds.ls(uuids, type="animCurve", long=True)
+    """The keyed clip, moved to start on the scene's start frame (as the GLB builder keys it)."""
+    curves = cmds.ls(uuids, type=TIME_CURVES, long=True)
     times = cmds.keyframe(curves, query=True, timeChange=True) if curves else None
     if not times:
         return None
+    first, last = min(times), max(times)
+    start = cmds.playbackOptions(query=True, minTime=True)
+    if abs(first - start) > 1e-6:
+        cmds.keyframe(curves, edit=True, relative=True, timeChange=start - first)
     fps = mel.eval("currentTimeUnitToFPS()")
-    return {"name": "clip_1", "start": min(times), "end": max(times), "seconds": (max(times) - min(times)) / fps if fps else 0.0}
+    return {"name": "clip_1", "start": start, "end": start + last - first, "seconds": (last - first) / fps if fps else 0.0}

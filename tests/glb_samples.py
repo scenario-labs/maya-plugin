@@ -92,6 +92,18 @@ def textured_quad(path: str) -> str:
     return w.save(path)
 
 
+def coloured_quad(path: str) -> str:
+    """A 1 m quad with a vertex colour per corner (COLOR_0, RGBA floats) and no material, as an untextured character arrives."""
+    w = Writer()
+    position = w.accessor("VEC3", [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)], bounds=True)
+    colour = w.accessor("VEC4", [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1), (1, 1, 1, 1)])
+    indices = w.accessor("SCALAR", [0, 1, 2, 0, 2, 3], component=5123)
+    w.add("meshes", {"name": "quad", "primitives": [{"attributes": {"POSITION": position, "COLOR_0": colour}, "indices": indices}]})
+    w.add("nodes", {"name": "Quad", "mesh": 0})
+    w.add("scenes", {"nodes": [0]})
+    return w.save(path)
+
+
 def quaternion(axis, degrees) -> list:
     half = math.radians(degrees) / 2.0
     x, y, z = axis

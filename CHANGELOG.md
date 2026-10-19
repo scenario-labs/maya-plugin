@@ -33,11 +33,18 @@
 - FBX results import through Maya's own FBX importer as one Ctrl+Z, so a Tripo result with the quad setting (delivered as FBX only) can be imported. The scene's unit, up axis, playback range and frame rate are kept; textures go under `sourceimages`; escaped names (`FBXASC045`) are cleaned; the importer's materials stay, with data textures Raw and normal maps read as normals. The 3D tab downloads the GLB when a job returns one, else the FBX. `tools/render_glb.py` renders FBX files too.
 - 3D tab, Multi-view mode: views of one object from the front, left, back and right (and top, bottom and 45 degree views where the model takes them) into a textured model, with Tripo P2 Multi View, Tripo 3.1 Multi View or Hunyuan 3D 3.1 Pro Multiview. **Capture views** renders the selection from each side the model takes with temporary orthographic cameras, at one scale, clipped to the selection's box so neighbours stay out; nothing stays in the scene or the undo queue. Each view can also take a file or an Image result. Tripo P2 Multi View is the default (a clean mesh of a few thousand faces); Tripo 3.1 Multi View is the low-cost choice; Hunyuan starts at its lightest mesh (40,000 faces). Import places a result made from captured views over the object they show, at its size and facing the same way.
 
+- 3D tab, Motion mode: a prompt to a character that moves, with Meshy Text to Motion (the default: its own mannequin, from the prompt alone), Uthana Text to Motion 3.0 (your character or its own) or Cartwheel Text to Motion (your character, as Maya FBX). **Use selection** sends the selected character (a group or its meshes) as one GLB, once; Cartwheel waits for one. The model's frame-rate setting starts at the scene's rate when the model offers it. Import brings the character in with its joints, skin and clip, over the character it was made from when one was sent. The model picker of the Text and Edit selection modes no longer lists motion models.
+- `tools/render_glb.py --play STEP` renders a landed clip over time, for animated GIFs.
+- A clip whose keys fall between the scene's frames (made at 30 fps, imported into a 24 fps scene) is reported in the import checks.
+
 ### Fixes
 
+- A rigged FBX lands in one piece: its skinned meshes no longer inherit the group's transform, which turned them twice in a Z-up scene (the character came in upside down) and moved them twice when placed on the ground or fitted over an object. Its clip now starts on the scene's start frame, as a GLB clip does.
+- A GLB with vertex colours imports (creating the colour set failed on its arguments).
 - 3D results and Import GLB land at the right size in scenes set to metres or millimetres (they were 100 times too small in metres and 10 times too large in millimetres; centimetre scenes were right).
 
 ### Development
 
 - `tools/lint.py` also checks files not yet added to git, so a local run before a commit finds what CI finds.
+- The fake Scenario server answers the motion models like the live ones (Cartwheel refuses to price without a character, Uthana prices one in, results are a skinned, keyed character), and serves their recorded schemas.
 - The fake Scenario server answers the edit models like the live ones (the sent mesh back resized and centred, with new UVs, a texture or other triangles over the same shape), so Edit selection is tested end to end without spending.

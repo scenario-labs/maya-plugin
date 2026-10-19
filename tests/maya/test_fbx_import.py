@@ -21,7 +21,7 @@ def png(folder, name, rgb):
 
 
 def write_fbx(cmds, folder, *, rig=False):
-    """A 1 m crate standing on the ground with a colour and a normal map (optionally skinned to two joints keyed over 1 s at 30 fps), as ASCII FBX."""
+    """A 1 m crate standing on the ground with a colour and a normal map (optionally skinned to two joints keyed over 1 s at 30 fps, at rest on the first two frames), as ASCII FBX."""
     from maya import mel
 
     cmds.loadPlugin("fbxmaya", quiet=True)
@@ -47,8 +47,8 @@ def write_fbx(cmds, folder, *, rig=False):
         root = cmds.joint(name="hips", position=(0, 0, 0))
         tip = cmds.joint(name="spine", position=(0, 100, 0))
         cmds.skinCluster(root, tip, box, toSelectedBones=True)
-        cmds.setKeyframe(tip, attribute="rotateZ", time=1, value=0)
-        cmds.setKeyframe(tip, attribute="rotateZ", time=31, value=45)
+        for frame, value in ((1, 0), (2, 0), (31, 45)):  # a key on the second frame, as in a clip keyed on every frame
+            cmds.setKeyframe(tip, attribute="rotateZ", time=frame, value=value)
     path = os.path.join(folder, "crate.fbx")
     cmds.select([node for node in cmds.ls(assemblies=True) if not cmds.listRelatives(node, shapes=True, type="camera")])
     mel.eval("FBXResetExport")
@@ -120,14 +120,54 @@ def test_fbx_materials_keep_colour_srgb_and_read_normal_maps(plugin, cmds, tmp_p
 def test_an_fbx_rig_keeps_its_skin_and_keys(plugin, cmds, tmp_path):
     path = write_fbx(cmds, str(tmp_path), rig=True)
     cmds.currentUnit(time="film")
+    cmds.playbackOptions(minTime=10, maxTime=60)
     made = land(cmds, path, tmp_path)
     assert len(made["joints"]) == 2 and len(made["skin_clusters"]) == 1
     assert made["checks"]["joints"] == 2 and made["checks"]["influences"] == 2
     clip = made["clip"]
     assert clip is not None and clip["seconds"] == pytest.approx(1.0, abs=0.05), clip
+    assert clip["start"] == 10 and clip["end"] == pytest.approx(34), "the clip starts on the scene's start frame, as a GLB clip does"
+    curve = cmds.ls(made["namespace"] + ":*", type="animCurveTA")[0]
+    assert cmds.keyframe(curve, query=True, timeChange=True) == pytest.approx([10, 10.8, 34])
+    assert made["checks"]["notes"] == ["The clip was made at 30 fps and this scene runs at 24 fps, so its keys fall between frames."]
     assert cmds.currentUnit(query=True, time=True) == "film", "the scene keeps its frame rate"
     cmds.undo()
     assert not ours(cmds)
+    cmds.redo()
+    assert cmds.keyframe(curve, query=True, timeChange=True) == pytest.approx([10, 10.8, 34]), "redo brings the moved keys back"
+
+
+def test_an_fbx_clip_at_the_scene_rate_has_no_note(plugin, cmds, tmp_path):
+    path = write_fbx(cmds, str(tmp_path), rig=True)
+    cmds.currentUnit(time="ntsc")
+    cmds.playbackOptions(minTime=1, maxTime=60)  # the unit change made the start 1.25
+    try:
+        made = land(cmds, path, tmp_path)
+        assert made["clip"]["start"] == cmds.playbackOptions(query=True, minTime=True)
+        assert not made["checks"]["notes"]
+    finally:
+        cmds.currentUnit(time="film")
+
+
+@pytest.mark.parametrize("up", ["y", "z"])
+def test_a_rigged_fbx_moves_once_with_its_group(plugin, cmds, tmp_path, up):
+    """Skinned meshes stop inheriting, so the group moves the joints and the skin follows once (a Z-up turn or a move applied twice put the character upside down or off its spot)."""
+    path = write_fbx(cmds, str(tmp_path), rig=True)
+    cmds.upAxis(axis=up)
+    try:
+        cmds.currentTime(1)
+        made = land(cmds, path, tmp_path, place=(30, 40, 20) if up == "y" else (30, 20, 40))
+        cmds.currentTime(made["clip"]["start"])
+        expected = [-20, 0, -30, 80, 100, 70] if up == "y" else [-20, -30, 0, 80, 70, 100]
+        assert cmds.exactWorldBoundingBox(made["meshes"]) == pytest.approx(expected, abs=1e-3)
+        for shape in made["meshes"]:
+            assert not cmds.getAttr(cmds.listRelatives(shape, parent=True, fullPath=True)[0] + ".inheritsTransform")
+        box = [10.0, 5.0, -20.0, 50.0, 45.0, 20.0]
+        over = land(cmds, path, tmp_path, box=box, over="blockout")
+        cmds.currentTime(over["clip"]["start"])
+        assert cmds.exactWorldBoundingBox(over["meshes"]) == pytest.approx(box, abs=1e-3)
+    finally:
+        cmds.upAxis(axis="y")
 
 
 def test_an_undone_fbx_import_freed_from_the_undo_queue_leaves_maya_stable(plugin, cmds, tmp_path):

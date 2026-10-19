@@ -104,6 +104,15 @@ def test_morph_target_and_weight_keys(cmds, land, tmp_path):
     assert cmds.aliasAttr(blend, query=True)[0] == "Lift"
 
 
+def test_vertex_colours_land_in_a_colour_set(cmds, land, tmp_path):
+    """Uthana's own character arrives with vertex colours and no texture (2026-10-19); creating the set once failed on its arguments."""
+    made = land(glb_samples.coloured_quad(str(tmp_path / "colours.glb")), attributes={})
+    shape = made["meshes"][0]
+    assert cmds.polyColorSet(shape, query=True, allColorSets=True) == ["colorSet1"]
+    assert cmds.getAttr(shape + ".displayColors") == 1, "an untextured result shows its colours"
+    assert cmds.polyColorPerVertex(shape + ".vtx[1]", query=True, rgb=True) == pytest.approx([0.0, 1.0, 0.0])
+
+
 @pytest.mark.parametrize("unit, per_metre", [("m", 1.0), ("mm", 1000.0)])
 def test_sizes_hold_in_metre_and_millimetre_scenes(cmds, land, tmp_path, unit, per_metre):
     """Mesh points, bind matrices and distance keys go through the API in centimetres, whatever the scene unit."""

@@ -100,9 +100,9 @@ def test_an_uploaded_image_prices_and_runs_image_to_3d(signed_in, fake, tmp_path
     assert row["state"] == "remote" and fake.state.paid_runs()[0]["arguments"]["parameters"]["image"] == [sent["asset_id"]]
 
 
-def test_the_3d_tab_has_text_image_multi_view_and_edit_modes():
+def test_the_3d_tab_has_text_image_multi_view_edit_and_motion_modes():
     assert lanes.tabs() == ("image", "3d")
-    assert [lane.mode for lane in lanes.tab_lanes("3d")] == ["Text", "Image", "Multi-view", "Edit selection"]
+    assert [lane.mode for lane in lanes.tab_lanes("3d")] == ["Text", "Image", "Multi-view", "Edit selection", "Motion"]
     assert lanes.THREE_D_VIEWS.inputs == "views" and lanes.THREE_D_VIEWS.quick_picks[0] == "model_tripo-p2-multiview-to-3d"
     assert lanes.lane_for_model(["img23d"]) is lanes.THREE_D_IMAGE
     assert lanes.lane_for_model(["3d23d"]) is lanes.THREE_D_EDIT and lanes.THREE_D_EDIT.inputs == "mesh"

@@ -401,7 +401,7 @@ class _Builder:
         shape = cmds.rename(shape, _short(transform) + "Shape")
         shape = _long(shape)
         if geometry["colors"]:
-            fn.createColorSet("colorSet1")
+            fn.createColorSet("colorSet1", False)  # name, clamped: API 2.0 takes both
             fn.setCurrentColorSetName("colorSet1")
             fn.setFaceVertexColors(om.MColorArray([geometry["colors"][corner] for corner in geometry["corners"]]), faces, geometry["connects"])
             if not any(material in self.textured for material, _start, _end in geometry["ranges"]):

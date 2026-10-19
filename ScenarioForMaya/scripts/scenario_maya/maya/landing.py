@@ -19,16 +19,20 @@ Main thread only.
 from __future__ import annotations
 
 import contextlib
+import itertools
 import math
 import os
 
-from maya import cmds
+from maya import cmds, mel
 
 from ..core import errors, gltf, naming
 from . import scene
 
 SRGB = "sRGB Encoded Rec.709 (sRGB)"
 LINEAR = "scene-linear Rec.709-sRGB"
+# Curves keyed in time; driven keys (animCurveU*) are left alone.
+TIME_CURVES = ("animCurveTA", "animCurveTL", "animCurveTT", "animCurveTU")
+COMMON_RATES = (12, 15, 24, 25, 30, 48, 50, 60, 120)
 _BASE_COLOR = {"openPBRSurface": "baseColor", "standardSurface": "baseColor", "lambert": "color"}
 MODES = ("card", "material", "image_plane")
 LABELS = {"card": "Import as card", "material": "Material on selection", "image_plane": "Image plane"}
@@ -252,7 +256,8 @@ def land_model(
     gets that world matrix, which is how an edit result lands over the mesh
     it came from; with ``box`` (a world bounding box in scene units) it is
     scaled and moved onto that box, which is how a multi-view result lands
-    over the object its views show (``over`` names the mesh or object);
+    over the object its views show and a motion over the character it was
+    made for (``over`` names the mesh or object);
     without any, the file's own origin is kept. Returns what was made plus
     the import checks.
     """
@@ -291,7 +296,7 @@ def land_model(
         if matrix is not None:
             cmds.xform(made["top"], matrix=matrix, worldSpace=True)
         elif box is not None and made["meshes"]:
-            _onto_box(made["top"], made["meshes"], box)
+            _onto_box(made["top"], made["meshes"], box, (made.get("clip") or {}).get("start"))
         elif place is not None and made["meshes"]:
             _on_ground(made["top"], made["meshes"], place)
         if attributes:
@@ -299,6 +304,9 @@ def land_model(
         if select:
             cmds.select(made["top"], replace=True)
     made["checks"] = glb_builder.inspect(made)
+    note = off_frame_note(ns)
+    if note:
+        made["checks"].setdefault("notes", []).append(note)
     textures = not cmds.about(batch=True) and scene.show_textures()
     checks = made["checks"]
     made.update(
@@ -315,12 +323,37 @@ def land_model(
     return made
 
 
-def _onto_box(top: str, meshes: list, box: list) -> None:
+def off_frame_note(namespace: str) -> str:
+    """A note when the namespace's keys fall between the scene's frames (a 30 fps clip in a 24 fps scene), else ""."""
+    curves = cmds.ls(namespace + ":*", type=TIME_CURVES)
+    times = sorted(set(cmds.keyframe(curves, query=True, timeChange=True) or [])) if curves else []
+    if not any(abs(time - round(time)) > 1e-3 for time in times):
+        return ""
+    fps = mel.eval("currentTimeUnitToFPS()")
+    steps = [b - a for a, b in itertools.pairwise(times)]
+    step = min(steps) if steps else 0.0  # one frame of the file's rate when keyed on every frame
+    source = fps / step if step > 0 and fps else 0.0
+    rate = next((rate for rate in COMMON_RATES if abs(source - rate) < 0.05), None)
+    if rate and rate != round(fps):
+        return f"The clip was made at {rate} fps and this scene runs at {fps:g} fps, so its keys fall between frames."
+    return "The clip's keys fall between this scene's frames."
+
+
+def _onto_box(top: str, meshes: list, box: list, frame: float | None = None) -> None:
     """Scales ``top`` uniformly and moves it so the meshes' bounding box has ``box``'s centre and diagonal (no rotation).
 
     ``top`` is a new group at the origin, so its scale applies about the origin.
+    An animated result is measured on ``frame`` (its clip's first), the
+    current frame kept.
     """
-    have = cmds.exactWorldBoundingBox(meshes)
+    now = cmds.currentTime(query=True)
+    if frame is not None and frame != now:
+        cmds.currentTime(frame, update=True)
+    try:
+        have = cmds.exactWorldBoundingBox(meshes)
+    finally:
+        if frame is not None and frame != now:
+            cmds.currentTime(now, update=True)
     size, want = math.dist(have[:3], have[3:]), math.dist(box[:3], box[3:])
     scale = want / size if size > 0 else 1.0
     cmds.setAttr(top + ".scale", scale, scale, scale, type="double3")

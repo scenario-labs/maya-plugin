@@ -62,28 +62,29 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
     bytes, parts PUT to Scenario's links as given (no checksum headers), the
     same bytes reused within a session and workspace.
   - `catalog.py` (models per workspace and modality, cached 24 h),
-    `lanes.py` (lane definitions: Image, 3D Text, Image, Multi-view and Edit selection modes; quick picks, presets), `provenance.py` (node attributes), `naming.py`.
+    `lanes.py` (lane definitions: Image, 3D Text, Image, Multi-view, Edit selection and Motion modes; quick picks, presets, tag filters), `motion.py` (which motion models need, take or ignore a character; the scene's frame rate for a model's rate field), `provenance.py` (node attributes), `naming.py`.
   - `http.py`, `jsonutil.py`, `errors.py`, `paths.py`, `settings.py`,
     `status.py`, `workspaces.py`, `log.py`, `diagnostics.py`, `links.py`.
 - `scripts/scenario_maya/maya/`: Maya side. `dispatcher.py` (workers do the
   network, the main thread does the scene), `runtime.py` (one runtime per
   Maya process), `jobs.py` (quote to landed result, recovery),
-  `landing.py` (images as card, material or image plane, 3D models, one
-  undo step each), `import_command.py` (the recording `scenarioImport`
-  command that makes any import one undo step), `fbx_import.py` (FBX results through Maya's `FBXImport`: options set per import, root namespace then renamed in, timeline and up axis kept, importer's materials kept), `glb_builder.py` (GLB to
+  `landing.py` (images as card, material or image plane, 3D models on the
+  ground, at a matrix or fitted onto a box, one undo step each; the
+  off-frame clip note), `import_command.py` (the recording `scenarioImport`
+  command that makes any import one undo step), `fbx_import.py` (FBX results through Maya's `FBXImport`: options set per import, root namespace then renamed in, timeline and up axis kept, importer's materials kept, skinned meshes not inheriting, clip moved to the start frame), `glb_builder.py` (GLB to
   meshes, materials, joints, skins, blend shapes and keys; import checks), `scene.py` (project folders, camera, selection, scene id),
   `capture.py` (a viewport still for a model input, and the selection from named sides for multi-view models; outside the undo queue),
-  `mesh_export.py` (a selected mesh to the GLB sent for an edit, with the
-  record kept to find and fit the result), `apply.py` (edit results back
+  `mesh_export.py` (selected meshes to the GLB sent for an edit or as a
+  motion's character, with the record kept to find and fit the result), `apply.py` (edit results back
   on the mesh: target by UUID, fit against the kept sent file; Apply as
-  gather, compare, run with a review: Replace UVs, textures or geometry; where a multi-view result lands over the object its views show), `uv_command.py` (the undoable
+  gather, compare, run with a review: Replace UVs, textures or geometry), `uv_command.py` (the undoable
   `scenarioSetUVs` command),
   `lifecycle.py` (load and unload), `compat.py`.
 - `scripts/scenario_maya/ui/`: PySide6. `panel.py` (the dockable
   `workspaceControl`), `lane.py` (a lane: model, prompt, settings, priced
   Generate, result cards), `inputs.py` (the image row: file, viewport
   capture, Image results; the Multi-view row: one slot per named view, Capture views), `mesh_input.py` (the Edit selection row: task,
-  Use selection, checks, send), `apply_review.py` (the Apply review), `fields.py` (settings from a model schema),
+  Use selection, checks, send; the Motion mode's character row), `apply_review.py` (the Apply review), `fields.py` (settings from a model schema),
   `picker.py`, `signin.py`, `workspace.py`, `jobs.py`, `menu.py`,
   `commands.py` (runtime commands), `common.py`, `qt.py`.
 - `scripts/scenario_maya/agent/`: the local MCP server (milestone M5).

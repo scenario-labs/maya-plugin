@@ -8,26 +8,27 @@ Scenario for Maya is a plug-in for Maya 2025, 2026 and 2027. Write a prompt
 in a docked panel, see the exact price on the Generate button, and the result
 lands in the open scene: a 3D model on the ground in front of the camera, or
 an image as a card, a material or an image plane. A 3D model can start from a
-prompt, an image, or views of an object captured in the scene, and a mesh of
-the scene can be remeshed, UV unwrapped or retextured. Each landing is one
-Ctrl+Z.
+prompt, an image, or views of an object captured in the scene; a mesh of
+the scene can be remeshed, UV unwrapped or retextured; and a prompt can make
+a character move, the model's own or one selected in the scene. Each landing
+is one Ctrl+Z.
 Every request is priced before it is sent, sent once, and recorded on disk, so
 a crash or a dropped connection never charges twice.
 
 **Status:** in development, not released. Tested on Maya 2027.2 on macOS, in
-the real Maya window and headless with `mayapy` (the Multi-view and Edit
-selection modes headless only so far). Two tabs work today, Image and 3D; the table lists
+the real Maya window and headless with `mayapy` (the Multi-view, Edit
+selection and Motion modes headless only so far). Two tabs work today, Image and 3D; the table lists
 what comes next.
 
 | Area | Today | Next |
 | --- | --- | --- |
 | Sign-in | Browser (OAuth), a code on another device, or an API key; secrets in the system keychain | |
 | Panel | Docked beside the Channel Box and restored with the workspace; team and project picker; model picker; job list | Studio window, quick composer over the viewport |
-| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; multi-view to 3D from views captured around a selected object (Tripo P2, Tripo 3.1, Hunyuan 3D Pro 3.1), landed over it; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs, a new material or new geometry, reviewed first, one Ctrl+Z); quad meshes, delivered as FBX; GLB import with PBR materials, skins, blend shapes and animation, FBX through Maya's importer; import checks | Rig, animate, split into parts; motion |
+| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; multi-view to 3D from views captured around a selected object (Tripo P2, Tripo 3.1, Hunyuan 3D Pro 3.1), landed over it; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs, a new material or new geometry, reviewed first, one Ctrl+Z); motion from a prompt (Meshy, Uthana, Cartwheel), on the model's own character or one selected in the scene, landed with its joints, skin and clip; quad meshes, delivered as FBX; GLB import with PBR materials, skins, blend shapes and animation, FBX through Maya's importer; import checks | Rig, animate, split into parts; motion onto an existing rig; video to motion |
 | Image | Text to image with Scenario's image models; lands as a card, a material or an image plane | Image editing, upscale, LoRAs |
 | Jobs | One job list for every Maya session; downloads resume; results that finish while Maya is closed are offered on the next start | Results history, an "In this scene" view |
 | Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
-| Other lanes | | Materials, environment (sky domes), render a view, video, audio, motion |
+| Other lanes | | Materials, environment (sky domes), render a view, video, audio |
 
 ## Generate a 3D model
 
@@ -182,6 +183,9 @@ Around Maya's FBX importer, the plug-in:
 - cleans the names the FBX format escaped (`FBXASC045` for a dash);
 - keeps the importer's materials (Phong), with colour textures in sRGB, every
   other texture Raw and normal maps read as tangent-space normals;
+- lets skinned meshes follow their joints only, so a rig lands upright in a
+  Z-up scene and in one piece wherever it is placed or fitted;
+- starts a clip on the scene's start frame, as for a GLB;
 - reports the same import checks as for a GLB.
 
 ## Edit a mesh of the scene
@@ -272,6 +276,75 @@ the mesh's construction history (history would overwrite new UVs) and when
 a mesh with several materials would get one; it refuses deformed (skinned),
 referenced and locked meshes, and Replace geometry refuses instanced ones,
 in this version.
+
+## Animate a character
+
+The **Motion** mode turns a prompt into a character that moves: a skinned
+mesh, its joints and a clip, imported into the scene as one Ctrl+Z. Some
+models bring their own character; others rig and animate yours.
+
+<p align="center"><img src="docs/media/motion-wave.gif" width="300" alt="A wooden mannequin waving its right hand, from Meshy Text to Motion"> <img src="docs/media/motion-robot.gif" width="300" alt="The Multi-view robot, rigged and animated by Uthana Text to Motion 3.0, raising its right arm"></p>
+
+*"waves hello with the right hand". Left, Meshy Text to Motion from the
+prompt alone: its own mannequin, 52 joints, 3 seconds. Right, Uthana Text to
+Motion 3.0 on the robot from the Multi-view section, sent from the scene:
+rigged with 52 joints and animated for 4 seconds; its box arms bend as one
+piece. Imported by the plug-in and rendered in Viewport 2.0 with
+`tools/render_glb.py --play`.*
+
+```mermaid
+flowchart LR
+    A[Describe a motion] --> B{Character}
+    B -- none --> C[The model makes its own]
+    B -- select it,<br/>Use selection --> D[Your meshes sent as one GLB<br/>once, no undo step]
+    C --> E[Generate<br/>priced first]
+    D --> E
+    E --> F[Import<br/>joints, skin and clip,<br/>over your character if you sent one]
+```
+
+1. Open the **3D** tab and choose **Motion**. The default model, Meshy Text
+   to Motion, needs only the prompt: one simple action works best (a walk, a
+   wave, a jump), 2 to 10 seconds, 40 CU whatever the length.
+2. To animate your own character, press **Change** and pick Uthana Text to
+   Motion 3.0 or Cartwheel Text to Motion. Select the character (its group or
+   its meshes) and press **Use selection**: the meshes are written as one GLB,
+   with neutral names, and sent to your Scenario project once. Nothing is
+   added to the scene or to the undo queue. Cartwheel needs a character, and
+   the Generate button says so until one is sent; Uthana takes one or makes
+   its own.
+3. A model's frame-rate setting starts at the scene's rate when the model
+   offers it (Uthana: 24, 30 or 60 fps), so the clip is asked for at the
+   scene's rate. For
+   Cartwheel the plug-in asks for its Maya FBX, never a `.ma` or `.mb` scene
+   file, which would have to be imported in a way that clears Maya's undo
+   history.
+4. **Import** brings the character in as a new group with its joints, skin
+   and clip. The clip starts on the scene's start frame and the playback
+   range is not changed. A result made from your character lands over it, at
+   its size, measured on the clip's first frame; your character is not
+   changed. When a clip was made at another rate than the scene's (30 fps in
+   a 24 fps scene), its keys fall between frames and the result says so.
+
+**Which model.** One prompt, one run each:
+
+| Model | Character | Result | Price |
+| --- | --- | --- | --- |
+| Meshy Text to Motion, the default | Its own wooden mannequin (52 joints) | FBX, in about 30 seconds | 40 CU, 2 to 10 s |
+| Uthana Text to Motion 3.0, first pick for your character | Yours (auto-rigged) or its own (160 joints) | GLB, in about 3 minutes | 104 CU for 4 s; 124 CU with a character |
+| Cartwheel Text to Motion | Yours, required | Maya FBX, in 2 to 4 minutes | 72 CU for 3 s |
+
+![One row per run: Meshy's mannequin and Uthana's own character wave from the prompt alone; Uthana rigs the robot facing front; Cartwheel's rig faces the robot's back](docs/media/motion-shootout.jpg)
+
+*Frames from the start to the end of each clip, rendered with
+`tools/render_glb.py --play`. With the robot as the character, Uthana rigged
+it facing the way it faces. Cartwheel's rig faced the robot's back, whichever
+way the robot was sent and also with its forward option set to -Z; that is one
+character, whose back panel may read as a front. Check which way a rig faces
+before animating further.*
+
+Not built yet: putting a motion onto a rig already in the scene
+(retargeting, HumanIK), video to motion, and Meshy Animation's library of
+ready-made clips.
 
 ## Generate an image
 

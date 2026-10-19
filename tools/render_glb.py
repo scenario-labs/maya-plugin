@@ -6,12 +6,14 @@ grey backdrop, and rendered with ``ogsRender`` (Viewport 2.0, works headless).
 Stills at the given angles, or a full turn; ``--gif`` also writes a looping
 GIF with ffmpeg; ``--checker`` shows the UV layout instead of the materials;
 ``--wire`` draws every edge as a thin tube, so the topology shows (batch
-Viewport 2.0 draws no wireframe).
+Viewport 2.0 draws no wireframe); ``--play`` renders the landed clip over
+time at the first angle, one image every STEP frames.
 0 CU: nothing is sent to Scenario.
 
 Usage (mayapy, headless):
   MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --angles 0,180
   MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --turn 48 --size 480 --gif out/turn.gif
+  MAYA_DISABLE_CER=1 mayapy tools/render_glb.py motion.fbx out/ --play 2 --fps 12 --gif out/motion.gif
 """
 
 import argparse
@@ -35,6 +37,7 @@ def main():
     parser.add_argument("--fps", type=int, default=16)
     parser.add_argument("--checker", type=int, default=0, help="replace the materials by a checker repeated this many times across UV space")
     parser.add_argument("--wire", action="store_true", help="draw every edge over the model")
+    parser.add_argument("--play", type=int, default=0, help="render the clip over time instead, one image every this many frames")
     args = parser.parse_args()
     glb, out = os.path.abspath(args.glb), os.path.abspath(args.out)
     os.makedirs(out, exist_ok=True)
@@ -98,9 +101,16 @@ def main():
     cmds.xform(spin, pivots=(0, 0, 0), worldSpace=True)
     cmds.setAttr("persp.rotate", -15, 30, 0, type="double3")
     cmds.setAttr("perspShape.focalLength", 50)
-    cmds.viewFit("persp", spin, fitFactor=0.95)
+    clip = made.get("clip") if args.play else None
+    times = [clip["start"] + step for step in range(0, int(clip["end"] - clip["start"]) + 1, args.play)] if clip else []
+    if times:
+        angles = angles[:1] * len(times)
+        cmds.currentTime(times[0])
+    cmds.viewFit("persp", spin, fitFactor=0.8 if times else 0.95)
     frames = []
     for index, angle in enumerate(angles):
+        if times:
+            cmds.currentTime(times[index])
         cmds.setAttr(spin + ".rotateY", angle)
         written = cmds.ogsRender(camera="perspShape", width=args.size, height=args.size)
         target = os.path.join(out, f"{stem}_{index:03d}.jpg")

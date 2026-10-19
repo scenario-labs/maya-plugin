@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import secrets
+import tempfile
 import threading
 import time
 import urllib.parse
@@ -80,6 +81,9 @@ PRICES = {
     "model_tripo-p2-multiview-to-3d": 220,
     "model_tripo-v3-1-multiview-to-3d": 45,
     "model_hunyuan-3d-pro-3-1-multiview": 120,
+    "model_meshy-text-to-motion": 40,
+    "model_cartwheel-text-to-motion": 72,
+    "model_uthana-text-to-motion-3.0": 104,
 }
 
 
@@ -134,6 +138,38 @@ EDIT_ROWS = [
     }
     for model_id, (task, _field, _side, name) in EDIT_MODELS.items()
 ]
+
+
+# Motion models (txt23d, tagged Motion): their character field, if any, and whether they need one.
+# Cartwheel refuses to price without a character, as the live one did on 2026-10-19.
+MOTION_MODELS = {
+    "model_meshy-text-to-motion": ("", False, "Meshy Text to Motion", ["txt23d"]),
+    "model_cartwheel-text-to-motion": ("characterModel", True, "Cartwheel Text to Motion", ["txt23d", "3d23d"]),
+    "model_uthana-text-to-motion-3.0": ("characterFile", False, "Uthana Text to Motion 3.0", ["txt23d"]),
+}
+MOTION_ROWS = [
+    {
+        "id": model_id,
+        "name": name,
+        "shortDescription": "A rigged character that moves, from a prompt.",
+        "type": "custom",
+        "privacy": "public",
+        "capabilities": capabilities,
+        "status": "trained",
+        "tags": ["3D", "Animation", "Motion"],
+        "createdAt": "2026-08-25T00:00:00.000Z",
+    }
+    for model_id, (_field, _needed, name, capabilities) in MOTION_MODELS.items()
+]
+
+
+def _motion_glb() -> bytes:
+    """A skinned, keyed character stand-in: the two-joint strip of the GLB samples."""
+    from tests import glb_samples
+
+    with tempfile.TemporaryDirectory() as folder:
+        with open(glb_samples.skinned_strip(os.path.join(folder, "motion.glb")), "rb") as handle:
+            return handle.read()
 
 
 def _glb() -> bytes:
@@ -626,7 +662,7 @@ class Handler(BaseHTTPRequestHandler):
         if filters.get("modality") == "image" and filters.get("privacy") == "public":
             data["models"] = data["models"] + [IMAGE_MODEL]
         if filters.get("modality") == "3d" and filters.get("privacy") == "public":
-            data["models"] = data["models"] + [THREE_D_MODEL, IMAGE_TO_3D_MODEL] + [dict(row) for row in EDIT_ROWS + MULTIVIEW_ROWS]
+            data["models"] = data["models"] + [THREE_D_MODEL, IMAGE_TO_3D_MODEL] + [dict(row) for row in EDIT_ROWS + MULTIVIEW_ROWS + MOTION_ROWS]
         return data
 
     def _tool_model_schema_get(self, args):
@@ -660,12 +696,24 @@ class Handler(BaseHTTPRequestHandler):
             asset = self.state.assets.get(given) if isinstance(given, str) else None
             if asset is None or asset.get("kind") != "3d":
                 raise ToolFailure(400, {"error": f"{field}: Asset not found or not an uploaded 3D model."})
+        if model_id in MOTION_MODELS:
+            field, needed, _name, _caps = MOTION_MODELS[model_id]
+            given = (args.get("parameters") or {}).get(field) if field else None
+            if needed and not given:
+                raise ToolFailure(400, {"error": "Provide a reference image or a 3D model."})
+            if given is not None:
+                asset = self.state.assets.get(given) if isinstance(given, str) else None
+                if asset is None or asset.get("kind") != "3d":
+                    raise ToolFailure(400, {"error": f"{field}: Asset not found or not an uploaded 3D model."})
+                cost += 20 if model_id == "model_uthana-text-to-motion-3.0" else 0  # Uthana prices a character in
         if args.get("dry_run"):
             return {"dry_run": True, "model_id": model_id, "job": {}, "creativeUnitsCost": cost, "creativeUnitsDiscount": 0}
         job_id = "job_fake" + secrets.token_hex(8)
         asset_id = "asset_fake" + secrets.token_hex(8)
         if model_id in THREE_D_MODELS:
             return self._run_3d(model_id, job_id, cost)
+        if model_id in MOTION_MODELS:
+            return self._run_3d(model_id, job_id, cost, glb=_motion_glb(), meta={"kind": "3d", "faceCount": 4, "boneCount": 2})
         if model_id in EDIT_MODELS:
             task, field, side, _name = EDIT_MODELS[model_id]
             source = self.state.files[self.state.assets[args["parameters"][field]]["file"]]

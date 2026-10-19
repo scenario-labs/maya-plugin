@@ -1,5 +1,6 @@
 """What the plug-in reads from the open scene: project folders, the scene's
-id, the camera people look through, the selection. Main thread only.
+id, the camera people look through, the selection, the frame rate. Main
+thread only.
 """
 
 from __future__ import annotations
@@ -8,7 +9,7 @@ import os
 import uuid
 from datetime import date
 
-from maya import cmds
+from maya import cmds, mel
 
 SCENE_UUID_KEY = "scenario_scene_uuid"
 
@@ -123,6 +124,11 @@ def selected_surfaces() -> list:
         if cmds.listRelatives(item, shapes=True, type="mesh", noIntermediate=True):
             out.append(item)
     return out
+
+
+def fps() -> float:
+    """The scene's frame rate in frames per second."""
+    return float(mel.eval("currentTimeUnitToFPS()"))
 
 
 def short(node: str) -> str:

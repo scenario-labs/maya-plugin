@@ -1,16 +1,20 @@
-"""The mesh row of the 3D tab's Edit selection mode (spec 4.2, 6.3).
+"""The mesh row of the 3D tab's Edit selection mode (spec 4.2, 6.3), and the
+character row of its Motion mode (6.5).
 
-A task (Remesh, UV unwrap, Retexture) and the mesh it works on. Use selection
-writes the selected mesh as a GLB (main thread, a fraction of a second for a
-game mesh), checks it against the chosen model's limits, and sends it to
-Scenario on a worker; that click is the explicit action spec 7.1 point 8
-asks for. The same unchanged mesh gives the same bytes, so it is not sent
-twice in a session. This version edits one mesh at a time.
+Edit selection: a task (Remesh, UV unwrap, Retexture) and the mesh it works
+on. Use selection writes the selected mesh as a GLB (main thread, a fraction
+of a second for a game mesh), checks it against the chosen model's limits,
+and sends it to Scenario on a worker; that click is the explicit action spec
+7.1 point 8 asks for. The same unchanged mesh gives the same bytes, so it is
+not sent twice in a session. This version edits one mesh at a time.
+
+Motion (``character=True``): no task; the selected meshes (a character is
+often several) go as one GLB, and only to a model that takes a character.
 """
 
 from __future__ import annotations
 
-from ..core import edits, uploads
+from ..core import edits, motion, uploads
 from .common import error_text
 from .qt import QtCore, QtWidgets, dpi
 
@@ -21,12 +25,14 @@ class MeshInput(QtWidgets.QWidget):
     changed = QtCore.Signal()
     task_changed = QtCore.Signal(str)
 
-    def __init__(self, runtime, parent=None) -> None:
+    def __init__(self, runtime, parent=None, *, character: bool = False) -> None:
         super().__init__(parent)
         self.runtime = runtime
+        self.character = character
         self.item: dict | None = None
         self.model_id = ""
         self.model_name = ""
+        self.takes_mesh = not character  # a Motion model takes a character when it has a 3D input
         self.task = edits.TASKS[0]
 
         self.task_label = QtWidgets.QLabel("Task")
@@ -46,11 +52,14 @@ class MeshInput(QtWidgets.QWidget):
             tasks.addWidget(button)
         tasks.addStretch(1)
 
-        self.title = QtWidgets.QLabel("Mesh")
+        self.title = QtWidgets.QLabel("Character" if character else "Mesh")
         self.mesh_line = QtWidgets.QLabel("Nothing captured yet.")
         self.mesh_line.setWordWrap(True)
         self.use_button = QtWidgets.QPushButton("Use selection")
-        self.use_button.setToolTip("Write the selected mesh as a GLB (neutral names, no scene paths) and send it to Scenario for this task.")
+        if character:
+            self.use_button.setToolTip("Write the selected meshes as one GLB (neutral names, no scene paths) and send it to Scenario as the character to rig and animate.")
+        else:
+            self.use_button.setToolTip("Write the selected mesh as a GLB (neutral names, no scene paths) and send it to Scenario for this task.")
         self.use_button.clicked.connect(self.use_selection)
         row = QtWidgets.QHBoxLayout()
         row.addWidget(self.mesh_line, 1)
@@ -63,7 +72,12 @@ class MeshInput(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(dpi(4))
-        layout.addLayout(tasks)
+        if character:
+            self.task_label.hide()
+            for button in self.task_button.values():
+                button.hide()
+        else:
+            layout.addLayout(tasks)
         layout.addWidget(self.title)
         layout.addLayout(row)
         layout.addWidget(self.note)
@@ -84,13 +98,23 @@ class MeshInput(QtWidgets.QWidget):
     def name(self) -> str:
         return self.item["name"] if self.item else ""
 
+    def target(self) -> str:
+        """The node a job names as its target: the meshes' shared group for a character in parts, else the first mesh."""
+        if not self.item:
+            return ""
+        nodes = [item["node"] for item in self.item["record"]["meshes"]]
+        parents = {node.rsplit("|", 1)[0] for node in nodes}
+        return parents.pop() if self.character and len(nodes) > 1 and len(parents) == 1 and "" not in parents else nodes[0]
+
     def described(self) -> dict:
         """What the job keeps locally about its input (spec 6.3): enough to find the mesh and fit the result."""
         if not self.item:
             return {}
         record = self.item["record"]
         return {
-            "task": self.task.id,
+            "task": "" if self.character else self.task.id,
+            "name": self.item["name"],
+            "box": record.get("box"),
             "asset_id": self.item["asset_id"],
             "path": record["path"],
             "sha256": record["sha256"],
@@ -110,29 +134,42 @@ class MeshInput(QtWidgets.QWidget):
         if emit:
             self.task_changed.emit(self.task.id)
 
-    def set_model(self, model_id: str, model_name: str) -> None:
+    def set_model(self, model_id: str, model_name: str, takes_mesh: bool = True) -> None:
         """The page changed model: check the captured mesh against it, and send it if it now fits."""
         self.model_id, self.model_name = model_id, model_name
-        known = edits.task_for_model(model_id)
-        if known is not None and known.id != self.task.id:
-            self.set_task(known.id)
+        if self.character:
+            self.takes_mesh = takes_mesh
+            self.use_button.setEnabled(takes_mesh)
+        else:
+            known = edits.task_for_model(model_id)
+            if known is not None and known.id != self.task.id:
+                self.set_task(known.id)
         if self.item:
-            self.item["problems"] = edits.check(model_id, model_name, self.item["record"])
+            self.item["problems"] = self._check(self.item["record"])
             if not self.item["problems"] and self.item["state"] == "checked":
                 self._send()
         self._refresh()
         self.changed.emit()
+
+    def rule(self) -> str:
+        """Motion: whether the current model needs, takes or ignores a character (core/motion.py)."""
+        return motion.character_rule(self.model_id, self.takes_mesh)
+
+    def _check(self, record: dict) -> list:
+        if self.character:
+            return []  # motion models document no mesh limits; the price check refuses what they cannot take
+        return edits.check(self.model_id, self.model_name, record) if self.model_id else []
 
     # -- capture -------------------------------------------------------------------
 
     def use_selection(self) -> None:
         from ..maya import mesh_export
 
-        selected = mesh_export.selected_meshes()
+        selected = mesh_export.selected_meshes(below=self.character)
         if not selected:
-            self._say("Select a mesh in the scene first.")
+            self._say("Select your character's meshes in the scene first." if self.character else "Select a mesh in the scene first.")
             return
-        if len(selected) > 1:
+        if len(selected) > 1 and not self.character:
             self._say(f"{len(selected)} meshes are selected. This version edits one mesh at a time: select one.")
             return
         try:
@@ -143,8 +180,12 @@ class MeshInput(QtWidgets.QWidget):
         self.set_record(record)
 
     def set_record(self, record: dict, asset_id: str = "") -> None:
-        name = record["meshes"][0]["node"].split("|")[-1]
-        problems = edits.check(self.model_id, self.model_name, record) if self.model_id else []
+        name = record.get("name") or record["meshes"][0]["node"].split("|")[-1]
+        if self.character and len(record["meshes"]) > 1 and not record.get("name"):
+            parents = {item["node"].rsplit("|", 1)[0] for item in record["meshes"]}
+            group = parents.pop().split("|")[-1] if len(parents) == 1 else ""
+            name = group or f"{name} and {len(record['meshes']) - 1} more"  # a character's group names it
+        problems = self._check(record)
         self.item = {"record": record, "asset_id": asset_id, "state": "ready" if asset_id else "checked", "name": name, "problems": problems}
         if not asset_id and not problems:
             self._send()
@@ -192,11 +233,16 @@ class MeshInput(QtWidgets.QWidget):
         self.note.setText(text)
         self.note.setVisible(bool(text))
 
+    def _hint(self) -> str:
+        return motion.hint(self.model_id, self.takes_mesh) if self.character else self.task.hint
+
     def _refresh(self) -> None:
         item = self.item
+        if self.character:
+            self.title.setText({motion.REQUIRED: "Character", motion.OPTIONAL: "Character (optional)"}.get(self.rule(), "Character (made by the model)"))
         if not item:
-            self.mesh_line.setText("Nothing captured yet.")
-            self._say(self.task.hint)
+            self.mesh_line.setText("None: the model makes its own." if self.character and self.rule() != motion.REQUIRED else "Nothing captured yet.")
+            self._say(self._hint())
             return
         record = item["record"]
         self.mesh_line.setText(f"{item['name']}  .  {record['triangles']:,} triangles")
@@ -204,5 +250,7 @@ class MeshInput(QtWidgets.QWidget):
             self._say(f"Sending {item['name']} to Scenario...")
         elif item["problems"]:
             self._say(" ".join(item["problems"]))
+        elif self.character and self.rule() == motion.NONE:
+            self._say(f"{item['name']} is kept for a model that takes a character. " + self._hint())
         else:
-            self._say("; ".join(record.get("notes") or []) or self.task.hint)
+            self._say("; ".join(record.get("notes") or []) or self._hint())

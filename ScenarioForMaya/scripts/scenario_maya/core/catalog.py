@@ -14,7 +14,7 @@ import os
 import threading
 import time
 
-from .lanes import Lane
+from .lanes import Lane, takes_tags
 from .paths import user_file
 
 TTL = 24 * 3600
@@ -93,7 +93,7 @@ class Catalog:
         words = [word for word in text.lower().split() if word]
         out = []
         for row in self.models(workspace):
-            if not set(row.get("capabilities") or ()) & set(lane.capabilities):
+            if not set(row.get("capabilities") or ()) & set(lane.capabilities) or not takes_tags(lane, row.get("tags")):
                 continue
             if not show_legacy and is_legacy(row):
                 continue

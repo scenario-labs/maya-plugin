@@ -33,15 +33,21 @@ ROUGH_ATTRIBUTES = ("specularRoughness", "roughness")
 IMAGE_MIME = {"png": "image/png", "jpg": "image/jpeg"}
 
 
-def selected_meshes() -> list:
-    """Transforms of the selected meshes, long paths, in selection order; a face selection counts as its object."""
+def selected_meshes(below: bool = False) -> list:
+    """Transforms of the selected meshes, long paths, in selection order; a face selection counts as its object.
+
+    With ``below``, a selected group counts as the meshes under it (a character made of parts).
+    """
     out = []
     for item in cmds.ls(selection=True, long=True, flatten=False) or []:
         node = item.split(".")[0]
         if cmds.nodeType(node) == "mesh":
             node = cmds.listRelatives(node, parent=True, fullPath=True)[0]
-        if mesh_shape(node) and node not in out:
-            out.append(node)
+        found = [node] if mesh_shape(node) else []
+        if not found and below and cmds.objectType(node, isAType="transform"):
+            shapes = cmds.listRelatives(node, allDescendents=True, type="mesh", noIntermediate=True, fullPath=True) or []
+            found = [cmds.listRelatives(shape, parent=True, fullPath=True)[0] for shape in reversed(shapes)]
+        out.extend(transform for transform in found if transform not in out)
     return out
 
 
@@ -121,6 +127,7 @@ def export(transforms: list, folder: str = "", neutral: bool = True) -> dict:
         "triangles": sum(record["triangles"] for record in records),
         "names": names,
         "up_axis": "z" if up_z else "y",
+        "box": cmds.exactWorldBoundingBox(transforms),  # scene units: where a result made from these meshes lands over them
         "notes": list(dict.fromkeys(notes)),
     }
 
