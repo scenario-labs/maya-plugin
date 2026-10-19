@@ -231,14 +231,16 @@ def _image_plane(path: str, base: str, attributes: dict, camera: tuple) -> dict:
     }
 
 
-def land_model(path: str, attributes: dict, *, texture_folder: str, label: str = "", select: bool = True, place: tuple | None = None) -> dict:
+def land_model(path: str, attributes: dict, *, texture_folder: str, label: str = "", select: bool = True, place: tuple | None = None, matrix: list | None = None, over: str = "") -> dict:
     """Imports a 3D result (GLB) as a new group: one undo step, provenance on the group.
 
     Embedded textures are written to ``texture_folder`` first (files stay after
     an undo, spec 7.3). With ``place`` (a world point) the group is moved so
     the model's bottom centre sits on the ground plane below that point (spec
-    10.4); without it, the file's own origin is kept. Returns what was made
-    plus the import checks.
+    10.4); with ``matrix`` (centimetres, as ``cmds.xform`` takes it) the group
+    gets that world matrix, which is how an edit result lands over the mesh
+    it came from (``over`` names it); without either, the file's own origin
+    is kept. Returns what was made plus the import checks.
     """
     from . import glb_builder, import_command
 
@@ -261,7 +263,9 @@ def land_model(path: str, attributes: dict, *, texture_folder: str, label: str =
         scene.scene_uuid()
         with in_namespace(namespace) as ns:
             made = import_command.run(lambda: glb_builder.build(doc, images, base))
-        if place is not None and made["meshes"]:
+        if matrix is not None:
+            cmds.xform(made["top"], matrix=matrix, worldSpace=True)
+        elif place is not None and made["meshes"]:
             _on_ground(made["top"], made["meshes"], place)
         if attributes:
             add_provenance(made["top"], attributes)
@@ -278,7 +282,8 @@ def land_model(path: str, attributes: dict, *, texture_folder: str, label: str =
         textures_turned_on=bool(textures),
         summary=f"Imported {base}: {checks['faces']:,} faces"
         + (f", {checks['joints']} joints" if checks["joints"] else "")
-        + (", on the ground at the camera's centre of interest" if place is not None and made["meshes"] else ""),
+        + (f", over {over}" if matrix is not None and over else "")
+        + (", on the ground at the camera's centre of interest" if matrix is None and place is not None and made["meshes"] else ""),
     )
     return made
 

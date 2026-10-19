@@ -1,0 +1,16 @@
+{
+ "model_id": "model_tencent-uv-unwrapping",
+ "name": "Tencent UV Unwrapping",
+ "capabilities": [
+  "3d23d"
+ ],
+ "parameters": [
+  {
+   "name": "file3d",
+   "type": "file",
+   "description": "Source 3D model file. Maximum: 30,000 faces.",
+   "required": true,
+   "kind": "3d"
+  }
+ ]
+}

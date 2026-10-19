@@ -168,7 +168,13 @@ class JobRunner:
             if mode == "model":
                 folder = (row.get("result") or {}).get("folder") or item["path"]
                 textures = naming.unique_folder(scene.folders()["images"], os.path.basename(folder.rstrip(os.sep)))
-                made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, place=scene.interest_point(camera))
+                if lane_of(row).inputs == "mesh":  # an edit: over the mesh it came from, fitted (maya/apply.py)
+                    from . import apply
+
+                    over = apply.import_over_target(row, item["path"])
+                    made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, matrix=over["matrix"], over=over["target_name"])
+                else:
+                    made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, place=scene.interest_point(camera))
             else:
                 made = landing.land(item["path"], attrs, mode, label=label, camera=camera, targets=targets, select=select)
         except Exception as error:

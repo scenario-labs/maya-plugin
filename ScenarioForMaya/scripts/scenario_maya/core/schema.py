@@ -173,6 +173,12 @@ class ModelForm:
         fields = [item for item in self.fields if item.is_file and item.kind in ("image", "")]
         return sorted(fields, key=lambda item: not item.required)
 
+    @property
+    def mesh_fields(self) -> list:
+        """3D model inputs (an edit's mesh), required ones first."""
+        fields = [item for item in self.fields if item.is_file and item.kind == "3d"]
+        return sorted(fields, key=lambda item: not item.required)
+
     def defaults(self) -> dict:
         return {item.name: item.default for item in self.fields if item.default is not None}
 

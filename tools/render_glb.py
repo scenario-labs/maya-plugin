@@ -4,7 +4,8 @@ Used for README pictures of 3D results: the model is landed exactly as the
 Import button lands it, lit by a key, a rim and a fill light in front of a
 grey backdrop, and rendered with ``ogsRender`` (Viewport 2.0, works headless).
 Stills at the given angles, or a full turn; ``--gif`` also writes a looping
-GIF with ffmpeg. 0 CU: nothing is sent to Scenario.
+GIF with ffmpeg; ``--checker`` shows the UV layout instead of the materials.
+0 CU: nothing is sent to Scenario.
 
 Usage (mayapy, headless):
   MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --angles 0,180
@@ -30,6 +31,7 @@ def main():
     parser.add_argument("--size", type=int, default=800)
     parser.add_argument("--gif", help="also write a looping GIF here (needs ffmpeg)")
     parser.add_argument("--fps", type=int, default=16)
+    parser.add_argument("--checker", type=int, default=0, help="replace the materials by a checker repeated this many times across UV space")
     args = parser.parse_args()
     glb, out = os.path.abspath(args.glb), os.path.abspath(args.out)
     os.makedirs(out, exist_ok=True)
@@ -48,6 +50,17 @@ def main():
     stem = os.path.splitext(os.path.basename(glb))[0]
     made = landing.land_model(glb, {}, texture_folder=os.path.join(project, "sourceimages", stem), label=stem, place=(0, 0, 0))
     print(made["summary"], flush=True)
+    if args.checker:
+        checker = cmds.shadingNode("checker", asTexture=True, name="uv_checker")
+        cmds.setAttr(checker + ".color1", 0.85, 0.85, 0.82, type="double3")
+        cmds.setAttr(checker + ".color2", 0.2, 0.45, 0.75, type="double3")
+        place = cmds.shadingNode("place2dTexture", asUtility=True)
+        cmds.connectAttr(place + ".outUV", checker + ".uvCoord")
+        cmds.setAttr(place + ".repeatUV", args.checker, args.checker, type="double2")
+        shader = cmds.shadingNode("lambert", asShader=True, name="uv_checker_shader")
+        cmds.connectAttr(checker + ".outColor", shader + ".color")
+        cmds.select(cmds.listRelatives(made["top"], allDescendents=True, type="mesh", fullPath=True))
+        cmds.hyperShade(assign=shader)
 
     # Batch mode draws no background colour, so a grey cyclorama stands behind and under the model.
     box = cmds.exactWorldBoundingBox(made["top"])

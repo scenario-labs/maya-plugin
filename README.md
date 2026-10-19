@@ -8,19 +8,21 @@ Scenario for Maya is a plug-in for Maya 2025, 2026 and 2027. Write a prompt
 in a docked panel, see the exact price on the Generate button, and the result
 lands in the open scene: a 3D model on the ground in front of the camera, or
 an image as a card, a material or an image plane. A 3D model can start from a
-prompt or from an image. Each landing is one Ctrl+Z.
+prompt or from an image, and a mesh of the scene can be remeshed, UV
+unwrapped or retextured. Each landing is one Ctrl+Z.
 Every request is priced before it is sent, sent once, and recorded on disk, so
 a crash or a dropped connection never charges twice.
 
 **Status:** in development, not released. Tested on Maya 2027.2 on macOS, in
-the real Maya window and headless with `mayapy`. Two tabs work today, Image
-and 3D; the table lists what comes next.
+the real Maya window and headless with `mayapy` (the Edit selection mode
+headless only so far). Two tabs work today, Image and 3D; the table lists
+what comes next.
 
 | Area | Today | Next |
 | --- | --- | --- |
 | Sign-in | Browser (OAuth), a code on another device, or an API key; secrets in the system keychain | |
 | Panel | Docked beside the Channel Box and restored with the workspace; team and project picker; model picker; job list | Studio window, quick composer over the viewport |
-| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; GLB import with PBR materials, skins, blend shapes and animation; import checks | Multi-view captures around the selection, then edits on your own meshes: retexture, remesh, UV unwrap, rig, animate, split into parts |
+| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it; GLB import with PBR materials, skins, blend shapes and animation; import checks | Apply an edit onto the mesh itself (new UV set, new material, new geometry, one Ctrl+Z); multi-view captures; rig, animate, split into parts |
 | Image | Text to image with Scenario's image models; lands as a card, a material or an image plane | Image editing, upscale, LoRAs |
 | Jobs | One job list for every Maya session; downloads resume; results that finish while Maya is closed are offered on the next start | Results history, an "In this scene" view |
 | Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
@@ -99,6 +101,69 @@ run each:
 | ![Meshy 7.1 result, front and back](docs/media/image-to-3d-meshy.jpg) | ![Tripo P2 result, front and back](docs/media/image-to-3d-tripo.jpg) |
 | 28,984 faces (30,000 preset), carving kept on every side, about 140 s, 120 CU, up to four views | 4,222 faces, clean mesh with flatter carving and a plain back, about 85 s, 220 CU, one image |
 
+## Edit a mesh of the scene
+
+The **Edit selection** mode of the 3D tab sends one of your meshes to an
+edit model and brings the result back over it.
+
+```mermaid
+flowchart LR
+    mesh["Selected mesh"] --> glb["GLB written by the plug-in<br/>object space, metres, Y up,<br/>its UVs and base colour textures,<br/>neutral names"]
+    glb --> check["Checked against the model<br/>format, triangle cap"]
+    check --> send["Sent to your project<br/>once per unchanged mesh"]
+    send --> model["Edit model<br/>remesh, UV unwrap, retexture"]
+    model --> fit["Fitted onto the sent mesh<br/>one uniform scale and an offset"]
+    fit --> land["Imported over the mesh<br/>a new group, one Ctrl+Z"]
+```
+
+1. Select one mesh (the object, or some of its faces) and open **3D**,
+   **Edit selection**.
+2. Choose the task: **Remesh**, **UV unwrap** or **Retexture**. Each task
+   keeps its own model; the defaults are Tripo Retopology v3, Tripo Smart UV
+   and Meshy 7 Retexture.
+3. **Use selection** writes the mesh as a GLB in the project's
+   `images/scenario/captures` folder. Object, scene and path names stay on
+   your machine: the file says `scn_input_0`. The mesh is checked against
+   the model before anything is sent (Tripo Smart UV takes up to 80,000
+   triangles, Meshy UV Unwrap 44,000, Hunyuan UV Unwrapping 30,000); a mesh
+   it cannot take shows why and is not sent.
+4. Retexture needs a prompt. The price shows on **Generate**.
+5. **Import** places the result over the mesh it came from, as a new group,
+   even if you moved the mesh after sending it. Your mesh is not changed.
+
+Edit models return the mesh resized and centred: on 2026-10-19, Tripo models
+returned it 1 m long and Meshy models 2 m long, never rotated. The plug-in
+keeps the file it sent and fits the result back onto it with one uniform scale
+and an offset from the bounding boxes, then applies the mesh's current
+transform.
+
+**What came back.** A bevelled crate of 1,052 triangles with the cube's
+default UVs, sent by the plug-in, one run per model:
+
+| Your mesh | Meshy 7 Retexture | Tripo 3.0 Texturing |
+| --- | --- | --- |
+| ![The crate sent, grey, before any edit](docs/media/edit-input.jpg) | ![The crate retextured by Meshy 7 as weathered planks with metal corners](docs/media/edit-meshy-retexture.jpg) | ![The crate retextured by Tripo 3.0 in dark brown wood](docs/media/edit-tripo-texturing.jpg) |
+| 1,052 triangles | Same triangles and the same UVs; base colour, normal, metallic and roughness maps; 40 CU | Same triangles and the same UVs; PBR textures; 15 CU |
+
+| Your UVs, on a checker | Tripo Smart UV |
+| --- | --- |
+| ![The crate with its default UVs on a checker: large squares, stretched on the bevels](docs/media/edit-uv-input.jpg) | ![The crate with Tripo Smart UV's layout on the same checker: even squares across the faces](docs/media/edit-uv-smart.jpg) |
+| The cube's default layout | A new layout on the same triangles; 40 CU |
+
+Remesh models return a new surface: Meshy Remesh gave 522 triangles (20 CU)
+and Tripo Retopology v3 gave 560 (70 CU). *Stills rendered headless in
+Maya's Viewport 2.0 with `tools/render_glb.py` (`--checker 6` for the UV
+pair).*
+
+**Next: Apply**, to write the new UV set or material onto the mesh itself
+(the old UV set kept as a backup) and to replace geometry for remeshes (the
+old shape kept hidden), each in one Ctrl+Z. The check it needs is built and
+tested (`core/topology.py`): a result is the same surface as the mesh sent
+when every result vertex sits on a sent vertex after the fit, every triangle
+lies inside one face with the same winding, every face is covered exactly,
+and each face corner gets one UV. The three results above pass it; the
+remeshes do not, as expected.
+
 ## Generate an image
 
 | Ready | As a card facing the camera | As a material on a selected mesh |
@@ -166,8 +231,8 @@ flowchart TB
     artist["Artist<br/>panel, picker, menu"]
     agent["Agent<br/>local MCP server (next)"]
     actions["Action layer, maya/<br/>generate, follow, land, import"]
-    core["core/, no Maya import<br/>Scenario MCP client, sign-in, quotes, job ledger,<br/>schema forms, catalog, downloads, glTF reader"]
-    scene["Maya scene<br/>GLB builder, materials, cards,<br/>provenance attributes, undo"]
+    core["core/, no Maya import<br/>Scenario MCP client, sign-in, quotes, job ledger,<br/>schema forms, catalog, downloads, uploads,<br/>glTF reader and writer, topology match"]
+    scene["Maya scene<br/>GLB builder, mesh export, materials, cards,<br/>provenance attributes, undo"]
     scenario["Scenario MCP over HTTPS<br/>models, jobs, assets"]
     artist --> actions
     agent --> actions

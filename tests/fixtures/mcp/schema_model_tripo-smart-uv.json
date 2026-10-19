@@ -1,0 +1,23 @@
+{
+ "model_id": "model_tripo-smart-uv",
+ "name": "Tripo Smart UV",
+ "capabilities": [
+  "3d23d"
+ ],
+ "parameters": [
+  {
+   "name": "model",
+   "type": "file",
+   "description": "Source 3D model. Must not exceed 80,000 triangles (a quad counts as two); reduce the polycount with Tripo Retopology first.",
+   "required": true,
+   "kind": "3d"
+  },
+  {
+   "name": "bake",
+   "type": "boolean",
+   "description": "Bake the existing textures onto the new UV layout. When off, returns the geometry with new UVs only.",
+   "default": true,
+   "required": false
+  }
+ ]
+}

@@ -49,11 +49,19 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
     resume with range requests, SHA-256 receipt, delivery host allow-list.
   - `gltf.py`: GLB reader (accessors, sparse, normalized), real file type
     by header, embedded textures written by role.
+  - `gltf_write.py`: GLB writer, the reader's inverse (meshes, one UV set,
+    normals, base colour textures, metres).
+  - `edits.py`: Edit selection tasks (Remesh, UV unwrap, Retexture), each
+    edit model's mesh field, formats and triangle cap, the checks made
+    before a mesh is sent, mesh fingerprints.
+  - `topology.py`: fit (uniform scale and offset from bounds) and the
+    matcher that proves an edit result is the sent surface (vertices,
+    triangles tiling each face, one UV per face corner).
   - `uploads.py`: a local file to a Scenario asset id: type read from the
     bytes, parts PUT to Scenario's links as given (no checksum headers), the
     same bytes reused within a session and workspace.
   - `catalog.py` (models per workspace and modality, cached 24 h),
-    `lanes.py` (lane definitions: Image, 3D Text and 3D Image modes; quick picks, presets), `provenance.py` (node attributes), `naming.py`.
+    `lanes.py` (lane definitions: Image, 3D Text, Image and Edit selection modes; quick picks, presets), `provenance.py` (node attributes), `naming.py`.
   - `http.py`, `jsonutil.py`, `errors.py`, `paths.py`, `settings.py`,
     `status.py`, `workspaces.py`, `log.py`, `diagnostics.py`, `links.py`.
 - `scripts/scenario_maya/maya/`: Maya side. `dispatcher.py` (workers do the
@@ -64,11 +72,15 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
   command that makes any import one undo step), `glb_builder.py` (GLB to
   meshes, materials, joints, skins, blend shapes and keys; import checks), `scene.py` (project folders, camera, selection, scene id),
   `capture.py` (a viewport still for a model input, outside the undo queue),
+  `mesh_export.py` (a selected mesh to the GLB sent for an edit, with the
+  record kept to find and fit the result), `apply.py` (edit results back
+  over the mesh: target by UUID, fit against the kept sent file),
   `lifecycle.py` (load and unload), `compat.py`.
 - `scripts/scenario_maya/ui/`: PySide6. `panel.py` (the dockable
   `workspaceControl`), `lane.py` (a lane: model, prompt, settings, priced
   Generate, result cards), `inputs.py` (the image row: file, viewport
-  capture, Image results), `fields.py` (settings from a model schema),
+  capture, Image results), `mesh_input.py` (the Edit selection row: task,
+  Use selection, checks, send), `fields.py` (settings from a model schema),
   `picker.py`, `signin.py`, `workspace.py`, `jobs.py`, `menu.py`,
   `commands.py` (runtime commands), `common.py`, `qt.py`.
 - `scripts/scenario_maya/agent/`: the local MCP server (milestone M5).

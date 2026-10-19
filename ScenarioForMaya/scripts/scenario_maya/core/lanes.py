@@ -2,13 +2,15 @@
 
 Lane ids are stable and separate from labels, so a renamed label never breaks
 saved state. A lane appears in the panel only once it is built end to end.
-Lanes that share a ``tab`` are the modes of one tab (3D: Text, Image) and
-share its results list.
+Lanes that share a ``tab`` are the modes of one tab (3D: Text, Image, Edit
+selection) and share its results list.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
+from . import edits
 
 
 @dataclass(frozen=True)
@@ -27,7 +29,7 @@ class Lane:
     presets: dict = field(default_factory=dict, compare=False, hash=False)  # first values per model, before the user saves any
     tab: str = ""  # lanes with the same tab are its modes; "" means the lane is its own tab
     mode: str = ""  # the mode's label inside its tab
-    inputs: str = ""  # "images": the lane draws an image input row for the model's image fields
+    inputs: str = ""  # "images": an image row for the model's image fields; "mesh": the selected mesh for an edit
     empty_hint: str = "Nothing generated yet. Type what you need and press Generate."
 
     @property
@@ -105,7 +107,26 @@ THREE_D_IMAGE = Lane(
     empty_hint="Nothing generated yet. Add an image of one object (a file, the viewport or an Image result) and press Generate.",
 )
 
-LANES = (IMAGE, THREE_D, THREE_D_IMAGE)
+THREE_D_EDIT = Lane(
+    id="3d_edit",
+    label="3D",
+    modality="3d",
+    capabilities=("3d23d",),
+    recommend="3d23d",
+    # Every task's picks; the page shows the current task's (core/edits.py).
+    quick_picks=tuple(model for task in edits.TASKS for model in task.quick_picks),
+    starter_prompt="",
+    examples=(),
+    destination="Saved under scenario/<date> in the project. Import places the result over the mesh it came from, as a new group.",
+    results="model",
+    formats=("glb",),
+    tab="3d",
+    mode="Edit selection",
+    inputs="mesh",
+    empty_hint="Nothing edited yet. Select a mesh, choose a task, then Use selection and Generate.",
+)
+
+LANES = (IMAGE, THREE_D, THREE_D_IMAGE, THREE_D_EDIT)
 BY_ID = {lane.id: lane for lane in LANES}
 
 

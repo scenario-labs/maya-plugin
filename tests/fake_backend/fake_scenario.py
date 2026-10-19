@@ -72,11 +72,43 @@ PRICES = {
     "model_meshy-7-1-img23d": 120,
     "model_tripo-p2-image-to-3d": 220,
     "model_spark-test": 2.75,
+    "model_tripo-retopology-v3": 70,
+    "model_tripo-smart-uv": 40,
+    "model_tencent-uv-unwrapping": 23,
+    "model_meshy-7-retexture": 40,
+    "model_tripo-v3-0-texturing": 15,
 }
 
 
 THREE_D_MODELS = ("model_meshy-7-1-txt23d", "model_meshy-t2-5-smart-topology", "model_tripo-v3-1-image-to-3d", "model_meshy-7-1-img23d", "model_tripo-p2-image-to-3d")
 IMAGE_INPUT_MODELS = ("model_tripo-v3-1-image-to-3d", "model_meshy-7-1-img23d", "model_tripo-p2-image-to-3d")
+
+# Edit models (3d23d): task, mesh field, longest side of the result in metres. On 2026-10-19
+# Tripo models returned the sent mesh 1 m long and Meshy models 2 m long, centred, unrotated;
+# the Tencent model was not run live, so its size here is a guess.
+EDIT_MODELS = {
+    "model_tripo-retopology-v3": ("remesh", "model", 1.0, "Tripo Retopology v3"),
+    "model_meshy-remesh": ("remesh", "model", 2.0, "Meshy Remesh"),
+    "model_tripo-smart-uv": ("uv", "model", 1.0, "Tripo Smart UV"),
+    "model_tencent-uv-unwrapping": ("uv", "file3d", 1.0, "Tencent UV Unwrapping"),
+    "model_meshy-uv-unwrap": ("uv", "model", 2.0, "Meshy UV Unwrap"),
+    "model_meshy-7-retexture": ("retexture", "model", 2.0, "Meshy 7 Retexture"),
+    "model_tripo-v3-0-texturing": ("retexture", "model", 1.0, "Tripo 3.0 Texturing"),
+}
+EDIT_ROWS = [
+    {
+        "id": model_id,
+        "name": name,
+        "shortDescription": f"{task.title()} of an uploaded 3D model.",
+        "type": "custom",
+        "privacy": "public",
+        "capabilities": ["3d23d"],
+        "status": "trained",
+        "tags": ["3d"],
+        "createdAt": "2026-09-15T00:00:00.000Z",
+    }
+    for model_id, (task, _field, _side, name) in EDIT_MODELS.items()
+]
 
 
 def _glb() -> bytes:
@@ -89,6 +121,38 @@ def _glb() -> bytes:
         path = glb_samples.textured_quad(os.path.join(folder, "result.glb"))
         with open(path, "rb") as handle:
             return handle.read()
+
+
+def _edited_glb(task: str, side: float, source: bytes) -> tuple:
+    """(GLB bytes, triangles, dimensions): the sent mesh as the edit models returned it on
+    2026-10-19, rescaled to ``side`` metres and centred, no rotation. A UV task gets a new
+    layout (a planar projection, one UV per vertex position), a retexture keeps the sent
+    UVs and adds a base colour texture, a remesh keeps half the triangles."""
+    from scenario_maya.core import gltf, gltf_write, topology
+
+    mesh = topology.result_from_document(gltf.Document.parse(source))
+    lo, hi = topology.bounds(mesh.points)
+    size = max(max(hi[k] - lo[k] for k in range(3)), 1e-9)
+    scale = side / size
+    centre = [(lo[k] + hi[k]) / 2 for k in range(3)]
+    points = [(scale * (x - centre[0]), scale * (y - centre[1]), scale * (z - centre[2])) for x, y, z in mesh.points]
+    triangles = mesh.triangles
+    uvs = mesh.uvs
+    materials = None
+    if task == "uv" or (task == "retexture" and uvs is None):
+        uvs = [((x - lo[0]) / size, (z - lo[2]) / size) for x, _y, z in mesh.points]
+    if task == "remesh":
+        triangles = triangles[: max(1, len(triangles) // 2)]
+    if task == "retexture":
+        materials = [gltf_write.MaterialPart("retextured", image=_png(8, 8, (60, 110, 200)), image_mime="image/png")]
+    part = gltf_write.MeshPart(
+        "result",
+        [value for point in points for value in point],
+        [gltf_write.Primitive([index for triangle in triangles for index in triangle], 0 if materials else None)],
+        uvs=[value for uv in uvs for value in uv] if uvs is not None else None,
+    )
+    dims = [round(scale * (hi[k] - lo[k]), 6) for k in range(3)]
+    return gltf_write.to_bytes([part], materials, generator="fake edit model"), len(triangles), dims
 
 
 def _load_fixture(name: str) -> dict:
@@ -515,7 +579,7 @@ class Handler(BaseHTTPRequestHandler):
         if filters.get("modality") == "image" and filters.get("privacy") == "public":
             data["models"] = data["models"] + [IMAGE_MODEL]
         if filters.get("modality") == "3d" and filters.get("privacy") == "public":
-            data["models"] = data["models"] + [THREE_D_MODEL, IMAGE_TO_3D_MODEL]
+            data["models"] = data["models"] + [THREE_D_MODEL, IMAGE_TO_3D_MODEL] + [dict(row) for row in EDIT_ROWS]
         return data
 
     def _tool_model_schema_get(self, args):
@@ -537,12 +601,23 @@ class Handler(BaseHTTPRequestHandler):
             ids = given if isinstance(given, list) else [given] if given else []
             if not ids or any(asset_id not in self.state.assets for asset_id in ids):
                 raise ToolFailure(400, {"error": "image: Asset not found or not an uploaded image."})
+        if model_id in EDIT_MODELS:
+            field = EDIT_MODELS[model_id][1]
+            given = (args.get("parameters") or {}).get(field)
+            asset = self.state.assets.get(given) if isinstance(given, str) else None
+            if asset is None or asset.get("kind") != "3d":
+                raise ToolFailure(400, {"error": f"{field}: Asset not found or not an uploaded 3D model."})
         if args.get("dry_run"):
             return {"dry_run": True, "model_id": model_id, "job": {}, "creativeUnitsCost": cost, "creativeUnitsDiscount": 0}
         job_id = "job_fake" + secrets.token_hex(8)
         asset_id = "asset_fake" + secrets.token_hex(8)
         if model_id in THREE_D_MODELS:
             return self._run_3d(model_id, job_id, cost)
+        if model_id in EDIT_MODELS:
+            task, field, side, _name = EDIT_MODELS[model_id]
+            source = self.state.files[self.state.assets[args["parameters"][field]]["file"]]
+            glb, triangles, dims = _edited_glb(task, side, source)
+            return self._run_3d(model_id, job_id, cost, glb=glb, meta={"kind": "3d", "faceCount": triangles, "dimensions": dims})
         with self.state.lock:
             self.state.jobs[job_id] = {
                 "jobId": job_id,
@@ -560,11 +635,12 @@ class Handler(BaseHTTPRequestHandler):
             self.state.assets[asset_id] = {"id": asset_id, "mimeType": "image/png", "kind": "image", "file": asset_id + ".png"}
         return {"model_id": model_id, "job_id": job_id, "status": "queued"}
 
-    def _run_3d(self, model_id: str, job_id: str, cost) -> dict:
+    def _run_3d(self, model_id: str, job_id: str, cost, glb: bytes = b"", meta: dict | None = None) -> dict:
         """Like the hosted service: a GLB, its OBJ and MTL siblings and a texture. The OBJ comes
         first here (the service lists the GLB first) so tests prove the pick is by format."""
+        data = glb or _glb()
         glb, obj, mtl, png = ("asset_fake" + secrets.token_hex(8) for _ in range(4))
-        meta = {"kind": "3d", "faceCount": 2, "dimensions": [1.0, 1.0, 0.0]}
+        meta = meta or {"kind": "3d", "faceCount": 2, "dimensions": [1.0, 1.0, 0.0]}
         with self.state.lock:
             self.state.jobs[job_id] = {
                 "jobId": job_id,
@@ -578,7 +654,7 @@ class Handler(BaseHTTPRequestHandler):
                 "polls": 0,
                 "result_assets": [obj, glb, mtl, png],
             }
-            self.state.files[glb + ".glb"] = _glb()
+            self.state.files[glb + ".glb"] = data
             self.state.files[glb + "_thumb.png"] = _png(16, 16, (90, 160, 90))
             self.state.files[obj + ".obj"] = b"v 0 0 0\nv 1 0 0\nv 1 1 0\nf 1 2 3\n"
             self.state.files[mtl + ".mtl"] = b"newmtl m\n"

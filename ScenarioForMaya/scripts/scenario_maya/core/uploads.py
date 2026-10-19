@@ -14,11 +14,12 @@ import hashlib
 import os
 import threading
 
-from . import errors
+from . import errors, gltf
 from .http import Transport, UrllibTransport, is_secure_url
 from .session import no_spend
 
 IMAGE_TYPES = {"png": "image/png", "jpeg": "image/jpeg", "webp": "image/webp"}
+MODEL_TYPES = {"glb": "model/gltf-binary", "fbx": "model/x-fbx", "obj": "model/obj"}
 _PENDING = ("timeout", "in_progress", "processing", "pending")
 _CACHE: dict = {}
 _LOCK = threading.Lock()
@@ -77,6 +78,11 @@ def upload_file(session, path: str, *, kind: str = "image", transport: Transport
         if not found:
             raise errors.Refused(f"{name} is not a PNG, JPEG or WebP image.", hint="Save it as PNG or JPEG and add it again.")
         content_type = IMAGE_TYPES[found]
+    elif kind == "3d":
+        found = gltf.sniff_format(path)
+        if found not in MODEL_TYPES:
+            raise errors.Refused(f"{name} is not a GLB, FBX or OBJ file.")
+        content_type = MODEL_TYPES[found]
     size = os.path.getsize(path)
     if not size:
         raise errors.Refused(f"{name} is empty.")

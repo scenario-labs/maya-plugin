@@ -10,10 +10,11 @@ modes of one tab (3D: Text, Image) show the same results.
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import time
 
-from ..core import errors, lanes, provenance
+from ..core import edits, errors, lanes, provenance
 from ..core.jsonutil import cu_display
 from ..core.session import no_spend
 from ..core.status import status_tone, status_word
@@ -22,6 +23,7 @@ from .common import TONE_COLORS, copy_text, error_text, message_label, open_url,
 from .fields import FieldsForm
 from .inputs import ImageInputs
 from .jobs import job_details
+from .mesh_input import MeshInput
 from .qt import QtCore, QtGui, QtWidgets, dpi
 
 PRICE_DELAY_MS = 700
@@ -262,6 +264,12 @@ class LanePage(QtWidgets.QWidget):
             self.inputs = ImageInputs(runtime)
             self.inputs.changed.connect(self._edited)
             self.inputs.set_field(None)
+        self.mesh = None
+        if lane.inputs == "mesh":
+            self.mesh = MeshInput(runtime)
+            self.mesh.set_task(self.session.settings.get(f"lane_{lane.id}_task") or edits.TASKS[0].id)
+            self.mesh.changed.connect(self._edited)
+            self.mesh.task_changed.connect(self._task_changed)
         self.prompt_label = QtWidgets.QLabel("Prompt")
         self.prompt = QtWidgets.QPlainTextEdit()
         self.prompt.setPlaceholderText("Describe what you need")
@@ -299,6 +307,8 @@ class LanePage(QtWidgets.QWidget):
         layout.addWidget(self.model_line)
         if self.inputs is not None:
             layout.addWidget(self.inputs)
+        if self.mesh is not None:
+            layout.addWidget(self.mesh)
         layout.addWidget(self.prompt_label)
         layout.addWidget(self.prompt)
         layout.addLayout(self.fields_box)
@@ -329,7 +339,7 @@ class LanePage(QtWidgets.QWidget):
         self.prompt.blockSignals(True)
         self.prompt.setPlainText(prompt)
         self.prompt.blockSignals(False)
-        self.set_model(settings.get(f"lane_{lane.id}_model") or lane.quick_picks[0], save=False)
+        self.set_model(self._saved_model(), save=False)
         self.reload_results()
 
     # -- model and form ----------------------------------------------------
@@ -338,6 +348,16 @@ class LanePage(QtWidgets.QWidget):
     def model_id(self) -> str:
         return self._model_id
 
+    def _saved_model(self) -> str:
+        settings = self.session.settings
+        if self.mesh is not None:  # Edit selection remembers a model per task
+            return settings.get(f"lane_{self.lane.id}_model_{self.mesh.task.id}") or self.mesh.task.quick_picks[0]
+        return settings.get(f"lane_{self.lane.id}_model") or self.lane.quick_picks[0]
+
+    def _task_changed(self, task_id: str) -> None:
+        self.session.settings.update(**{f"lane_{self.lane.id}_task": task_id})
+        self.set_model(self._saved_model(), save=False)
+
     def set_model(self, model_id: str, save: bool = True) -> None:
         self._model_id = model_id
         row = self.runtime.catalog.get(self.session.workspace(), model_id) if self.session.signed_in else None
@@ -345,7 +365,11 @@ class LanePage(QtWidgets.QWidget):
         self.model_line.setText((row or {}).get("shortDescription") or "")
         self.model_line.setVisible(bool(self.model_line.text()))
         if save:
-            self.session.settings.update(**{f"lane_{self.lane.id}_model": model_id})
+            key = f"lane_{self.lane.id}_model"
+            task = edits.task_for_model(model_id) if self.mesh is not None else None
+            if task is not None:
+                key += f"_{task.id}"
+            self.session.settings.update(**{key: model_id})
         self._set_fields(None)
         self._button("Loading model...", False)
         if not self.session.signed_in:
@@ -369,6 +393,9 @@ class LanePage(QtWidgets.QWidget):
         self._show_prompt(form.prompt_field)
         if self.inputs is not None:
             self.inputs.set_field(form.image_fields[0] if form.image_fields else None)
+        if self.mesh is not None:
+            self.mesh.set_model(model_id, self.model_name.text())
+            self._show_prompt(form.prompt_field)
         self._edited()
 
     def _show_prompt(self, field) -> None:
@@ -376,7 +403,8 @@ class LanePage(QtWidgets.QWidget):
         self.prompt_label.setVisible(field is not None)
         self.prompt.setVisible(field is not None)
         if field is not None:
-            self.prompt_label.setText("Prompt" if field.required or field.name == "prompt" else f"{field.label} (optional)")
+            needed = field.required or field.name == "prompt" or (self.mesh is not None and self.mesh.task.needs_prompt)
+            self.prompt_label.setText("Prompt" if needed else f"{field.label} (optional)")
 
     def _form_failed(self, error) -> None:
         self._button("Price unavailable (Retry)", True)
@@ -397,7 +425,8 @@ class LanePage(QtWidgets.QWidget):
 
         if not self.session.signed_in:
             return
-        dialog = ModelPicker(self.runtime, self.lane, current=self._model_id, parent=self)
+        lane = self.lane if self.mesh is None else dataclasses.replace(self.lane, quick_picks=self.mesh.task.quick_picks)
+        dialog = ModelPicker(self.runtime, lane, current=self._model_id, parent=self)
         if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted and dialog.chosen:
             self.set_model(dialog.chosen)
 
@@ -413,12 +442,18 @@ class LanePage(QtWidgets.QWidget):
             ids = self.inputs.asset_ids()
             if ids:
                 out[self.inputs.field.name] = ids if self.inputs.field.is_array else ids[0]
+        if self.mesh is not None and self.form is not None and self.form.mesh_fields and self.mesh.asset_id():
+            field = self.form.mesh_fields[0]
+            out[field.name] = [self.mesh.asset_id()] if field.is_array else self.mesh.asset_id()
         return out
 
     def origin(self) -> dict:
         out = {"scene_uuid": scene.scene_uuid(create=False), "scene_path": scene.scene_path(), "target": "", "lane": self.lane.id}
         if self.inputs is not None:
             out["inputs"] = self.inputs.described()  # local record only, for Re-run
+        if self.mesh is not None and self.mesh.item:
+            out["edit"] = self.mesh.described()  # local record: what was sent, to fit and apply the result
+            out["target"] = out["edit"]["meshes"][0]["node"]
         return out
 
     def label(self, params: dict) -> str:
@@ -427,6 +462,8 @@ class LanePage(QtWidgets.QWidget):
         text = str(params.get(prompt_field.name if prompt_field is not None else "prompt") or "")
         if not text and self.inputs is not None:
             text = ", ".join(os.path.splitext(name)[0] for name in self.inputs.names())
+        if not text and self.mesh is not None:
+            text = f"{self.mesh.task.label} {self.mesh.name()}"
         return text
 
     def _button(self, text: str, enabled: bool) -> None:
@@ -447,6 +484,12 @@ class LanePage(QtWidgets.QWidget):
             self.price_timer.stop()
             self._button("Sending the image...", False)
             return
+        if self.mesh is not None:
+            blocked = self._mesh_blocked()
+            if blocked:
+                self.price_timer.stop()
+                self._button(blocked, False)
+                return
         problems = self.form.problems(self.values())
         if problems:
             self.price_timer.stop()
@@ -454,6 +497,21 @@ class LanePage(QtWidgets.QWidget):
             return
         self._button("Checking price...", False)
         self.price_timer.start(PRICE_DELAY_MS)
+
+    def _mesh_blocked(self) -> str:
+        """The Generate button's word when the edit's mesh is not ready (spec 4.2)."""
+        mesh = self.mesh
+        if mesh.busy():
+            return "Sending the mesh..."
+        if not mesh.item:
+            self.destination.setText(self.lane.destination)
+            return "Select a mesh to edit"
+        self.destination.setText(f"Saved under scenario/<date>. Import places the result over {mesh.name()}, fitted to it, as a new group; {mesh.name()} is not changed.")
+        if mesh.problems():
+            return "Mesh not accepted by this model"
+        if mesh.task.needs_prompt and not self.prompt.toPlainText().strip():
+            return "Needs a prompt"
+        return ""
 
     def check_price(self) -> None:
         if self.form is None or not self.session.signed_in or self._busy:
@@ -603,6 +661,8 @@ class LanePage(QtWidgets.QWidget):
         prompt_field = form.prompt_field if form is not None else None
         if self.inputs is not None:
             self.inputs.set_items((row.get("origin") or {}).get("inputs") or [])
+        if self.mesh is not None:
+            self.mesh.restore((row.get("origin") or {}).get("edit") or {})
         if row.get("target_id") and row["target_id"] != self._model_id:
             self.session.settings.update(**{f"lane_{self.lane.id}_values_{row['target_id']}": {k: v for k, v in params.items() if k != "prompt"}})
             self.set_model(row["target_id"])

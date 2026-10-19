@@ -100,8 +100,28 @@ def test_an_uploaded_image_prices_and_runs_image_to_3d(signed_in, fake, tmp_path
     assert row["state"] == "remote" and fake.state.paid_runs()[0]["arguments"]["parameters"]["image"] == [sent["asset_id"]]
 
 
-def test_the_3d_tab_has_a_text_and_an_image_mode():
+def test_the_3d_tab_has_text_image_and_edit_modes():
     assert lanes.tabs() == ("image", "3d")
-    assert [lane.mode for lane in lanes.tab_lanes("3d")] == ["Text", "Image"]
+    assert [lane.mode for lane in lanes.tab_lanes("3d")] == ["Text", "Image", "Edit selection"]
     assert lanes.lane_for_model(["img23d"]) is lanes.THREE_D_IMAGE
+    assert lanes.lane_for_model(["3d23d"]) is lanes.THREE_D_EDIT and lanes.THREE_D_EDIT.inputs == "mesh"
     assert lanes.THREE_D_IMAGE.quick_picks[0] == MESHY_IMAGE and lanes.THREE_D_IMAGE.formats == ("glb",)
+
+
+def test_a_mesh_is_sent_as_3d_and_runs_an_edit_model(signed_in, fake, tmp_path):
+    from tests.glb_samples import textured_quad
+
+    form = ModelForm.from_schema(schema("model_tripo-smart-uv"))
+    assert [field.name for field in form.mesh_fields] == ["model"] and form.prompt_field is None
+    mesh = textured_quad(str(tmp_path / "scn_input_test.glb"))
+    with pytest.raises(errors.Refused, match="is not a GLB, FBX or OBJ file"):
+        uploads.upload_file(signed_in, image(tmp_path), kind="3d")
+    sent = uploads.upload_file(signed_in, mesh, kind="3d")
+    upload = next(iter(fake.state.uploads.values()))
+    assert (upload["kind"], upload["content_type"]) == ("3d", "model/gltf-binary")
+    picture = uploads.upload_file(signed_in, image(tmp_path))
+    with pytest.raises(errors.ScenarioError):
+        signed_in.price("model_tripo-smart-uv", {"model": picture["asset_id"]})  # an image is not a mesh
+    params = form.build_params({"model": sent["asset_id"]})
+    quote = signed_in.price("model_tripo-smart-uv", params, origin={"lane": lanes.THREE_D_EDIT.id})
+    assert quote.cu_cost_exact == "40"

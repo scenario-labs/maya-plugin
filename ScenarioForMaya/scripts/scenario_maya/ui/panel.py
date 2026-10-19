@@ -27,11 +27,12 @@ DOCK_BESIDE = "ChannelBoxLayerEditor"
 
 LANE_TIPS = {
     "image": "Image: generate images, then land them as a card, a material or an image plane.",
-    "3d": "3D: generate a 3D model from a prompt or an image and import it as a textured group.",
+    "3d": "3D: generate a 3D model from a prompt or an image, or edit a mesh of the scene (remesh, UV unwrap, retexture).",
 }
 MODE_TIPS = {
     "3d": "Text to 3D: describe one object.",
     "3d_image": "Image to 3D: one image of an object (a file, the viewport or an Image result), or several views of it.",
+    "3d_edit": "Edit selection: remesh, UV unwrap or retexture a mesh of the scene. The result comes back fitted over it.",
 }
 
 _PANEL: ScenarioPanel | None = None

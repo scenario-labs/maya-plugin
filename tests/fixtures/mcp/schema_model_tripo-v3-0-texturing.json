@@ -1,0 +1,82 @@
+{
+ "model_id": "model_tripo-v3-0-texturing",
+ "name": "Tripo 3.0 Texturing",
+ "capabilities": [
+  "3d23d"
+ ],
+ "parameters": [
+  {
+   "name": "model",
+   "type": "file",
+   "description": "Source 3D model.",
+   "required": true,
+   "kind": "3d"
+  },
+  {
+   "name": "pbr",
+   "type": "boolean",
+   "description": "PBR generates material maps (albedo, metallic, roughness, normal). When enabled, texture options are ignored.",
+   "default": true,
+   "required": false
+  },
+  {
+   "name": "textureQuality",
+   "type": "string",
+   "description": "Texture quality level. 'Detailed' gives HD quality textures.",
+   "default": "standard",
+   "allowed_values": [
+    "standard",
+    "detailed",
+    "extreme"
+   ],
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "textureAlignment",
+   "type": "string",
+   "description": "Texture alignment strategy.",
+   "default": "original_image",
+   "allowed_values": [
+    "original_image",
+    "geometry"
+   ],
+   "required": false
+  },
+  {
+   "name": "textureSeed",
+   "type": "number",
+   "description": "Random seed for texture generation.",
+   "required": false
+  },
+  {
+   "name": "prompt",
+   "type": "string",
+   "description": "Text description for texture generation. Mutually exclusive with image prompt and multiview images.",
+   "prompt": true,
+   "required": false
+  },
+  {
+   "name": "imagePrompt",
+   "type": "file",
+   "description": "Single image used as texture prompt. Mutually exclusive with text prompt.",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "styleImage",
+   "type": "file",
+   "description": "Reference image for artistic style. Requires prompt or image prompt to also be set.",
+   "kind": "image",
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "bake",
+   "type": "boolean",
+   "description": "Bake textures onto the model.",
+   "default": true,
+   "required": false
+  }
+ ]
+}

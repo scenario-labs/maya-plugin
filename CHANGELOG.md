@@ -24,6 +24,9 @@
 - The prompt box follows the model: hidden when the model takes no prompt, marked optional when it only guides the texture.
 - A form that misses its image says "Add an image".
 - `tools/render_glb.py` renders a GLB in Viewport 2.0 without a window, through the plug-in's importer: stills or a turntable GIF for documentation.
+- 3D tab, Edit selection mode: remesh, UV unwrap or retexture a mesh of the scene (Tripo Retopology v3, Meshy Remesh, Tripo Smart UV, Hunyuan UV Unwrapping, Meshy UV Unwrap, Meshy 7 Retexture, Tripo 3.0 Texturing). Use selection writes the selected mesh as a GLB (object space, metres, neutral names, its UVs and base colour textures), checks it against the model's limits (format, triangle cap) before anything is sent, and sends it once per unchanged mesh. Each task remembers its own model; Retexture asks for a prompt. One mesh at a time in this version.
+- Import of an edit result places it over the mesh it came from, as a new group, fitted with one uniform scale and an offset (edit models return the mesh resized and centred), even when the mesh moved after it was sent. The mesh itself is not changed.
+- `tools/render_glb.py --checker N` shows the UV layout with a checker instead of the materials.
 
 ### Fixes
 
@@ -32,3 +35,4 @@
 ### Development
 
 - `tools/lint.py` also checks files not yet added to git, so a local run before a commit finds what CI finds.
+- The fake Scenario server answers the edit models like the live ones (the sent mesh back resized and centred, with new UVs, a texture or fewer triangles), so Edit selection is tested end to end without spending.

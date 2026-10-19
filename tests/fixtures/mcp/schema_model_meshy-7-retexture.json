@@ -1,0 +1,68 @@
+{
+ "model_id": "model_meshy-7-retexture",
+ "name": "Meshy 7 - Retexture",
+ "capabilities": [
+  "3d23d"
+ ],
+ "parameters": [
+  {
+   "name": "model",
+   "type": "file",
+   "description": "Upload a GLB file of the 3D model you want to retexture.",
+   "required": true,
+   "kind": "3d"
+  },
+  {
+   "name": "textStylePrompt",
+   "type": "string",
+   "description": "Describe your desired texture style using text. Provide exactly one of Style Prompt, Style Image, or Multi-View Images.",
+   "max_length": 600,
+   "prompt": true,
+   "required": false
+  },
+  {
+   "name": "imageStyle",
+   "type": "file",
+   "description": "Provide a 2D image to guide the texturing process. Provide exactly one of Style Prompt, Style Image, or Multi-View Images.",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "multiviewImage",
+   "type": "file_array",
+   "description": "Provide 1\u20134 images of the same object from different views to drive multi-view texturing (Meshy 7). The first image is the primary (front) view. Provide exactly one of Style Prompt, Style Image, or Multi-View Images.",
+   "max_length": 4,
+   "kind": "image",
+   "required": false,
+   "array": true,
+   "array_note": "Pass an array, even for a single value: a bare value is ignored."
+  },
+  {
+   "name": "enablePbr",
+   "type": "boolean",
+   "description": "Generate PBR Maps (metallic, roughness, normal) in addition to the base color.",
+   "default": true,
+   "required": false
+  },
+  {
+   "name": "textureResolution",
+   "type": "string",
+   "description": "Base color texture resolution: 2K (2048), 4K (4096), or 8K (8192). At 8K, PBR maps are generated at 4K and no emission map is produced.",
+   "default": "2k",
+   "allowed_values": [
+    "2k",
+    "4k",
+    "8k"
+   ],
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "enableOriginalUv",
+   "type": "boolean",
+   "description": "Use the model's existing UV map instead of generating a new one. If no UVs are present, output quality may be lower.",
+   "default": true,
+   "required": false
+  }
+ ]
+}
