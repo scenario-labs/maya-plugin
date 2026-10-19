@@ -50,6 +50,17 @@ THREE_D_MODEL = {
     "tags": ["3d"],
     "createdAt": "2026-09-22T00:00:00.000Z",
 }
+IMAGE_TO_3D_MODEL = {
+    "id": "model_meshy-7-1-img23d",
+    "name": "Meshy 7.1 - Image to 3D",
+    "shortDescription": "Textured 3D models from one image or up to four views.",
+    "type": "custom",
+    "privacy": "public",
+    "capabilities": ["img23d"],
+    "status": "trained",
+    "tags": ["3d"],
+    "createdAt": "2026-09-22T00:00:00.000Z",
+}
 PROJECT = {"id": "proj_fake0000000000000001", "name": "Test project"}
 
 PRICES = {
@@ -58,11 +69,14 @@ PRICES = {
     "model_meshy-remesh": 20,
     "model_meshy-uv-unwrap": 20,
     "model_tripo-v3-1-image-to-3d": 45,
+    "model_meshy-7-1-img23d": 120,
+    "model_tripo-p2-image-to-3d": 220,
     "model_spark-test": 2.75,
 }
 
 
-THREE_D_MODELS = ("model_meshy-7-1-txt23d", "model_meshy-t2-5-smart-topology", "model_tripo-v3-1-image-to-3d")
+THREE_D_MODELS = ("model_meshy-7-1-txt23d", "model_meshy-t2-5-smart-topology", "model_tripo-v3-1-image-to-3d", "model_meshy-7-1-img23d", "model_tripo-p2-image-to-3d")
+IMAGE_INPUT_MODELS = ("model_tripo-v3-1-image-to-3d", "model_meshy-7-1-img23d", "model_tripo-p2-image-to-3d")
 
 
 def _glb() -> bytes:
@@ -94,6 +108,15 @@ def _png(width: int = 8, height: int = 8, rgb=(200, 120, 40)) -> bytes:
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
 
 
+class ToolFailure(Exception):
+    """A tool's own refusal, answered as the hosted server does (isError with the status)."""
+
+    def __init__(self, status: int, body: dict) -> None:
+        super().__init__(status)
+        self.status = status
+        self.body = body
+
+
 class State:
     def __init__(self) -> None:
         self.lock = threading.Lock()
@@ -103,6 +126,8 @@ class State:
         self.assets: dict = {}
         self.files: dict = {}
         self.uploads: dict = {}
+        self.upload_part_size = 6000000  # Scenario's part size; tests lower it to get several parts
+        self.upload_puts: list = []  # (upload id, part number, headers) per PUT
         self.file_requests: list = []  # (name, Range header) per file GET
         self.file_faults: dict = {}  # name -> list of "503", "cut" (half the bytes, then close), "redirect:<url>"
         self.polls_to_finish = 2
@@ -226,13 +251,15 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path.startswith("/upload/"):
             upload_id = parsed.path.split("/")[2]
+            number = int((urllib.parse.parse_qs(parsed.query).get("partNumber") or ["1"])[0])
             data = self._body()
             with self.state.lock:
                 upload = self.state.uploads.get(upload_id)
                 if upload is None:
                     self._send(404)
                     return
-                upload["data"] += data
+                upload["parts"][number] = data
+                self.state.upload_puts.append((upload_id, number, {k.lower(): v for k, v in self.headers.items()}))
             self._send(200, b"", "text/plain", {"ETag": '"' + hashlib.md5(data).hexdigest() + '"'})
             return
         self._send(404)
@@ -450,7 +477,11 @@ class Handler(BaseHTTPRequestHandler):
         if fault == "moderation":
             self._tool_error(request_id, 400, {"reason": "Prompt flagged by moderation"})
             return
-        result = handler(args)
+        try:
+            result = handler(args)
+        except ToolFailure as failure:
+            self._tool_error(request_id, failure.status, failure.body)
+            return
         if fault == "drop":
             self.close_connection = True
             self.connection.close()
@@ -484,7 +515,7 @@ class Handler(BaseHTTPRequestHandler):
         if filters.get("modality") == "image" and filters.get("privacy") == "public":
             data["models"] = data["models"] + [IMAGE_MODEL]
         if filters.get("modality") == "3d" and filters.get("privacy") == "public":
-            data["models"] = data["models"] + [THREE_D_MODEL]
+            data["models"] = data["models"] + [THREE_D_MODEL, IMAGE_TO_3D_MODEL]
         return data
 
     def _tool_model_schema_get(self, args):
@@ -500,6 +531,12 @@ class Handler(BaseHTTPRequestHandler):
     def _tool_model_run(self, args):
         model_id = args.get("model_id")
         cost = PRICES.get(model_id, 10)
+        if model_id in IMAGE_INPUT_MODELS:
+            # Like the hosted service, a run checks its required image: it must be an uploaded asset.
+            given = (args.get("parameters") or {}).get("image")
+            ids = given if isinstance(given, list) else [given] if given else []
+            if not ids or any(asset_id not in self.state.assets for asset_id in ids):
+                raise ToolFailure(400, {"error": "image: Asset not found or not an uploaded image."})
         if args.get("dry_run"):
             return {"dry_run": True, "model_id": model_id, "job": {}, "creativeUnitsCost": cost, "creativeUnitsDiscount": 0}
         job_id = "job_fake" + secrets.token_hex(8)
@@ -602,23 +639,29 @@ class Handler(BaseHTTPRequestHandler):
 
     def _tool_upload_asset(self, args):
         upload_id = "upl_fake" + secrets.token_hex(6)
+        size = int(args.get("file_size") or 0)
+        part_size = self.state.upload_part_size
+        count = max(1, -(-size // part_size))
         with self.state.lock:
-            self.state.uploads[upload_id] = {"data": b"", "name": args.get("file_name"), "kind": args.get("kind"), "size": args.get("file_size")}
-        return {
-            "upload_id": upload_id,
-            "parts": [{"part_number": 1, "upload_url": f"{self.base}/upload/{upload_id}?partNumber=1", "content_length": args.get("file_size")}],
-            "part_size": 6000000,
-            "total_parts": 1,
-        }
+            self.state.uploads[upload_id] = {"parts": {}, "name": args.get("file_name"), "kind": args.get("kind"), "size": size, "content_type": args.get("content_type")}
+        parts = [
+            {"part_number": n, "upload_url": f"{self.base}/upload/{upload_id}?partNumber={n}&x-amz-checksum-crc32=AAAAAA%3D%3D", "content_length": min(part_size, size - (n - 1) * part_size)}
+            for n in range(1, count + 1)
+        ]
+        return {"upload_id": upload_id, "parts": parts, "part_size": part_size, "total_parts": count}
 
     def _tool_upload_asset_complete(self, args):
         upload = self.state.uploads.get(args.get("upload_id"))
         if upload is None:
             return {"status": "failed"}
+        data = b"".join(upload["parts"][n] for n in sorted(upload["parts"]))
+        if len(data) != upload["size"]:
+            return {"status": "failed", "message": f"received {len(data)} of {upload['size']} bytes"}
         asset_id = "asset_up" + secrets.token_hex(8)
         with self.state.lock:
-            self.state.files[asset_id] = upload["data"]
-            self.state.assets[asset_id] = {"id": asset_id, "mimeType": "application/octet-stream", "kind": upload["kind"], "file": asset_id}
+            upload["data"] = data
+            self.state.files[asset_id] = data
+            self.state.assets[asset_id] = {"id": asset_id, "mimeType": upload["content_type"] or "application/octet-stream", "kind": upload["kind"], "file": asset_id}
         return {"asset_id": asset_id, "status": "imported"}
 
 

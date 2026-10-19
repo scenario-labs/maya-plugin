@@ -7,7 +7,8 @@ Every Scenario model inside Autodesk Maya, for artists and for agents.
 Scenario for Maya is a plug-in for Maya 2025, 2026 and 2027. Write a prompt
 in a docked panel, see the exact price on the Generate button, and the result
 lands in the open scene: a 3D model on the ground in front of the camera, or
-an image as a card, a material or an image plane. Each landing is one Ctrl+Z.
+an image as a card, a material or an image plane. A 3D model can start from a
+prompt or from an image. Each landing is one Ctrl+Z.
 Every request is priced before it is sent, sent once, and recorded on disk, so
 a crash or a dropped connection never charges twice.
 
@@ -19,7 +20,7 @@ and 3D; the table lists what comes next.
 | --- | --- | --- |
 | Sign-in | Browser (OAuth), a code on another device, or an API key; secrets in the system keychain | |
 | Panel | Docked beside the Channel Box and restored with the workspace; team and project picker; model picker; job list | Studio window, quick composer over the viewport |
-| 3D | Text to 3D with Meshy 7.1, Meshy T2.5, Tripo P2 and Rodin Gen-2.5; GLB import with PBR materials, skins, blend shapes and animation; import checks | Image to 3D and multi-view, then edits on your own meshes: retexture, remesh, UV unwrap, rig, animate, split into parts |
+| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; GLB import with PBR materials, skins, blend shapes and animation; import checks | Multi-view captures around the selection, then edits on your own meshes: retexture, remesh, UV unwrap, rig, animate, split into parts |
 | Image | Text to image with Scenario's image models; lands as a card, a material or an image plane | Image editing, upscale, LoRAs |
 | Jobs | One job list for every Maya session; downloads resume; results that finish while Maya is closed are offered on the next start | Results history, an "In this scene" view |
 | Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
@@ -60,6 +61,43 @@ Any local GLB can be imported the same way with **Scenario > Import GLB...**,
 without signing in. Maya has no glTF importer for scripts, so the plug-in
 builds the scene itself: meshes with UVs and normals, PBR materials, joints,
 skins, blend shapes and the first animation clip.
+
+## Turn an image into a 3D model
+
+| The image | The model, imported in Maya |
+| --- | --- |
+| ![A concept image of a carved wooden treasure chest](docs/media/image-to-3d-input.jpg) | ![The chest generated from it with Meshy 7.1, in Maya's viewport](docs/media/image-to-3d-result.jpg) |
+
+<p align="center"><img src="docs/media/image-to-3d-turntable.gif" width="420" alt="The generated chest turning in Maya's Viewport 2.0"></p>
+
+*The image was generated in the Image tab with GPT Image 2.5 Flare. The
+model is Meshy 7.1 Image to 3D at the 30,000-face preset (28,984 faces),
+imported by the plug-in and rendered in Maya's Viewport 2.0 with
+`tools/render_glb.py`.*
+
+1. Open the **3D** tab and choose **Image** (beside **Text**).
+2. Add the image: **File...** for a PNG, JPEG or WebP; **Viewport** for a
+   capture of the view you look through, with the grid and the selection
+   highlight hidden; **Image results** for anything made in the Image tab.
+   An Image result also has **Make a 3D model from this image** in its menu,
+   which opens this mode with the image in place.
+3. A file or a capture is sent to your Scenario project when you add it
+   (once per session: the same file added again is not sent twice). An
+   Image result is already on Scenario and is used as it is.
+4. The price shows on **Generate**, then the result card follows the job,
+   downloads the GLB and offers **Import**, as for text to 3D. A job
+   without a prompt is named after its image.
+
+One clear image of one object works best. Meshy 7.1 also takes up to four
+views of the same object; models that take one image use the first.
+
+**Which model.** Both quick picks below started from the image above, one
+run each:
+
+| Meshy 7.1 Image to 3D, the default | Tripo P2 |
+| --- | --- |
+| ![Meshy 7.1 result, front and back](docs/media/image-to-3d-meshy.jpg) | ![Tripo P2 result, front and back](docs/media/image-to-3d-tripo.jpg) |
+| 28,984 faces (30,000 preset), carving kept on every side, about 140 s, 120 CU, up to four views | 4,222 faces, clean mesh with flatter carving and a plain back, about 85 s, 220 CU, one image |
 
 ## Generate an image
 
@@ -205,7 +243,7 @@ What the plug-in sends and stores is in [docs/PRIVACY.md](docs/PRIVACY.md).
 | Layer | What it covers | Where it runs |
 | --- | --- | --- |
 | Unit | `core/` against a fake Scenario MCP and OAuth server: money rules, quotes, ledger recovery, downloads, the glTF reader | Python 3.11 and 3.13 on Linux, macOS and Windows (CI) |
-| `mayapy` | Plug-in load and unload, GLB import with undo and redo, the Image and 3D tabs end to end against the fake server, the panel | A Mac with Maya: `tools/test_maya.sh` |
+| `mayapy` | Plug-in load and unload, GLB import with undo and redo, the Image and 3D tabs end to end against the fake server (image upload, viewport capture without an undo step, an Image result sent to 3D), the panel | A Mac with Maya: `tools/test_maya.sh` |
 | GUI | Scripted sessions in the real Maya window: install, sign-in, restart recovery, live generation, undo after a click | A Mac with Maya: `tools/test_maya_gui.sh`, `tools/readme_media.sh` |
 | Contract | Reads and dry runs against the live Scenario MCP, nothing spent | Weekly in CI with a test key |
 

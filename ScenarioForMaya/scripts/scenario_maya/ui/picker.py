@@ -18,7 +18,7 @@ class ModelPicker(QtWidgets.QDialog):
         self.runtime = runtime
         self.lane = lane
         self.chosen = ""
-        self.setWindowTitle(f"Choose a model: {lane.label}")
+        self.setWindowTitle(f"Choose a model: {lane.label}" + (f" ({lane.mode})" if lane.mode else ""))
         self.resize(dpi(640), dpi(440))
         self.search = QtWidgets.QLineEdit()
         self.search.setPlaceholderText("Search models...")

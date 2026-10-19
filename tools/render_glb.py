@@ -1,0 +1,99 @@
+"""Renders a GLB in Maya's Viewport 2.0 without a window, through the plug-in's own importer.
+
+Used for README pictures of 3D results: the model is landed exactly as the
+Import button lands it, lit by a key, a rim and a fill light in front of a
+grey backdrop, and rendered with ``ogsRender`` (Viewport 2.0, works headless).
+Stills at the given angles, or a full turn; ``--gif`` also writes a looping
+GIF with ffmpeg. 0 CU: nothing is sent to Scenario.
+
+Usage (mayapy, headless):
+  MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --angles 0,180
+  MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --turn 48 --size 480 --gif out/turn.gif
+"""
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("glb")
+    parser.add_argument("out", help="folder for the JPEG frames")
+    parser.add_argument("--angles", default="0", help="turntable angles in degrees, comma separated (0 is a three-quarter front view)")
+    parser.add_argument("--turn", type=int, default=0, help="render a full turn in this many frames instead")
+    parser.add_argument("--size", type=int, default=800)
+    parser.add_argument("--gif", help="also write a looping GIF here (needs ffmpeg)")
+    parser.add_argument("--fps", type=int, default=16)
+    args = parser.parse_args()
+    glb, out = os.path.abspath(args.glb), os.path.abspath(args.out)
+    os.makedirs(out, exist_ok=True)
+    angles = [360.0 * i / args.turn for i in range(args.turn)] if args.turn else [float(a) for a in args.angles.split(",")]
+
+    import maya.standalone
+
+    maya.standalone.initialize(name="python")
+    from maya import cmds
+
+    project = tempfile.mkdtemp(prefix="scenario-render-")
+    cmds.workspace(project, openWorkspace=True)
+    cmds.loadPlugin(os.path.join(ROOT, "ScenarioForMaya", "plug-ins", "scenario_for_maya.py"))
+    from scenario_maya.maya import landing
+
+    stem = os.path.splitext(os.path.basename(glb))[0]
+    made = landing.land_model(glb, {}, texture_folder=os.path.join(project, "sourceimages", stem), label=stem, place=(0, 0, 0))
+    print(made["summary"], flush=True)
+
+    # Batch mode draws no background colour, so a grey cyclorama stands behind and under the model.
+    box = cmds.exactWorldBoundingBox(made["top"])
+    span = max(box[3] - box[0], box[4] - box[1], box[5] - box[2]) * 14
+    floor = cmds.polyPlane(width=span, height=span, subdivisionsX=1, subdivisionsY=1, name="backdrop_floor")[0]
+    wall = cmds.polyPlane(width=span, height=span, subdivisionsX=1, subdivisionsY=1, axis=(0, 0, 1), name="backdrop_wall")[0]
+    cmds.move(0, span / 2, -span / 5, wall)
+    backdrop = cmds.group(floor, wall, name="backdrop")
+    cmds.setAttr(backdrop + ".rotateY", 30)
+    grey = cmds.shadingNode("lambert", asShader=True, name="backdrop_grey")
+    cmds.setAttr(grey + ".color", 0.3, 0.31, 0.33, type="double3")
+    cmds.select(floor, wall)
+    cmds.hyperShade(assign=grey)
+    cmds.select(clear=True)
+    for name, intensity, rotate in (("key", 1.6, (-38, 40, 0)), ("rim", 0.7, (-18, 200, 0))):
+        light = cmds.directionalLight(intensity=intensity, name=name)
+        cmds.setAttr(cmds.listRelatives(light, parent=True)[0] + ".rotate", *rotate, type="double3")
+    cmds.ambientLight(intensity=0.5, name="fill")
+    modes = cmds.attributeQuery("lightingMode", node="hardwareRenderingGlobals", listEnum=True)[0].split(":")
+    cmds.setAttr("hardwareRenderingGlobals.lightingMode", modes.index("All"))
+    cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", 1)
+    cmds.setAttr("defaultRenderGlobals.imageFormat", 8)  # JPEG
+    # Batch ogsRender writes scene-linear values; the viewport applies the view transform, so do the same.
+    cmds.colorManagementPrefs(edit=True, outputTarget="renderer", outputTransformEnabled=True)
+    cmds.colorManagementPrefs(edit=True, outputTarget="renderer", outputUseViewTransform=True)
+
+    spin = cmds.group(made["top"], name="spin")
+    cmds.xform(spin, pivots=(0, 0, 0), worldSpace=True)
+    cmds.setAttr("persp.rotate", -15, 30, 0, type="double3")
+    cmds.setAttr("perspShape.focalLength", 50)
+    cmds.viewFit("persp", spin, fitFactor=0.95)
+    frames = []
+    for index, angle in enumerate(angles):
+        cmds.setAttr(spin + ".rotateY", angle)
+        written = cmds.ogsRender(camera="perspShape", width=args.size, height=args.size)
+        target = os.path.join(out, f"{stem}_{index:03d}.jpg")
+        shutil.move(written, target)
+        frames.append(target)
+    print(f"{len(frames)} frame(s) in {out}", flush=True)
+    if args.gif:
+        pattern = os.path.join(out, f"{stem}_%03d.jpg")
+        palette = f"fps={args.fps},split[a][b];[a]palettegen=max_colors=160[p];[b][p]paletteuse=dither=sierra2_4a"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(args.fps), "-i", pattern, "-filter_complex", palette, "-loop", "0", args.gif], check=True)
+        print("GIF", args.gif, flush=True)
+    os._exit(0)  # Maya 2027 can stall in uninitialize() after rendering
+
+
+if __name__ == "__main__":
+    sys.exit(main())

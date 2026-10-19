@@ -12,8 +12,8 @@ from maya import cmds
 from shiboken6 import getCppPointer
 
 from .. import __version__
-from ..core import diagnostics, links
-from ..core.lanes import IMAGE, LANES
+from ..core import diagnostics, lanes, links
+from ..core.lanes import IMAGE
 from .common import copy_text, error_text, message_label, open_url, show_message
 from .jobs import JobsView
 from .lane import LanePage
@@ -26,8 +26,12 @@ UI_SCRIPT = "import scenario_maya.ui.panel as _scn; _scn.restore()"
 DOCK_BESIDE = "ChannelBoxLayerEditor"
 
 LANE_TIPS = {
-    "image": "Image lane: generate images, then land them as a card, a material or an image plane.",
-    "3d": "3D lane: generate a 3D model from a prompt and import it as a textured group.",
+    "image": "Image: generate images, then land them as a card, a material or an image plane.",
+    "3d": "3D: generate a 3D model from a prompt or an image and import it as a textured group.",
+}
+MODE_TIPS = {
+    "3d": "Text to 3D: describe one object.",
+    "3d_image": "Image to 3D: one image of an object (a file, the viewport or an Image result), or several views of it.",
 }
 
 _PANEL: ScenarioPanel | None = None
@@ -69,23 +73,51 @@ class ScenarioPanel(QtWidgets.QWidget):
         self.signin.signed_in.connect(self._after_sign_in)
         self.lanes = QtWidgets.QHBoxLayout()
         self.lanes.setSpacing(dpi(2))
-        self.lane_buttons = QtWidgets.QButtonGroup(self)
-        self.lane_button: dict = {}
+        self.lane_buttons = QtWidgets.QButtonGroup(self)  # one per tab
+        self.lane_button: dict = {}  # tab id -> button
+        self.mode_buttons = QtWidgets.QButtonGroup(self)
+        self.mode_button: dict = {}  # lane id -> button, for tabs with several modes
+        self.mode_bars: dict = {}  # tab id -> its row of modes
         self.lane_pages: dict = {}
         self.lane_stack = QtWidgets.QStackedWidget()
-        for lane in LANES:
+        modes_box = QtWidgets.QVBoxLayout()
+        modes_box.setContentsMargins(0, 0, 0, 0)
+        for tab_id in lanes.tabs():
+            modes = lanes.tab_lanes(tab_id)
             button = QtWidgets.QToolButton()
-            button.setText(lane.label)
+            button.setText(modes[0].label)
             button.setCheckable(True)
             button.setAutoRaise(True)
-            button.setToolTip(LANE_TIPS.get(lane.id, f"{lane.label} lane"))
-            button.clicked.connect(lambda _=False, lane_id=lane.id: self.select_lane(lane_id))
+            button.setToolTip(LANE_TIPS.get(tab_id, f"{modes[0].label} lane"))
+            button.clicked.connect(lambda _=False, tab=tab_id: self.select_tab(tab))
             self.lane_buttons.addButton(button)
             self.lanes.addWidget(button)
-            self.lane_button[lane.id] = button
-            page = LanePage(runtime, lane)
-            self.lane_pages[lane.id] = page
-            self.lane_stack.addWidget(page)
+            self.lane_button[tab_id] = button
+            if len(modes) > 1:
+                bar = QtWidgets.QWidget()
+                row = QtWidgets.QHBoxLayout(bar)
+                row.setContentsMargins(0, 0, 0, 0)
+                row.setSpacing(dpi(2))
+                for lane in modes:
+                    mode = QtWidgets.QToolButton()
+                    mode.setText(lane.mode)
+                    mode.setCheckable(True)
+                    mode.setAutoRaise(True)
+                    mode.setToolTip(MODE_TIPS.get(lane.id, lane.mode))
+                    mode.clicked.connect(lambda _=False, lane_id=lane.id: self.select_lane(lane_id))
+                    self.mode_buttons.addButton(mode)
+                    self.mode_button[lane.id] = mode
+                    row.addWidget(mode)
+                row.addStretch(1)
+                bar.hide()
+                self.mode_bars[tab_id] = bar
+                modes_box.addWidget(bar)
+            for lane in modes:
+                page = LanePage(runtime, lane)
+                page.image_to_3d.connect(self.image_to_3d)
+                page.show_lane.connect(self._reuse_in)
+                self.lane_pages[lane.id] = page
+                self.lane_stack.addWidget(page)
         self.lanes.addStretch(1)
         self.lane = self.lane_pages[IMAGE.id]
         self.banner = QtWidgets.QFrame()
@@ -110,6 +142,7 @@ class ScenarioPanel(QtWidgets.QWidget):
         home_layout.setContentsMargins(dpi(8), dpi(2), dpi(8), dpi(8))
         home_layout.setSpacing(dpi(6))
         home_layout.addLayout(self.lanes)
+        home_layout.addLayout(modes_box)
         home_layout.addWidget(self.banner)
         home_layout.addWidget(self.lane_stack)
         home_layout.addSpacing(dpi(6))
@@ -169,6 +202,12 @@ class ScenarioPanel(QtWidgets.QWidget):
             self.workspace_button.setText(label + "  ▾")
         self.jobs.refresh()
 
+    def select_tab(self, tab_id: str) -> None:
+        """A tab opens on the mode used last in it."""
+        last = self.runtime.session.settings.get(f"tab_{tab_id}_lane") or ""
+        modes = [lane.id for lane in lanes.tab_lanes(tab_id)]
+        self.select_lane(last if last in modes else modes[0])
+
     def select_lane(self, lane_id: str, save: bool = True) -> None:
         page = self.lane_pages.get(lane_id) or self.lane_pages[IMAGE.id]
         for other in self.lane_pages.values():
@@ -177,9 +216,26 @@ class ScenarioPanel(QtWidgets.QWidget):
             other.setSizePolicy(policy, policy)
         self.lane = page
         self.lane_stack.setCurrentWidget(page)
-        self.lane_button[page.lane.id].setChecked(True)
+        tab_id = page.lane.tab_id
+        self.lane_button[tab_id].setChecked(True)
+        for other_tab, bar in self.mode_bars.items():
+            bar.setVisible(other_tab == tab_id)
+        if page.lane.id in self.mode_button:
+            self.mode_button[page.lane.id].setChecked(True)
         if save:
-            self.runtime.session.settings.update(lane=page.lane.id)
+            self.runtime.session.settings.update(**{"lane": page.lane.id, f"tab_{tab_id}_lane": page.lane.id})
+
+    def image_to_3d(self, row: dict) -> None:
+        """An Image result goes to the 3D tab's Image mode as its input; nothing is sent yet."""
+        self.select_lane(lanes.THREE_D_IMAGE.id)
+        page = self.lane_pages[lanes.THREE_D_IMAGE.id]
+        if page.inputs is not None:
+            page.inputs.use_result(row)
+
+    def _reuse_in(self, lane_id: str, row: dict) -> None:
+        if lane_id in self.lane_pages:
+            self.select_lane(lane_id)
+            self.lane_pages[lane_id].reuse(row)
 
     def show_page(self, page: str | None) -> None:
         if page == "jobs" and self.runtime.session.signed_in:

@@ -175,7 +175,7 @@ def test_build_params_leaves_defaults_out():
 
 def test_file_fields_need_asset_ids():
     form = ModelForm.from_schema(schema("model_meshy-remesh"))
-    assert form.problems({}) == ["Needs a model (3d)"]
+    assert form.problems({}) == ["Add a 3D model"]
     assert "asset id" in form.problems({"model": "/Users/me/crate.glb"})[0]
     assert form.problems({"model": "asset_abc"}) == []
 

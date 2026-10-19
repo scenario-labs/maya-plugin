@@ -354,4 +354,8 @@ def test_provenance_has_inputs_and_no_secrets():
     assert json.loads(attrs["scenario_parameters"]) == {"numOutputs": 2}
     assert attrs["scenario_apply"].startswith("import ")
     assert provenance.attributes(row, "asset_out1", maya_version="2027.2", store_prompt=False)["scenario_prompt"] == ""
+    textured = dict(row, params={"image": ["asset_in2"], "texturePrompt": "worn brass", "negativePrompt": "blurry"})
+    attrs = provenance.attributes(textured, "asset_out1", maya_version="2027.2", store_prompt=False)
+    assert attrs["scenario_prompt"] == "" and "worn brass" not in attrs["scenario_parameters"], "a named prompt follows the prompt setting"
+    assert "blurry" in attrs["scenario_parameters"] and json.loads(attrs["scenario_input_asset_ids"]) == ["asset_in2"]
     assert provenance.web_url("asset_1", "team_1", "proj_1") == "https://app.scenario.com/assets?openAssetId=asset_1&teamId=team_1&projectId=proj_1"

@@ -1,0 +1,115 @@
+{
+ "model_id": "model_meshy-7-1-img23d",
+ "name": "Meshy 7.1 - Image to 3D",
+ "capabilities": [
+  "img23d"
+ ],
+ "parameters": [
+  {
+   "name": "image",
+   "type": "file_array",
+   "description": "Upload one image to convert into 3D, or up to four images from multiple angles for higher accuracy.",
+   "required": true,
+   "max_length": 4,
+   "kind": "image",
+   "array": true,
+   "array_note": "Pass an array, even for a single value — a bare value is ignored."
+  },
+  {
+   "name": "geometryResolution",
+   "type": "string",
+   "description": "Geometry generation pass. Standard skips the Ultra pass. 2K runs it at 2048 and 4K at 4096 for finer surface detail. 2K and 4K cost the same extra credits. 4K accepts a single input image only; two or more images are limited to 2K.",
+   "default": "standard",
+   "allowed_values": [
+    "standard",
+    "2k",
+    "4k"
+   ],
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "texturePrompt",
+   "type": "string",
+   "description": "Provide a text description to guide the texturing process. The Style Prompt is only used when no Style Image is provided. If you upload an image, this text prompt will be ignored.",
+   "default": "",
+   "max_length": 600,
+   "prompt": true,
+   "required": false
+  },
+  {
+   "name": "textureImage",
+   "type": "file",
+   "description": "Upload a reference image to guide the visual style of the generated texture. This will override the Style Prompt. Requires the Texture setting to be enabled (toggle ON).",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "shouldTexture",
+   "type": "boolean",
+   "description": "Enable texture generation for a fully colored model. Disable to create a plain, untextured mesh.",
+   "default": true,
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "textureResolution",
+   "type": "string",
+   "description": "Base color texture resolution: 2K (2048), 4K (4096), or 8K (8192). Requires Texture to be enabled. At 8K, PBR maps are generated at 4K and no emission map is produced. 8K is only supported with triangle topology when remeshing.",
+   "default": "2k",
+   "allowed_values": [
+    "2k",
+    "4k",
+    "8k"
+   ],
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "topology",
+   "type": "string",
+   "description": "Choose the mesh structure type used for the generated model (e.g., triangles or quads).",
+   "default": "triangle",
+   "allowed_values": [
+    "triangle",
+    "quad"
+   ],
+   "required": false
+  },
+  {
+   "name": "enablePbr",
+   "type": "boolean",
+   "description": "Generate advanced PBR maps (metallic, roughness, normal) for more realistic materials. Meshy 7.1 does not produce an emission map. Requires the Texture setting to be enabled (toggle ON).",
+   "default": true,
+   "required": false
+  },
+  {
+   "name": "poseMode",
+   "type": "string",
+   "description": "Specify the pose mode for the generated model. Accepts 'A-Pose', 'T-Pose', or empty string (default).",
+   "default": "",
+   "allowed_values": [
+    "",
+    "a-pose",
+    "t-pose"
+   ],
+   "required": false
+  },
+  {
+   "name": "shouldRemesh",
+   "type": "boolean",
+   "description": "Enable remeshing to improve mesh quality and control polycount. Disable to keep the raw, unprocessed mesh (recommended for highest quality on Meshy 7.1).",
+   "default": false,
+   "required": false
+  },
+  {
+   "name": "targetPolycount",
+   "type": "number",
+   "description": "Specify the target number of polygons in the generated model. The actual number of polygons may deviate from the target depending on the complexity of the geometry. Only applies when Remesh is enabled.",
+   "default": 30000,
+   "min": 100,
+   "max": 300000,
+   "required": false
+  }
+ ]
+}

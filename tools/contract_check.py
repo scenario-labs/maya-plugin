@@ -62,6 +62,8 @@ PAID_TOOLS = ("model_run", "workflow_run")
 QUICK_PICKS = (
     ("model_openai-gpt-image-2-5-flare", {"prompt": "a carved wooden treasure chest, game prop, studio light"}),
     ("model_meshy-7-1-txt23d", {"prompt": "a small wooden crate"}),
+    ("model_meshy-7-1-img23d", None),
+    ("model_tripo-p2-image-to-3d", None),
     ("model_tripo-v3-1-image-to-3d", None),
     ("model_meshy-remesh", None),
     ("model_meshy-uv-unwrap", None),

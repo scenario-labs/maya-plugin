@@ -18,3 +18,9 @@
 - The model catalog is cached per kind of model, so refreshing the 3D list keeps the image list.
 - A 3D result whose preview Scenario renders after the download gets it a few seconds later; until then its card shows "3D" instead of an empty square.
 - Import checks read "1 material, 3 textures" instead of "1 material(s), 3 texture(s)".
+- 3D tab, Image mode: turn one image, or up to four views of an object, into a textured model with Meshy 7.1 Image to 3D (preset to a 30,000-face game mesh), Tripo P2, Rodin Gen-2.5, Tripo 3.1 or Hunyuan 3D Pro 3.1. Add the image from a file, a capture of the viewport (grid and selection highlight hidden, no undo step) or a result of the Image tab, which is used as it is without a new upload. Files are sent to Scenario when you add them, once per session and project.
+- Image tab results have "Make a 3D model from this image" in their menu.
+- The 3D tab has a Text and an Image mode, sharing one results list; it reopens on the mode used last. Re-run fills the right mode, images included.
+- The prompt box follows the model: hidden when the model takes no prompt, marked optional when it only guides the texture.
+- A form that misses its image says "Add an image".
+- `tools/render_glb.py` renders a GLB in Viewport 2.0 without a window, through the plug-in's importer: stills or a turntable GIF for documentation.

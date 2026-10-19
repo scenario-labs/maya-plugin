@@ -108,6 +108,8 @@ def parse_field(data: dict) -> Field:
         kind_type = "file_array"
     max_length = data.get("max_length", data.get("maxLength"))
     max_items = data.get("max_items", data.get("maxItems"))
+    if kind_type == "file_array" and max_items is None:
+        max_items, max_length = max_length, None  # Scenario gives a file list's limit as max_length
     return Field(
         name=str(data.get("name") or ""),
         type=kind_type,
@@ -126,6 +128,13 @@ def parse_field(data: dict) -> Field:
         cost_impact=_truthy(data.get("cost_impact")),
         raw=dict(data),
     )
+
+
+def _missing_file(item: Field) -> str:
+    """``Add an image``; with the field's name when the model takes several kinds of file."""
+    noun = {"image": "image", "3d": "3D model", "video": "video", "audio": "audio file"}.get(item.kind, "file")
+    text = f"Add {'an' if noun[0] in 'aeiou' else 'a'} {noun}"
+    return text if item.name in _PRIMARY_NAMES else f"{text} for {item.label.lower()}"
 
 
 @dataclass
@@ -158,6 +167,12 @@ class ModelForm:
     def file_fields(self) -> list:
         return [item for item in self.fields if item.is_file]
 
+    @property
+    def image_fields(self) -> list:
+        """Image inputs, required ones first (the lane's image row fills the first)."""
+        fields = [item for item in self.fields if item.is_file and item.kind in ("image", "")]
+        return sorted(fields, key=lambda item: not item.required)
+
     def defaults(self) -> dict:
         return {item.name: item.default for item in self.fields if item.default is not None}
 
@@ -168,7 +183,7 @@ class ModelForm:
             value = values.get(item.name)
             empty = value is None or value == "" or value == [] or value == ()
             if item.required and empty:
-                out.append(f"Needs a {item.label.lower()}" if not item.is_file else f"Needs a {item.label.lower()} ({item.kind or 'file'})")
+                out.append(_missing_file(item) if item.is_file else f"Needs a {item.label.lower()}")
                 continue
             if empty:
                 continue

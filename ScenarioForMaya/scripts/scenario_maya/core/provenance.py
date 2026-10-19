@@ -44,7 +44,9 @@ def _asset_ids_in(value) -> list:
 def attributes(row: dict, asset_id: str, *, maya_version: str, apply: str = "import", store_prompt: bool = True) -> dict:
     """Attribute name to string value for one landed asset."""
     params = dict(row.get("params") or {})
-    prompt = str(params.pop("prompt", "") or "")
+    # The model's prompt field: "prompt", or a named one such as Meshy's texturePrompt (never a negative prompt).
+    key = "prompt" if "prompt" in params else next((name for name in params if name.lower().endswith("prompt") and "negative" not in name.lower() and isinstance(params[name], str)), "")
+    prompt = str(params.pop(key, "") or "") if key else ""
     inputs = _asset_ids_in(params)
     plain = {key: value for key, value in params.items() if not _asset_ids_in(value)}
     now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")

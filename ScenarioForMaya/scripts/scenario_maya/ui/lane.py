@@ -4,7 +4,8 @@ Generate with its price, then Results.
 The price check runs 0.7 s after the last edit (a free dry run); Generate is
 enabled only with a current quote for exactly this form and spends it with
 one click. Results update from the runtime's ``job`` events, never by
-polling the ledger. Network and file reads run on workers.
+polling the ledger. Network and file reads run on workers. Lanes that are
+modes of one tab (3D: Text, Image) show the same results.
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from ..core.status import status_tone, status_word
 from ..maya import landing, scene
 from .common import TONE_COLORS, copy_text, error_text, message_label, open_url, show_message
 from .fields import FieldsForm
+from .inputs import ImageInputs
 from .jobs import job_details
 from .qt import QtCore, QtGui, QtWidgets, dpi
 
@@ -186,6 +188,8 @@ class ResultCard(QtWidgets.QFrame):
                 "Open on Scenario",
                 lambda: open_url(provenance.web_url(files[0].get("asset_id", ""), session.settings.get("team_id"), session.settings.get("project_id"))),
             )
+        if files and self.page.lane.results == "image" and files[0].get("asset_id"):
+            menu.addAction("Make a 3D model from this image", lambda: self.page.image_to_3d.emit(self.row))
         menu.addAction("Re-run settings", lambda: self.page.reuse(self.row))
         menu.addAction("Copy details", lambda: copy_text(self.page.details(self.row)))
         more.setMenu(menu)
@@ -222,7 +226,15 @@ class ResultCard(QtWidgets.QFrame):
         self.runtime.background(decode, on_done=show)
 
 
+def _same_tab(row: dict, lane: lanes.Lane) -> bool:
+    other = lanes.BY_ID.get((row.get("origin") or {}).get("lane") or "")
+    return other is not None and other.tab_id == lane.tab_id
+
+
 class LanePage(QtWidgets.QWidget):
+    image_to_3d = QtCore.Signal(dict)  # an Image result to send to the 3D tab's Image mode
+    show_lane = QtCore.Signal(str, dict)  # re-run of a job from another mode of this tab
+
     def __init__(self, runtime, lane: lanes.Lane = lanes.IMAGE, parent=None) -> None:
         super().__init__(parent)
         self.runtime = runtime
@@ -245,6 +257,12 @@ class LanePage(QtWidgets.QWidget):
         model_row.addWidget(self.model_name, 1)
         model_row.addWidget(self.change)
 
+        self.inputs = None
+        if lane.inputs == "images":
+            self.inputs = ImageInputs(runtime)
+            self.inputs.changed.connect(self._edited)
+            self.inputs.set_field(None)
+        self.prompt_label = QtWidgets.QLabel("Prompt")
         self.prompt = QtWidgets.QPlainTextEdit()
         self.prompt.setPlaceholderText("Describe what you need")
         self.prompt.setTabChangesFocus(True)
@@ -264,7 +282,7 @@ class LanePage(QtWidgets.QWidget):
         self.results_title = _bold(QtWidgets.QLabel("Results"))
         self.results_box = QtWidgets.QVBoxLayout()
         self.results_box.setSpacing(dpi(4))
-        self.empty = _muted(QtWidgets.QLabel("Nothing generated yet. Type what you need and press Generate."))
+        self.empty = _muted(QtWidgets.QLabel(lane.empty_hint))
         self.examples = QtWidgets.QVBoxLayout()  # stacked: a row of prompts would widen a narrow panel
         self.examples.setSpacing(0)
         for example in lane.examples:
@@ -279,7 +297,9 @@ class LanePage(QtWidgets.QWidget):
         layout.setSpacing(dpi(6))
         layout.addLayout(model_row)
         layout.addWidget(self.model_line)
-        layout.addWidget(QtWidgets.QLabel("Prompt"))
+        if self.inputs is not None:
+            layout.addWidget(self.inputs)
+        layout.addWidget(self.prompt_label)
         layout.addWidget(self.prompt)
         layout.addLayout(self.fields_box)
         layout.addWidget(self.destination)
@@ -346,7 +366,17 @@ class LanePage(QtWidgets.QWidget):
         saved = self.session.settings.get(f"lane_{self.lane.id}_values_{model_id}") or dict(self.lane.presets.get(model_id) or {})
         self._set_fields(FieldsForm(form, saved))
         self.form = form
+        self._show_prompt(form.prompt_field)
+        if self.inputs is not None:
+            self.inputs.set_field(form.image_fields[0] if form.image_fields else None)
         self._edited()
+
+    def _show_prompt(self, field) -> None:
+        """The prompt box follows the model: hidden when it takes none, marked optional when it may."""
+        self.prompt_label.setVisible(field is not None)
+        self.prompt.setVisible(field is not None)
+        if field is not None:
+            self.prompt_label.setText("Prompt" if field.required or field.name == "prompt" else f"{field.label} (optional)")
 
     def _form_failed(self, error) -> None:
         self._button("Price unavailable (Retry)", True)
@@ -375,13 +405,29 @@ class LanePage(QtWidgets.QWidget):
 
     def values(self) -> dict:
         out = dict(self.fields.values()) if self.fields is not None else {}
+        prompt_field = self.form.prompt_field if self.form is not None else None
         prompt = self.prompt.toPlainText().strip()
-        if prompt:
-            out["prompt"] = prompt
+        if prompt and (prompt_field is not None or self.form is None):
+            out[prompt_field.name if prompt_field is not None else "prompt"] = prompt
+        if self.inputs is not None and self.inputs.field is not None:
+            ids = self.inputs.asset_ids()
+            if ids:
+                out[self.inputs.field.name] = ids if self.inputs.field.is_array else ids[0]
         return out
 
     def origin(self) -> dict:
-        return {"scene_uuid": scene.scene_uuid(create=False), "scene_path": scene.scene_path(), "target": "", "lane": self.lane.id}
+        out = {"scene_uuid": scene.scene_uuid(create=False), "scene_path": scene.scene_path(), "target": "", "lane": self.lane.id}
+        if self.inputs is not None:
+            out["inputs"] = self.inputs.described()  # local record only, for Re-run
+        return out
+
+    def label(self, params: dict) -> str:
+        """The job's name: its prompt, else the names of its images."""
+        prompt_field = self.form.prompt_field if self.form is not None else None
+        text = str(params.get(prompt_field.name if prompt_field is not None else "prompt") or "")
+        if not text and self.inputs is not None:
+            text = ", ".join(os.path.splitext(name)[0] for name in self.inputs.names())
+        return text
 
     def _button(self, text: str, enabled: bool) -> None:
         self.generate_button.setText(text)
@@ -396,6 +442,10 @@ class LanePage(QtWidgets.QWidget):
             self._button("Sign in to generate", False)
             return
         if self.form is None:
+            return
+        if self.inputs is not None and self.inputs.busy():
+            self.price_timer.stop()
+            self._button("Sending the image...", False)
             return
         problems = self.form.problems(self.values())
         if problems:
@@ -457,7 +507,8 @@ class LanePage(QtWidgets.QWidget):
         self._busy = True
         self._button("Waiting for Scenario...", False)
         settings = self.session.settings
-        settings.update(**{f"lane_{self.lane.id}_prompt": params.get("prompt", ""), f"lane_{self.lane.id}_values_{self._model_id}": self.fields.values() if self.fields else {}})
+        settings.update(**{f"lane_{self.lane.id}_prompt": self.prompt.toPlainText().strip(), f"lane_{self.lane.id}_values_{self._model_id}": self.fields.values() if self.fields else {}})
+        label = self.label(params)
         started = time.monotonic()
 
         def sent(row):
@@ -477,7 +528,7 @@ class LanePage(QtWidgets.QWidget):
             params=params,
             origin=origin,
             model_name=self.model_name.text(),
-            label=params.get("prompt", ""),
+            label=label,
             on_sent=sent,
             on_error=failed,
         )
@@ -492,7 +543,7 @@ class LanePage(QtWidgets.QWidget):
         if not self.session.signed_in:
             return []
         rows = self.runtime.ledger.list(limit=40, workspace=self.session.workspace())
-        return [row for row in rows if (row.get("origin") or {}).get("lane") == self.lane.id][:RESULTS_SHOWN]
+        return [row for row in rows if _same_tab(row, self.lane)][:RESULTS_SHOWN]
 
     def reload_results(self) -> None:
         rows = self._lane_rows()
@@ -517,7 +568,7 @@ class LanePage(QtWidgets.QWidget):
 
     def on_job(self, data: dict) -> None:
         row = data.get("row") or {}
-        if (row.get("origin") or {}).get("lane") != self.lane.id:
+        if not _same_tab(row, self.lane):
             return
         card = self.cards.get(row.get("local_id"))
         if card is None:
@@ -543,13 +594,21 @@ class LanePage(QtWidgets.QWidget):
 
     def reuse(self, row: dict) -> None:
         """Re-run: fills the form with that job's settings. Sends nothing."""
+        lane_id = (row.get("origin") or {}).get("lane") or self.lane.id
+        if lane_id != self.lane.id:
+            self.show_lane.emit(lane_id, row)  # the panel switches mode and re-runs there
+            return
         params = dict(row.get("params") or {})
+        form = self._forms.get(row.get("target_id") or self._model_id) or self.form
+        prompt_field = form.prompt_field if form is not None else None
+        if self.inputs is not None:
+            self.inputs.set_items((row.get("origin") or {}).get("inputs") or [])
         if row.get("target_id") and row["target_id"] != self._model_id:
             self.session.settings.update(**{f"lane_{self.lane.id}_values_{row['target_id']}": {k: v for k, v in params.items() if k != "prompt"}})
             self.set_model(row["target_id"])
         elif self.fields is not None:
             self.fields.set_values(params)
-        self.prompt.setPlainText(str(params.get("prompt") or ""))
+        self.prompt.setPlainText(str(params.get(prompt_field.name if prompt_field is not None else "prompt") or ""))
 
     def details(self, row: dict) -> str:
         return job_details(row)

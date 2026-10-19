@@ -49,8 +49,11 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
     resume with range requests, SHA-256 receipt, delivery host allow-list.
   - `gltf.py`: GLB reader (accessors, sparse, normalized), real file type
     by header, embedded textures written by role.
+  - `uploads.py`: a local file to a Scenario asset id: type read from the
+    bytes, parts PUT to Scenario's links as given (no checksum headers), the
+    same bytes reused within a session and workspace.
   - `catalog.py` (models per workspace and modality, cached 24 h),
-    `lanes.py` (lane definitions: Image, 3D; quick picks, presets), `provenance.py` (node attributes), `naming.py`.
+    `lanes.py` (lane definitions: Image, 3D Text and 3D Image modes; quick picks, presets), `provenance.py` (node attributes), `naming.py`.
   - `http.py`, `jsonutil.py`, `errors.py`, `paths.py`, `settings.py`,
     `status.py`, `workspaces.py`, `log.py`, `diagnostics.py`, `links.py`.
 - `scripts/scenario_maya/maya/`: Maya side. `dispatcher.py` (workers do the
@@ -60,10 +63,12 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
   undo step each), `import_command.py` (the recording `scenarioImport`
   command that makes any import one undo step), `glb_builder.py` (GLB to
   meshes, materials, joints, skins, blend shapes and keys; import checks), `scene.py` (project folders, camera, selection, scene id),
+  `capture.py` (a viewport still for a model input, outside the undo queue),
   `lifecycle.py` (load and unload), `compat.py`.
 - `scripts/scenario_maya/ui/`: PySide6. `panel.py` (the dockable
   `workspaceControl`), `lane.py` (a lane: model, prompt, settings, priced
-  Generate, result cards), `fields.py` (settings from a model schema),
+  Generate, result cards), `inputs.py` (the image row: file, viewport
+  capture, Image results), `fields.py` (settings from a model schema),
   `picker.py`, `signin.py`, `workspace.py`, `jobs.py`, `menu.py`,
   `commands.py` (runtime commands), `common.py`, `qt.py`.
 - `scripts/scenario_maya/agent/`: the local MCP server (milestone M5).
@@ -104,6 +109,7 @@ uv run --python 3.13 --with pytest pytest -q   # core unit tests, fake server, 0
 tools/test_maya.sh                             # mayapy tests, headless (needs a licensed Maya)
 tools/test_maya_gui.sh [install generate restart oauth] # scripted GUI session with screenshots; opens Maya windows; generate spends a few CU
 tools/readme_media.sh <signed-in MAYA_APP_DIR> # README pictures, GIFs and videos from a real session; opens Maya; spends one image and one 3D model
+MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --turn 60 --gif out/turn.gif  # Viewport 2.0 stills or a turntable of a GLB, headless, 0 CU
 python3 tools/lint.py                          # no em dashes, no secrets, JSON parses
 uvx ruff check . && uvx ruff format --check .
 python3 tools/contract_check.py                # free live check, needs a test key
@@ -158,7 +164,8 @@ reports go under `tests/reports/`.
 - Fill `.github/pull_request_template.md`; tick only what you ran.
 - Screenshots of a visible change go in the PR description, never in a commit.
   The one exception is `docs/media/`, the README's pictures and recordings,
-  made by `tools/readme_media.sh` with the team and account names masked;
+  made by `tools/readme_media.sh` with the team and account names masked,
+  and `tools/render_glb.py` (renders of a result, no interface in them);
   look at every file before committing it.
 - Name the contributing agent in the PR and keep its co-author trailer on
   commits and in the squash message. A human reviews the complete diff before
