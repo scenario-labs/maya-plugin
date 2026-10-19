@@ -87,3 +87,19 @@ def test_picker_lists_image_models(page):
     assert picker.list.item(0).text().startswith("GPT Image 2.5 Flare")
     assert picker.use.isEnabled()
     picker.close()
+
+
+def test_workspace_question_never_blocks_the_dispatcher(page):
+    from PySide6 import QtWidgets
+
+    runtime = page.runtime
+    runtime.dispatcher.reset_timing()
+    picked = []
+    fresh("scenario_maya.ui.workspace").choose(runtime, page, ask=True, on_done=lambda: picked.append(runtime.session.workspace()))
+    qt_pump_until(lambda: QtWidgets.QApplication.activeModalWidget() is not None)
+    dialog = QtWidgets.QApplication.activeModalWidget()
+    assert type(dialog).__name__ == "WorkspaceDialog"
+    assert runtime.dispatcher.longest_slice_ms < 1000, "the question is open while the dispatcher keeps running"
+    dialog.accept()
+    qt_pump_until(lambda: picked)
+    assert "/" in picked[0]

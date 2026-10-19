@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..core.workspaces import automatic_choice, load
-from .qt import QtWidgets
+from .qt import QtCore, QtWidgets
 
 
 class WorkspaceDialog(QtWidgets.QDialog):
@@ -52,24 +52,39 @@ class WorkspaceDialog(QtWidgets.QDialog):
 
 
 def choose(runtime, parent=None, *, ask: bool = False, on_done=None, on_error=None) -> None:
-    """Loads teams on a worker, then picks automatically or asks."""
+    """Loads teams on a worker, then picks automatically or asks.
+
+    The question opens with ``open()``, not ``exec()``: this runs as a
+    dispatcher callback, and a nested event loop there would hold the
+    dispatcher until the user answers.
+    """
     session = runtime.session
 
-    def apply(teams: list) -> None:
-        settings = session.settings
-        picked = None if ask else automatic_choice(teams, settings.get("team_id"), settings.get("project_id"))
-        if picked is None:
-            if not teams:
-                if on_error:
-                    on_error(RuntimeError("This account has no Scenario team."))
-                return
-            dialog = WorkspaceDialog(teams, settings.get("team_id"), settings.get("project_id"), parent)
-            if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted or dialog.choice() is None:
-                return
-            picked = dialog.choice()
+    def use(picked) -> None:
         team, project = picked
         session.set_workspace(team["id"], project["id"], team.get("name", ""), project.get("name", ""))
         if on_done:
             on_done()
+
+    def apply(teams: list) -> None:
+        settings = session.settings
+        picked = None if ask else automatic_choice(teams, settings.get("team_id"), settings.get("project_id"))
+        if picked is not None:
+            use(picked)
+            return
+        if not teams:
+            if on_error:
+                on_error(RuntimeError("This account has no Scenario team."))
+            return
+        dialog = WorkspaceDialog(teams, settings.get("team_id"), settings.get("project_id"), parent)
+        dialog.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        def finished(code: int) -> None:
+            choice = dialog.choice() if code == QtWidgets.QDialog.DialogCode.Accepted.value else None
+            if choice is not None:
+                use(choice)
+
+        dialog.finished.connect(finished)
+        dialog.open()
 
     runtime.background(lambda: load(session.backend()), on_done=apply, on_error=on_error)
