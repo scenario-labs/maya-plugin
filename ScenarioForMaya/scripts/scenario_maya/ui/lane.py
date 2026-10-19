@@ -215,14 +215,14 @@ class LanePage(QtWidgets.QWidget):
         self.results_box = QtWidgets.QVBoxLayout()
         self.results_box.setSpacing(dpi(4))
         self.empty = _muted(QtWidgets.QLabel("Nothing generated yet. Type what you need and press Generate."))
-        self.examples = QtWidgets.QHBoxLayout()
+        self.examples = QtWidgets.QVBoxLayout()  # stacked: a row of prompts would widen a narrow panel
+        self.examples.setSpacing(0)
         for example in lane.examples:
             chip = QtWidgets.QPushButton(example if len(example) < 28 else example[:26] + "...")
             chip.setToolTip(f"Use this prompt: {example}")
             chip.setFlat(True)
             chip.clicked.connect(lambda _=False, text=example: self.prompt.setPlainText(text))
-            self.examples.addWidget(chip)
-        self.examples.addStretch(1)
+            self.examples.addWidget(chip, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -483,7 +483,8 @@ class LanePage(QtWidgets.QWidget):
         except errors.ScenarioError as error:
             show_message(self.message, error_text(error), "error")
             return
-        show_message(self.message, f"{made.get('summary', 'Done')}. One Ctrl+Z removes it.", "ok")
+        note = " Textured display turned on in the viewport (key 6)." if made.get("textures_turned_on") else ""
+        show_message(self.message, f"{made.get('summary', 'Done')}. One Ctrl+Z removes it.{note}", "ok")
 
     def reuse(self, row: dict) -> None:
         """Re-run: fills the form with that job's settings. Sends nothing."""

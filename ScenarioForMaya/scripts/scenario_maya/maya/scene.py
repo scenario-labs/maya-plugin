@@ -57,8 +57,8 @@ def folders() -> dict:
     }
 
 
-def active_camera() -> tuple:
-    """(transform, shape) of the camera in the viewport with focus, else the first visible one, else persp."""
+def model_panel() -> str:
+    """The viewport with focus, else the first visible one, else ""."""
     panels = []
     try:
         focus = cmds.getPanel(withFocus=True)
@@ -72,8 +72,26 @@ def active_camera() -> tuple:
             continue
         camera = cmds.modelPanel(panel, query=True, camera=True)
         if camera and cmds.objExists(camera):
-            return _camera_pair(camera)
-    return _camera_pair("persp")
+            return panel
+    return ""
+
+
+def active_camera() -> tuple:
+    """(transform, shape) of the camera in the viewport with focus, else the first visible one, else persp."""
+    panel = model_panel()
+    return _camera_pair(cmds.modelPanel(panel, query=True, camera=True) if panel else "persp")
+
+
+def show_textures() -> bool:
+    """Turns on textured display (key 6) in the active viewport; True when it was off.
+
+    A view setting, not scene data: it stays out of the undo queue.
+    """
+    panel = model_panel()
+    if not panel or cmds.modelEditor(panel, query=True, displayTextures=True):
+        return False
+    cmds.modelEditor(panel, edit=True, displayTextures=True)
+    return True
 
 
 def _camera_pair(camera: str) -> tuple:

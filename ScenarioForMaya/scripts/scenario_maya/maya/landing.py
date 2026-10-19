@@ -164,7 +164,8 @@ def land(path: str, attributes: dict, mode: str, *, label: str = "", camera: tup
             cmds.select(selection, replace=True)
         else:
             cmds.select(clear=True)
-    made.update(mode=mode, namespace=ns, undo=chunk)
+    textures = mode != "image_plane" and not cmds.about(batch=True) and scene.show_textures()
+    made.update(mode=mode, namespace=ns, undo=chunk, textures_turned_on=bool(textures))
     return made
 
 
