@@ -30,6 +30,7 @@
 - `tools/render_glb.py --checker N` shows the UV layout with a checker instead of the materials.
 - Apply... on Remesh results replaces the mesh's geometry after a review: the result's mesh becomes the shape under your transform, with your shape's name and outgoing connections; it gets the result's material when the result has textures, otherwise keeps yours. The old shape stays, hidden, as `<shape>_scnPrev` with its history. The result must be the same shape by the surface-distance check; instanced meshes are refused in this version. One Ctrl+Z undoes it.
 - `tools/render_glb.py --wire` draws every edge, to show a topology.
+- 3D tab, Multi-view mode: views of one object from the front, left, back and right (and top, bottom and 45 degree views where the model takes them) into a textured model, with Tripo P2 Multi View, Tripo 3.1 Multi View or Hunyuan 3D 3.1 Pro Multiview. **Capture views** renders the selection from each side the model takes with temporary orthographic cameras, at one scale, clipped to the selection's box so neighbours stay out; nothing stays in the scene or the undo queue. Each view can also take a file or an Image result. Tripo P2 Multi View is the default (a clean mesh of a few thousand faces); Tripo 3.1 Multi View is the low-cost choice; Hunyuan starts at its lightest mesh (40,000 faces). Import places a result made from captured views over the object they show, at its size and facing the same way.
 
 ### Fixes
 

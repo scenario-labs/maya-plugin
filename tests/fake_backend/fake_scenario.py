@@ -77,11 +77,35 @@ PRICES = {
     "model_tencent-uv-unwrapping": 23,
     "model_meshy-7-retexture": 40,
     "model_tripo-v3-0-texturing": 15,
+    "model_tripo-p2-multiview-to-3d": 220,
+    "model_tripo-v3-1-multiview-to-3d": 45,
+    "model_hunyuan-3d-pro-3-1-multiview": 120,
 }
 
 
 THREE_D_MODELS = ("model_meshy-7-1-txt23d", "model_meshy-t2-5-smart-topology", "model_tripo-v3-1-image-to-3d", "model_meshy-7-1-img23d", "model_tripo-p2-image-to-3d")
 IMAGE_INPUT_MODELS = ("model_tripo-v3-1-image-to-3d", "model_meshy-7-1-img23d", "model_tripo-p2-image-to-3d")
+# Multi-view models: named view fields; the Tripo ones refuse a front view alone, like the live ones say they do.
+MULTIVIEW_MODELS = {
+    "model_tripo-p2-multiview-to-3d": "Tripo P2 Multi View",
+    "model_tripo-v3-1-multiview-to-3d": "Tripo 3.1 Multi View",
+    "model_hunyuan-3d-pro-3-1-multiview": "Hunyuan 3D 3.1 Pro (Multiview)",
+}
+THREE_D_MODELS = THREE_D_MODELS + tuple(MULTIVIEW_MODELS)
+MULTIVIEW_ROWS = [
+    {
+        "id": model_id,
+        "name": name,
+        "shortDescription": "A textured 3D model from views of one object.",
+        "type": "custom",
+        "privacy": "public",
+        "capabilities": ["img23d"],
+        "status": "trained",
+        "tags": ["3d", "Multiview"],
+        "createdAt": "2026-09-01T00:00:00.000Z",
+    }
+    for model_id, name in MULTIVIEW_MODELS.items()
+]
 
 # Edit models (3d23d): task, mesh field, longest side of the result in metres (0: returned in
 # place). On 2026-10-19 Tripo models returned the sent mesh 1 m long and centred, Meshy Remesh
@@ -602,7 +626,7 @@ class Handler(BaseHTTPRequestHandler):
         if filters.get("modality") == "image" and filters.get("privacy") == "public":
             data["models"] = data["models"] + [IMAGE_MODEL]
         if filters.get("modality") == "3d" and filters.get("privacy") == "public":
-            data["models"] = data["models"] + [THREE_D_MODEL, IMAGE_TO_3D_MODEL] + [dict(row) for row in EDIT_ROWS]
+            data["models"] = data["models"] + [THREE_D_MODEL, IMAGE_TO_3D_MODEL] + [dict(row) for row in EDIT_ROWS + MULTIVIEW_ROWS]
         return data
 
     def _tool_model_schema_get(self, args):
@@ -624,6 +648,12 @@ class Handler(BaseHTTPRequestHandler):
             ids = given if isinstance(given, list) else [given] if given else []
             if not ids or any(asset_id not in self.state.assets for asset_id in ids):
                 raise ToolFailure(400, {"error": "image: Asset not found or not an uploaded image."})
+        if model_id in MULTIVIEW_MODELS:
+            given = {key: value for key, value in (args.get("parameters") or {}).items() if key.endswith("Image")}
+            if given.get("frontImage") not in self.state.assets or any(value not in self.state.assets for value in given.values()):
+                raise ToolFailure(400, {"error": "frontImage: Asset not found or not an uploaded image."})
+            if model_id.startswith("model_tripo") and len(given) < 2:
+                raise ToolFailure(400, {"error": "Provide the front view with at least one of left, back, right."})
         if model_id in EDIT_MODELS:
             field = EDIT_MODELS[model_id][1]
             given = (args.get("parameters") or {}).get(field)

@@ -17,6 +17,15 @@ FILE_TYPES = ("file", "file_array")
 _PRIMARY_NAMES = ("prompt", "text", "image", "images", "model", "video", "audio")
 
 
+# Named views of multi-view models, in the order the panel shows them: field ``<view>Image``.
+# "left" is the object's own left (its left arm for a character), seen from +X in Maya.
+VIEWS = ("front", "left", "back", "right", "top", "bottom", "leftFront", "rightFront")
+
+
+def view_of(field_name: str) -> str:
+    return field_name[: -len("Image")] if field_name.endswith("Image") and field_name[: -len("Image")] in VIEWS else ""
+
+
 @dataclass
 class Field:
     name: str
@@ -172,6 +181,12 @@ class ModelForm:
         """Image inputs, required ones first (the lane's image row fills the first)."""
         fields = [item for item in self.fields if item.is_file and item.kind in ("image", "")]
         return sorted(fields, key=lambda item: not item.required)
+
+    @property
+    def view_fields(self) -> list:
+        """A multi-view model's named view inputs (``frontImage``, ``leftImage``...), in ``VIEWS`` order."""
+        by_name = {item.name: item for item in self.image_fields}
+        return [by_name[f"{view}Image"] for view in VIEWS if f"{view}Image" in by_name]
 
     @property
     def mesh_fields(self) -> list:

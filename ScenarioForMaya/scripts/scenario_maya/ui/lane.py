@@ -21,7 +21,7 @@ from ..core.status import status_tone, status_word
 from ..maya import landing, scene
 from .common import TONE_COLORS, copy_text, error_text, message_label, open_url, show_message
 from .fields import FieldsForm
-from .inputs import ImageInputs
+from .inputs import ImageInputs, ViewInputs
 from .jobs import job_details
 from .mesh_input import MeshInput
 from .qt import QtCore, QtGui, QtWidgets, dpi
@@ -277,6 +277,10 @@ class LanePage(QtWidgets.QWidget):
             self.inputs = ImageInputs(runtime)
             self.inputs.changed.connect(self._edited)
             self.inputs.set_field(None)
+        self.views = None
+        if lane.inputs == "views":
+            self.views = ViewInputs(runtime)
+            self.views.changed.connect(self._edited)
         self.mesh = None
         if lane.inputs == "mesh":
             self.mesh = MeshInput(runtime)
@@ -320,6 +324,8 @@ class LanePage(QtWidgets.QWidget):
         layout.addWidget(self.model_line)
         if self.inputs is not None:
             layout.addWidget(self.inputs)
+        if self.views is not None:
+            layout.addWidget(self.views)
         if self.mesh is not None:
             layout.addWidget(self.mesh)
         layout.addWidget(self.prompt_label)
@@ -406,6 +412,8 @@ class LanePage(QtWidgets.QWidget):
         self._show_prompt(form.prompt_field)
         if self.inputs is not None:
             self.inputs.set_field(form.image_fields[0] if form.image_fields else None)
+        if self.views is not None:
+            self.views.set_fields(form.view_fields)
         if self.mesh is not None:
             self.mesh.set_model(model_id, self.model_name.text())
             self._show_prompt(form.prompt_field)
@@ -455,6 +463,8 @@ class LanePage(QtWidgets.QWidget):
             ids = self.inputs.asset_ids()
             if ids:
                 out[self.inputs.field.name] = ids if self.inputs.field.is_array else ids[0]
+        if self.views is not None:
+            out.update(self.views.values())
         if self.mesh is not None and self.form is not None and self.form.mesh_fields and self.mesh.asset_id():
             field = self.form.mesh_fields[0]
             out[field.name] = [self.mesh.asset_id()] if field.is_array else self.mesh.asset_id()
@@ -464,6 +474,10 @@ class LanePage(QtWidgets.QWidget):
         out = {"scene_uuid": scene.scene_uuid(create=False), "scene_path": scene.scene_path(), "target": "", "lane": self.lane.id}
         if self.inputs is not None:
             out["inputs"] = self.inputs.described()  # local record only, for Re-run
+        if self.views is not None:
+            out["inputs"] = self.views.described()
+            if self.views.capture_record:
+                out["views_capture"] = dict(self.views.capture_record)  # where the views were taken
         if self.mesh is not None and self.mesh.item:
             out["edit"] = self.mesh.described()  # local record: what was sent, to fit and apply the result
             out["target"] = out["edit"]["meshes"][0]["node"]
@@ -475,6 +489,9 @@ class LanePage(QtWidgets.QWidget):
         text = str(params.get(prompt_field.name if prompt_field is not None else "prompt") or "")
         if not text and self.inputs is not None:
             text = ", ".join(os.path.splitext(name)[0] for name in self.inputs.names())
+        if not text and self.views is not None:
+            captured = self.views.capture_record.get("name") if self.views.capture_record else ""
+            text = f"Views of {captured}" if captured else ", ".join(os.path.splitext(name)[0] for name in self.views.names())
         if not text and self.mesh is not None:
             text = f"{self.mesh.task.label} {self.mesh.name()}"
         return text
@@ -496,6 +513,10 @@ class LanePage(QtWidgets.QWidget):
         if self.inputs is not None and self.inputs.busy():
             self.price_timer.stop()
             self._button("Sending the image...", False)
+            return
+        if self.views is not None and (self.views.busy() or self.views.problem()):
+            self.price_timer.stop()
+            self._button("Sending the views..." if self.views.busy() else self.views.problem(), False)
             return
         if self.mesh is not None:
             blocked = self._mesh_blocked()
@@ -706,6 +727,9 @@ class LanePage(QtWidgets.QWidget):
         prompt_field = form.prompt_field if form is not None else None
         if self.inputs is not None:
             self.inputs.set_items((row.get("origin") or {}).get("inputs") or [])
+        if self.views is not None:
+            self.views.capture_record = dict((row.get("origin") or {}).get("views_capture") or {})
+            self.views.set_items((row.get("origin") or {}).get("inputs") or [])
         if self.mesh is not None:
             self.mesh.restore((row.get("origin") or {}).get("edit") or {})
         if row.get("target_id") and row["target_id"] != self._model_id:

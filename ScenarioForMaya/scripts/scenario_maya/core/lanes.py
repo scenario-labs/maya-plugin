@@ -2,8 +2,8 @@
 
 Lane ids are stable and separate from labels, so a renamed label never breaks
 saved state. A lane appears in the panel only once it is built end to end.
-Lanes that share a ``tab`` are the modes of one tab (3D: Text, Image, Edit
-selection) and share its results list.
+Lanes that share a ``tab`` are the modes of one tab (3D: Text, Image,
+Multi-view, Edit selection) and share its results list.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ class Lane:
     presets: dict = field(default_factory=dict, compare=False, hash=False)  # first values per model, before the user saves any
     tab: str = ""  # lanes with the same tab are its modes; "" means the lane is its own tab
     mode: str = ""  # the mode's label inside its tab
-    inputs: str = ""  # "images": an image row for the model's image fields; "mesh": the selected mesh for an edit
+    inputs: str = ""  # "images": an image row for the model's first image field; "views": one slot per named view; "mesh": the selected mesh for an edit
     empty_hint: str = "Nothing generated yet. Type what you need and press Generate."
 
     @property
@@ -107,6 +107,34 @@ THREE_D_IMAGE = Lane(
     empty_hint="Nothing generated yet. Add an image of one object (a file, the viewport or an Image result) and press Generate.",
 )
 
+THREE_D_VIEWS = Lane(
+    id="3d_views",
+    label="3D",
+    modality="3d",
+    capabilities=("img23d",),
+    recommend="img23d",
+    # Models with named views (front, left, back, right...). Scenario's recommend ranked Tripo P2
+    # Multi View first for four views on 2026-10-19, Tripo 3.1 Multi View second. On the same four
+    # captured views both kept the shape; Tripo P2 gave 4,987 faces for 220 CU, Tripo 3.1
+    # 1.4 million faces for 45 CU. Tripo P2 stays the default, Tripo 3.1 is the runner-up.
+    quick_picks=(
+        "model_tripo-p2-multiview-to-3d",
+        "model_tripo-v3-1-multiview-to-3d",
+        "model_hunyuan-3d-pro-3-1-multiview",
+    ),
+    starter_prompt="",
+    examples=(),
+    destination="Saved under scenario/<date> in the project. Imports as a new group at real-world size, on the ground at the camera's centre of interest.",
+    results="model",
+    formats=("glb",),
+    # Hunyuan's default is 500,000 faces; its minimum keeps the import light.
+    presets={"model_hunyuan-3d-pro-3-1-multiview": {"faceCount": 40000}},
+    tab="3d",
+    mode="Multi-view",
+    inputs="views",
+    empty_hint="Nothing generated yet. Select an object and press Capture views, or add a front view and one more, then Generate.",
+)
+
 THREE_D_EDIT = Lane(
     id="3d_edit",
     label="3D",
@@ -126,7 +154,7 @@ THREE_D_EDIT = Lane(
     empty_hint="Nothing edited yet. Select a mesh, choose a task, then Use selection and Generate.",
 )
 
-LANES = (IMAGE, THREE_D, THREE_D_IMAGE, THREE_D_EDIT)
+LANES = (IMAGE, THREE_D, THREE_D_IMAGE, THREE_D_VIEWS, THREE_D_EDIT)
 BY_ID = {lane.id: lane for lane in LANES}
 
 

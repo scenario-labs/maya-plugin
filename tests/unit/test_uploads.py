@@ -100,9 +100,10 @@ def test_an_uploaded_image_prices_and_runs_image_to_3d(signed_in, fake, tmp_path
     assert row["state"] == "remote" and fake.state.paid_runs()[0]["arguments"]["parameters"]["image"] == [sent["asset_id"]]
 
 
-def test_the_3d_tab_has_text_image_and_edit_modes():
+def test_the_3d_tab_has_text_image_multi_view_and_edit_modes():
     assert lanes.tabs() == ("image", "3d")
-    assert [lane.mode for lane in lanes.tab_lanes("3d")] == ["Text", "Image", "Edit selection"]
+    assert [lane.mode for lane in lanes.tab_lanes("3d")] == ["Text", "Image", "Multi-view", "Edit selection"]
+    assert lanes.THREE_D_VIEWS.inputs == "views" and lanes.THREE_D_VIEWS.quick_picks[0] == "model_tripo-p2-multiview-to-3d"
     assert lanes.lane_for_model(["img23d"]) is lanes.THREE_D_IMAGE
     assert lanes.lane_for_model(["3d23d"]) is lanes.THREE_D_EDIT and lanes.THREE_D_EDIT.inputs == "mesh"
     assert lanes.THREE_D_IMAGE.quick_picks[0] == MESHY_IMAGE and lanes.THREE_D_IMAGE.formats == ("glb",)
@@ -125,3 +126,15 @@ def test_a_mesh_is_sent_as_3d_and_runs_an_edit_model(signed_in, fake, tmp_path):
     params = form.build_params({"model": sent["asset_id"]})
     quote = signed_in.price("model_tripo-smart-uv", params, origin={"lane": lanes.THREE_D_EDIT.id})
     assert quote.cu_cost_exact == "40"
+
+
+def test_multi_view_models_have_named_views_in_panel_order():
+    from scenario_maya.core.schema import VIEWS, view_of
+
+    tripo = ModelForm.from_schema(schema("model_tripo-p2-multiview-to-3d"))
+    assert [field.name for field in tripo.view_fields] == ["frontImage", "leftImage", "backImage", "rightImage"]
+    assert tripo.view_fields[0].required and not any(field.required for field in tripo.view_fields[1:])
+    hunyuan = ModelForm.from_schema(schema("model_hunyuan-3d-pro-3-1-multiview"))
+    assert [view_of(field.name) for field in hunyuan.view_fields] == list(VIEWS), "the schema lists right before back; the panel keeps its own order"
+    assert ModelForm.from_schema(schema("model_tripo-p2-image-to-3d")).view_fields == [], "a one-image model has no views"
+    assert view_of("image") == "" and view_of("frontImage") == "front"

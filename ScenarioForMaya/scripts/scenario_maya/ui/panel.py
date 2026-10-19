@@ -32,6 +32,7 @@ LANE_TIPS = {
 MODE_TIPS = {
     "3d": "Text to 3D: describe one object.",
     "3d_image": "Image to 3D: one image of an object (a file, the viewport or an Image result), or several views of it.",
+    "3d_views": "Multi-view to 3D: views of one object from the front, left, back and right, captured around the selection or added as files.",
     "3d_edit": "Edit selection: remesh, UV unwrap or retexture a mesh of the scene. The result comes back fitted over it.",
 }
 

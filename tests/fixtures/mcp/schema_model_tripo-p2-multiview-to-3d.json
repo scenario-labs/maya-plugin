@@ -1,0 +1,143 @@
+{
+ "model_id": "model_tripo-p2-multiview-to-3d",
+ "name": "Tripo P2 Multi View",
+ "capabilities": [
+  "img23d"
+ ],
+ "parameters": [
+  {
+   "name": "frontImage",
+   "type": "file",
+   "description": "Front view image (0 deg). Required for multiview mode. Provide with at least one of left, back, right.",
+   "required": true,
+   "kind": "image"
+  },
+  {
+   "name": "leftImage",
+   "type": "file",
+   "description": "Left view image (90 deg: character's left arm side).",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "backImage",
+   "type": "file",
+   "description": "Back view image (180 deg).",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "rightImage",
+   "type": "file",
+   "description": "Right view image (270 deg).",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "texture",
+   "type": "boolean",
+   "description": "Enable texturing. Set to false for a model without textures.",
+   "default": true,
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "textureQuality",
+   "type": "string",
+   "description": "Texture quality level. 'Fast' is the same resolution as standard and will use texture version v3.5. 'Detailed' gives HD quality textures.",
+   "default": "standard",
+   "allowed_values": [
+    "fast",
+    "standard",
+    "detailed",
+    "extreme"
+   ],
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "textureVersion",
+   "type": "string",
+   "description": "Texture model, independent of the geometry model. Leave unset for Tripo's default (v3.0 for v3.x and the P series, v2.5 for v2.5). 'Fast' quality and delight will use v3.5.",
+   "default": "",
+   "allowed_values": [
+    "",
+    "v2.5-20250123",
+    "v3.0-20250812",
+    "v3.5-20260815"
+   ],
+   "required": false
+  },
+  {
+   "name": "delight",
+   "type": "boolean",
+   "description": "Removes baked-in lighting and shadows from your reference image, so the model can be lit by your own scene. True by default. Turn it off to keep the original shading baked into the texture. That requires texture version v3.5, which will be used automatically.",
+   "default": true,
+   "required": false
+  },
+  {
+   "name": "textureAlignment",
+   "type": "string",
+   "description": "Determines the prioritization of texture alignment in the 3D model.",
+   "default": "original_image",
+   "allowed_values": [
+    "original_image",
+    "geometry"
+   ],
+   "required": false
+  },
+  {
+   "name": "textureSeed",
+   "type": "number",
+   "description": "Random seed for texture generation. Using the same seed will produce identical textures.",
+   "required": false
+  },
+  {
+   "name": "orientation",
+   "type": "string",
+   "description": "Set orientation to 'Align Image' will automatically rotate the model to align the original image.",
+   "default": "default",
+   "allowed_values": [
+    "default",
+    "align_image"
+   ],
+   "required": false
+  },
+  {
+   "name": "pbr",
+   "type": "boolean",
+   "description": "Enable PBR generation. Default value is True. If this option is set to True, texture parameters will be ignored.",
+   "default": true,
+   "required": false
+  },
+  {
+   "name": "faceLimit",
+   "type": "number",
+   "description": "Maximum face count. Adaptive if unset. Must be between 48 and 50,000 if set (48–25,000 when Quad is enabled).",
+   "min": 48,
+   "max": 50000,
+   "required": false
+  },
+  {
+   "name": "autoSize",
+   "type": "boolean",
+   "description": "Automatically scale the model to real-world dimensions, with the unit in meters.",
+   "default": false,
+   "required": false
+  },
+  {
+   "name": "quad",
+   "type": "boolean",
+   "description": "Enable quad mesh output (FBX format). When enabled, face limit is capped at 25,000.",
+   "default": false,
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "seed",
+   "type": "number",
+   "description": "Random seed for model generation. The seed controls the geometry generation process, ensuring identical models when the same seed is used.",
+   "required": false
+  }
+ ]
+}

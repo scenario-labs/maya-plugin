@@ -8,21 +8,22 @@ Scenario for Maya is a plug-in for Maya 2025, 2026 and 2027. Write a prompt
 in a docked panel, see the exact price on the Generate button, and the result
 lands in the open scene: a 3D model on the ground in front of the camera, or
 an image as a card, a material or an image plane. A 3D model can start from a
-prompt or from an image, and a mesh of the scene can be remeshed, UV
-unwrapped or retextured. Each landing is one Ctrl+Z.
+prompt, an image, or views of an object captured in the scene, and a mesh of
+the scene can be remeshed, UV unwrapped or retextured. Each landing is one
+Ctrl+Z.
 Every request is priced before it is sent, sent once, and recorded on disk, so
 a crash or a dropped connection never charges twice.
 
 **Status:** in development, not released. Tested on Maya 2027.2 on macOS, in
-the real Maya window and headless with `mayapy` (the Edit selection mode
-headless only so far). Two tabs work today, Image and 3D; the table lists
+the real Maya window and headless with `mayapy` (the Multi-view and Edit
+selection modes headless only so far). Two tabs work today, Image and 3D; the table lists
 what comes next.
 
 | Area | Today | Next |
 | --- | --- | --- |
 | Sign-in | Browser (OAuth), a code on another device, or an API key; secrets in the system keychain | |
 | Panel | Docked beside the Channel Box and restored with the workspace; team and project picker; model picker; job list | Studio window, quick composer over the viewport |
-| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs, a new material or new geometry, reviewed first, one Ctrl+Z); GLB import with PBR materials, skins, blend shapes and animation; import checks | Multi-view captures; rig, animate, split into parts; FBX results |
+| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; multi-view to 3D from views captured around a selected object (Tripo P2, Tripo 3.1, Hunyuan 3D Pro 3.1), landed over it; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs, a new material or new geometry, reviewed first, one Ctrl+Z); GLB import with PBR materials, skins, blend shapes and animation; import checks | Rig, animate, split into parts; motion; FBX results |
 | Image | Text to image with Scenario's image models; lands as a card, a material or an image plane | Image editing, upscale, LoRAs |
 | Jobs | One job list for every Maya session; downloads resume; results that finish while Maya is closed are offered on the next start | Results history, an "In this scene" view |
 | Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
@@ -100,6 +101,64 @@ run each:
 | --- | --- |
 | ![Meshy 7.1 result, front and back](docs/media/image-to-3d-meshy.jpg) | ![Tripo P2 result, front and back](docs/media/image-to-3d-tripo.jpg) |
 | 28,984 faces (30,000 preset), carving kept on every side, about 140 s, 120 CU, up to four views | 4,222 faces, clean mesh with flatter carving and a plain back, about 85 s, 220 CU, one image |
+
+## Turn views of an object into a 3D model
+
+The **Multi-view** mode builds a model from pictures of one object taken from
+named sides. Start from a blockout, a kitbash or an old asset in your scene:
+the plug-in photographs it from the front, left, back and right, and the
+model returns a textured mesh of the same object, facing the same way.
+
+| | Front, left, back, right |
+| --- | --- |
+| Captured around a blockout | ![The four views captured around a blockout robot](docs/media/views-capture.jpg) |
+| Tripo P2 Multi View, the default | ![The Tripo P2 result seen from the same four sides](docs/media/views-tripo-p2.jpg) |
+| Tripo 3.1 Multi View | ![The Tripo 3.1 result seen from the same four sides](docs/media/views-tripo-v31.jpg) |
+
+<p align="center"><img src="docs/media/views-turntable.gif" width="300" alt="The Tripo P2 robot turning in Maya's Viewport 2.0"> <img src="docs/media/views-tripo-p2-wire.jpg" width="300" alt="The Tripo P2 robot with every edge drawn: 4,987 faces"></p>
+
+*A robot blocked out from cubes in Maya, its four views captured by the
+plug-in, and one run of each Tripo model on those views. Results rendered in
+Viewport 2.0 with `tools/render_glb.py`; right, Tripo P2's mesh with every
+edge drawn.*
+
+```mermaid
+flowchart LR
+    A[Select an object] --> B[Capture views<br/>temporary orthographic cameras,<br/>one per side, no undo step]
+    B --> C[Views sent to your project<br/>once each]
+    C --> D[Generate<br/>priced first]
+    D --> E[Import<br/>over the object, at its size,<br/>facing the same way]
+```
+
+1. Open the **3D** tab and choose **Multi-view**. Each view the model takes
+   has a slot: Front, Left, Back and Right for the Tripo models; Hunyuan 3D
+   Pro 3.1 adds Top, Bottom and the two front three-quarter views.
+2. Select one object and press **Capture views**. The plug-in renders it from
+   each side with temporary orthographic cameras, all at one scale, clipped
+   close around the object so the floor and its neighbours stay out of the
+   pictures. Nothing is added to the scene or to the undo queue, and the
+   render settings it touches are put back. Left is the object's own left:
+   with the object facing front (+Z), the side Maya's Right view shows.
+3. A slot also takes a file or an Image result, from its menu. Each view is
+   sent to your Scenario project once. The Tripo models need the front and
+   at least one more view; the Generate button says what is missing, then
+   shows the price.
+4. **Import** places the result over the object its views came from, at the
+   object's size and facing the same way, as a new group (the object itself
+   is not changed). Views added as files land like any 3D result, on the
+   ground in front of the camera.
+
+**Which model.** Same four views, one run each:
+
+| Model | Faces | GLB | Price |
+| --- | --- | --- | --- |
+| Tripo P2 Multi View, the default | 4,987, a clean low-poly mesh | 1.4 MB | 220 CU |
+| Tripo 3.1 Multi View, the low-cost choice | 1,425,173, dense | 42 MB | 45 CU |
+| Hunyuan 3D Pro 3.1 Multiview | starts at 40,000, its lightest setting | not run yet | 120 CU |
+
+Both Tripo results kept the shape and colours on every side, took under four
+minutes and landed on the blockout within half a centimetre of its 82 cm
+height.
 
 ## Edit a mesh of the scene
 

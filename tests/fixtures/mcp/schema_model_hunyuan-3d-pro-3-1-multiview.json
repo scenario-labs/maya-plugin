@@ -1,0 +1,94 @@
+{
+ "model_id": "model_hunyuan-3d-pro-3-1-multiview",
+ "name": "Hunyuan 3D 3.1 Pro (Multiview)",
+ "capabilities": [
+  "img23d"
+ ],
+ "parameters": [
+  {
+   "name": "frontImage",
+   "type": "file",
+   "description": "Front view image for multiview generation. Size: 128-5000 pixels per side, max 8MB.",
+   "required": true,
+   "kind": "image"
+  },
+  {
+   "name": "leftImage",
+   "type": "file",
+   "description": "Left view image for multiview generation. Size: 128-5000 pixels per side, max 8MB",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "rightImage",
+   "type": "file",
+   "description": "Right view image for multiview generation. Size: 128-5000 pixels per side, max 8MB.",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "backImage",
+   "type": "file",
+   "description": "Back view image for multiview generation. Size: 128-5000 pixels per side, max 8MB.",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "topImage",
+   "type": "file",
+   "description": "Top view image for multiview generation. Size: 128-5000 pixels per side, max 8MB.",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "bottomImage",
+   "type": "file",
+   "description": "Bottom view image for multiview generation. Size: 128-5000 pixels per side, max 8MB.",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "leftFrontImage",
+   "type": "file",
+   "description": "Left front 45° view image for multiview generation. Size: 128-5000 pixels per side, max 8MB.",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "rightFrontImage",
+   "type": "file",
+   "description": "Right front 45° view image for multiview generation. Size: 128-5000 pixels per side, max 8MB.",
+   "kind": "image",
+   "required": false
+  },
+  {
+   "name": "faceCount",
+   "type": "number",
+   "description": "Target number of faces in the generated 3D mesh. Higher values produce finer detail.",
+   "default": 500000,
+   "min": 40000,
+   "max": 1500000,
+   "required": false
+  },
+  {
+   "name": "generateType",
+   "type": "string",
+   "description": "Standard: textured mesh. Mesh Only: no textures.",
+   "default": "Normal",
+   "allowed_values": [
+    "Normal",
+    "Geometry"
+   ],
+   "cost_impact": true,
+   "required": false
+  },
+  {
+   "name": "enablePbr",
+   "type": "boolean",
+   "description": "Enables Physically Based Rendering (PBR) materials for realistic lighting.",
+   "default": false,
+   "cost_impact": true,
+   "required": false
+  }
+ ]
+}

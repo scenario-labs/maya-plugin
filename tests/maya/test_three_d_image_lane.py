@@ -56,7 +56,7 @@ def test_3d_tab_has_its_modes_and_remembers_the_last(panel):
     assert [button.text() for button in panel.lane_buttons.buttons()] == ["Image", "3D"]
     panel.select_tab("3d")
     assert panel.lane.lane.id == "3d", "a tab opens on its first mode"
-    assert panel.mode_bars["3d"].isVisible() and [panel.mode_button[i].text() for i in ("3d", "3d_image", "3d_edit")] == ["Text", "Image", "Edit selection"]
+    assert panel.mode_bars["3d"].isVisible() and [panel.mode_button[i].text() for i in ("3d", "3d_image", "3d_views", "3d_edit")] == ["Text", "Image", "Multi-view", "Edit selection"]
     panel.select_lane("3d_image")
     panel.select_tab("image")
     assert not panel.mode_bars["3d"].isVisible()

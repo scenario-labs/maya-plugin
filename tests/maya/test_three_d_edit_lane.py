@@ -39,7 +39,7 @@ def ready(page):
 
 def test_the_3d_tab_has_an_edit_selection_mode(panel):  # noqa: F811
     panel.select_tab("3d")
-    assert [panel.mode_button[i].text() for i in ("3d", "3d_image", "3d_edit")] == ["Text", "Image", "Edit selection"]
+    assert [panel.mode_button[i].text() for i in ("3d", "3d_image", "3d_views", "3d_edit")] == ["Text", "Image", "Multi-view", "Edit selection"]
     page = edit_page(panel)
     assert page.mesh.isVisible() and [b.text() for b in page.mesh.task_buttons.buttons()] == ["Remesh", "UV unwrap", "Retexture"]
     assert page.form.model_id == SMART_UV, "UV unwrap starts on its first quick pick"

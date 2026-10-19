@@ -142,7 +142,8 @@ class JobRunner:
 
         ``mode`` is ``card``, ``material`` or ``image_plane`` for images and
         ``model`` for 3D results (a new group on the ground at the camera's
-        centre of interest; textures under ``sourceimages/scenario``).
+        centre of interest, or fitted over the mesh an edit came from or the
+        object whose views were captured; textures under ``sourceimages``).
         """
         row = self.ledger.get(local_id)
         if row is None:
@@ -175,6 +176,11 @@ class JobRunner:
                     made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, matrix=over["matrix"], over=over["target_name"])
                     if over["note"]:
                         made["checks"].setdefault("notes", []).append(over["note"])
+                elif ((row.get("origin") or {}).get("views_capture") or {}).get("box"):  # views captured around an object: over it
+                    from . import apply
+
+                    over = apply.import_over_views(row["origin"]["views_capture"], item["path"])
+                    made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, matrix=over["matrix"], over=over["target_name"])
                 else:
                     made = landing.land_model(item["path"], attrs, texture_folder=textures, label=label, select=select, place=scene.interest_point(camera))
             else:
