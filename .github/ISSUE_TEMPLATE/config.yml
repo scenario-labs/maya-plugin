@@ -1,11 +1,20 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Private support by e-mail
+    url: https://github.com/scenario-labs/maya-plugin/blob/main/SUPPORT.md#account-billing-credits-api-keys-and-security
+    about: The same report without publishing it, for example when it needs team or project ids. SUPPORT.md says what to send to support@scenario.com.
   - name: Account, billing, credits or a security report
     url: https://app.scenario.com
     about: Anything tied to your account is private. Use in-app support or support@scenario.com, not a public issue.
+  - name: User guide
+    url: https://github.com/scenario-labs/maya-plugin/blob/main/README.md
+    about: Install, sign in, generate, edit a mesh of the scene, animate a character.
   - name: Documentation
     url: https://github.com/scenario-labs/maya-plugin/tree/main/docs
     about: Privacy notes and the specification in the repository's docs folder.
   - name: Scenario Knowledge Base
     url: https://help.scenario.com
     about: How the platform, models and credits work.
+  - name: Scenario API documentation
+    url: https://docs.scenario.com
+    about: The Scenario API behind the plug-in's requests.
