@@ -144,9 +144,12 @@ Any paid run needs explicit authorization for the project and budget first.
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `ci.yml` | pull requests, `main` | `lint` (tools/lint.py, ruff), `unit` (pytest on Python 3.11 and 3.13, Linux, macOS, Windows); `ci-ok` requires all |
+| `ci.yml` | pull requests, `main` | `lint` (tools/lint.py, ruff), `unit` (pytest on Python 3.11 and 3.13, Linux, macOS, Windows; coverage on one leg); `ci-ok` requires both; `upload-coverage` sends the coverage to GitHub code coverage (skipped on fork PRs) |
+| `pr-name.yml`, `commitlint.yml` | pull requests | `pr-title` and `commits`: the PR title and each commit against `commitlint.config.mjs` |
 | `contract.yml` | weekly, PRs changing `core/` or the tool | `tools/contract_check.py` with `SCENARIO_NO_SPEND=1`, 0 CU (test key secrets; skipped with a warning without them) |
 | `links.yml` | weekly, docs PRs | links in Markdown |
+| `scorecard.yml` | weekly, `main` | OpenSSF Scorecard |
+| `project.yml` | PRs ready for review | adds them to the Plugins project (31) |
 
 GitHub runners have no Maya, so `tools/test_maya.sh` and
 `tools/test_maya_gui.sh` run on a Mac with Maya before each release; their
@@ -175,7 +178,8 @@ reports go under `tests/reports/`.
 - Branch from `main`; pull requests are squash-merged, so the PR title becomes
   the commit header and the changelog line. Titles follow Conventional Commits
   with a scope: `core`, `maya`, `ui`, `agent`, `lanes`, `docs`, `tools`,
-  `tests`, `ci`, `deps`, `release`, `repo`. Example:
+  `tests`, `ci`, `deps`, `release`, `repo` (the list in
+  `commitlint.config.mjs`, which the `pr-title` check applies). Example:
   `fix(maya): keep the selection after applying a material`.
 - Fill `.github/pull_request_template.md`; tick only what you ran.
 - Screenshots of a visible change go in the PR description, never in a commit.

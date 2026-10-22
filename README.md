@@ -1,4 +1,16 @@
-# Scenario for Maya
+<p align="center">
+  <a href="https://www.scenario.com/"><img src="docs/images/scenario-logo.png" height="84" alt="Scenario"></a>
+</p>
+<h1 align="center">Scenario for Maya</h1>
+<p align="center">
+  <a href="https://github.com/scenario-labs/maya-plugin/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/scenario-labs/maya-plugin"></a>
+  <a href="https://github.com/scenario-labs/maya-plugin/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/scenario-labs/maya-plugin/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
+  <img alt="Maya 2025 to 2027" src="https://img.shields.io/badge/Maya-2025%20to%202027-37A5CC">
+  <a href="https://docs.scenario.com"><img alt="API documentation" src="https://img.shields.io/badge/documentation-api-black.svg"></a>
+  <a href="https://help.scenario.com"><img alt="App documentation" src="https://img.shields.io/badge/documentation-app-black.svg"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/scenario-labs/maya-plugin"><img alt="OpenSSF Scorecard" src="https://img.shields.io/ossf-scorecard/github.com/scenario-labs/maya-plugin?label=openssf+scorecard&style=flat"></a>
+</p>
 
 Every Scenario model inside Autodesk Maya, for artists and for agents.
 

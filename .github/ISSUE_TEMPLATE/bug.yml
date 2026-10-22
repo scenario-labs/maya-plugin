@@ -1,6 +1,7 @@
 name: Bug report
 description: The Scenario panel, a generation, an import or apply, or the agent server behaves wrong
 type: Bug
+projects: ["scenario-labs/31"]
 body:
   - type: markdown
     attributes:
@@ -59,6 +60,15 @@ body:
       description: The verbatim text from the Scenario panel, the Script Editor or the log (`<MAYA_APP_DIR>/scenario/logs/scenario.log`). Paste text, not a screenshot, so it is searchable.
     validations:
       required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      description: What happens when you repeat the steps, in a new scene or after restarting Maya.
+      options:
+        - Always
+        - Sometimes
+        - Happened once
   - type: input
     id: maya_version
     attributes:
