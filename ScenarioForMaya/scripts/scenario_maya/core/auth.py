@@ -12,7 +12,6 @@ from __future__ import annotations
 import base64
 import os
 import threading
-import time
 
 from . import errors
 from .credstore import CredentialStore, default_store
@@ -158,7 +157,9 @@ class Credentials:
             return None
         if method == "oauth":
             client_id = self.settings.get("oauth_client_id")
-            refresh = self.store.get(ACCOUNT_REFRESH) if client_id else None
+            # A session from another application (an install that registered its own
+            # client, or a development instance) cannot be refreshed here: sign in again.
+            refresh = self.store.get(ACCOUNT_REFRESH) if client_id and client_id == self._app_client_id() else None
             if client_id and refresh:
                 team = os.environ.get("SCENARIO_TEAM_ID", "").strip() or self.settings.get("team_id")
                 project = os.environ.get("SCENARIO_PROJECT_ID", "").strip() or self.settings.get("project_id")
@@ -179,13 +180,17 @@ class Credentials:
         return auth
 
     def client_id(self) -> str:
-        """The registered OAuth client of this install, registering it once."""
-        client_id = self.settings.get("oauth_client_id")
-        if client_id:
-            return client_id
-        registered = self.oauth.register()
-        self.settings.update(oauth_client_id=registered["client_id"], oauth_registered_at=int(time.time()))
-        return registered["client_id"]
+        """The client id of Maya's OAuth application on the selected identity provider."""
+        client_id = self.oauth.app().client_id
+        if not client_id:
+            raise errors.Refused("Sign in with Scenario is not available in this release yet.", hint="Use an API key.")
+        return client_id
+
+    def _app_client_id(self) -> str:
+        try:
+            return self.oauth.app().client_id
+        except errors.ScenarioError:
+            return ""
 
     def save_oauth(self, client_id: str, tokens: Tokens) -> OAuthAuth:
         if not tokens.refresh_token:
@@ -205,7 +210,7 @@ class Credentials:
         self.store.delete(ACCOUNT_REFRESH)
 
     def sign_out(self) -> None:
-        """Revokes the refresh token, deletes stored secrets, keeps the client registration."""
+        """Revokes the refresh token and deletes stored secrets."""
         self._forget_oauth()
         key_id = self.settings.get("api_key_id")
         if key_id:

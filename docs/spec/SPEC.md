@@ -13,7 +13,7 @@ Facts are marked **[verified]** when they were checked on 2026-10-18 in a source
 1. **One action layer, three drivers.** A dockable Scenario panel, a larger Studio window and a quick composer for artists; a local MCP server inside Maya for agents; a Python API for scripts, `mayapy` batch jobs and other tools. All three call the same actions, so the same price checks, approvals, import code, undo and provenance apply whoever drives.
 2. **Pure Python, no compiled code.** `maya.cmds`, OpenMaya API 2.0 and PySide6, one code base for Maya 2025, 2026 and 2027 on Windows, macOS and Linux. No per-version binaries, nothing to sign, and the same code runs in the GUI and in `mayapy`.
 3. **Maya 2025, 2026 and 2027.** Developed and tested live on 2027.2 (macOS, Apple Silicon). 2025 and 2026 share Python 3.11 and PySide6 6.5; 2027 moves to Python 3.13 and PySide6 6.8. The plug-in is written for both.
-4. **Sign in with Scenario in one click.** Browser sign-in (OAuth authorization code with PKCE, loopback redirect) through the hosted Scenario MCP, with a device code fallback for remote machines. API key and secret, and environment variables, for CI and headless use. Secrets live in the OS credential store, never in the scene, the Maya project or Maya's preferences.
+4. **Sign in with Scenario in one click.** Browser sign-in (OAuth authorization code with PKCE, loopback redirect) as Maya's registered OAuth application on Scenario's identity provider, with a device code fallback for remote machines. API key and secret, and environment variables, for CI and headless use. Secrets live in the OS credential store, never in the scene, the Maya project or Maya's preferences.
 5. **The hosted Scenario MCP is the API**, as in the Godot, Unity and Unreal plug-ins: one JSON-RPC client, every model and tool, OAuth accepted. The transport sits behind an interface so the REST API can replace it later.
 6. **GLB lands through our own reader.** Maya 2025 to 2027 ship no glTF importer [verified], and Scenario's 3D outputs are GLB first. A pure-Python GLB reader (prototyped: meshes, UVs, normals, PBR materials, skins, skeletal animation, blend shapes, all matching Maya USD's own import to the centimetre on a reference character [verified]) builds Maya nodes directly. FBX through Maya's FBX plug-in is the fallback and the route for Maya-targeted outputs.
 7. **3D apply modes on the user's own meshes.** Beyond "import as new", a result can replace geometry, replace UVs, replace textures, split the mesh into parts, attach a returned rig and weights, apply returned animation onto an existing skeleton (with HumanIK retargeting for bipeds) or add face shapes, each with preconditions checked first, a review that says exactly what will change, one Ctrl+Z, and a kept original. Every mode was prototyped headless in Maya 2027.2 with exact undo and redo [verified].
@@ -449,15 +449,14 @@ Messages never contain secrets, tokens or full signed URLs. Logs go to Maya's Sc
 | API key + secret | Create a key on the team page, paste two values (or a `key:secret` pair) | Everywhere, including CI and farms | **Alternative** for CI, shared machines and teams that prefer keys |
 | Environment variables | Set `SCENARIO_API_KEY` and `SCENARIO_API_SECRET` | `mayapy`, CI, render farms, Docker | Always read first when set |
 
-Facts **[verified 2026-10-18]**: the hosted Scenario MCP publishes OAuth metadata with grant types `authorization_code`, `refresh_token` and `urn:ietf:params:oauth:grant-type:device_code`, PKCE `S256`, dynamic client registration and public clients. OAuth callers pass `team_id` and `project_id` on each call; an API key is already scoped to its project. The REST API does not accept these tokens yet. **[to verify]**: a full browser round trip from a desktop app and device-code registration, shared with the Unreal and Unity plug-ins.
+Facts **[verified 2026-11-02]**: Scenario's identity provider publishes OAuth metadata with grant types `authorization_code`, `refresh_token` and `urn:ietf:params:oauth:grant-type:device_code` and PKCE `S256`; it matches a loopback redirect URI on scheme, host and path, not the port; the hosted Scenario MCP accepts its access tokens. OAuth callers pass `team_id` and `project_id` on each call; an API key is already scoped to its project. The REST API does not accept these tokens yet. **[to verify]**: a full browser round trip from a desktop app and device-code registration, shared with the Unreal and Unity plug-ins.
 
 ### 5.2 Flow details
 
-- Discovery from `https://mcp.scenario.com/.well-known/oauth-authorization-server`; client registration once per install, cached with its redirect URI; loopback redirect on `http://127.0.0.1:<random port>/callback` served by a one-shot listener on a worker thread; `state` and PKCE verified; `resource=https://mcp.scenario.com/mcp`.
+- Discovery from `https://clerk.scenario.com/.well-known/oauth-authorization-server`; Maya's registered public client id (one redirect URI, `http://127.0.0.1/callback`, scopes `openid offline_access`); loopback redirect on `http://127.0.0.1:<free port>/callback` served by a one-shot listener on a worker thread; `state` and PKCE verified. A session saved by another client id is not resumed.
 - Refresh: one silent refresh on a 401, then one resend. Safe for paid calls because a 401 means the request was refused before dispatch.
 - Workspace: `teams_list` then `projects_list`; the choice is stored per user and per Maya project (ids only, no secret). Switching workspace clears quotes and private catalog entries, and never touches jobs already submitted.
 - Sign out revokes the refresh token, deletes it from the credential store and clears cached private data.
-- When Scenario's shared authorization server serves first-party clients, the plug-in moves to a registered client id with a branded consent page.
 
 ### 5.3 Where secrets live
 
@@ -477,6 +476,7 @@ Read order: environment variables, then the credential store, then the fallback 
 |---|---|
 | `SCENARIO_API_KEY`, `SCENARIO_API_SECRET` | Credentials for CI, farms and `mayapy` |
 | `SCENARIO_TEAM_ID`, `SCENARIO_PROJECT_ID` | Workspace for OAuth tokens supplied by a CI secret manager |
+| `SCENARIO_OAUTH_ISSUER`, `SCENARIO_OAUTH_CLIENT_ID` | Developers: sign in against a development identity provider and application (both together, the issuer over HTTPS), with `SCENARIO_MCP_URL` naming that instance's MCP |
 | `SCENARIO_NO_SPEND=1` | Refuses every paid call and upload locally (price checks still work) |
 | `SCENARIO_MAYA_MCP_PORT`, `SCENARIO_MAYA_MCP_TOKEN` | Agent server port and token for headless runs |
 | `SCENARIO_MAYA_OFFLINE=1` | No network at all (catalog from cache, jobs paused) |
