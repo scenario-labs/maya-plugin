@@ -198,6 +198,10 @@ class Credentials:
         key_id = self.settings.get("api_key_id")
         if key_id:
             self.store.delete(api_secret_account(key_id))
+        previous = self.settings.get("oauth_client_id")
+        if previous and previous != client_id:
+            # Another application means another provider: its team and project ids mean nothing here.
+            self.settings.update(team_id="", team_name="", project_id="", project_name="")
         self.store.set(ACCOUNT_REFRESH, tokens.refresh_token)
         self.settings.update(auth_method="oauth", oauth_client_id=client_id, api_key_id="", account_label="Scenario account")
         return OAuthAuth(self.oauth, client_id, tokens, self.store, self.settings.get("team_id"), self.settings.get("project_id"))

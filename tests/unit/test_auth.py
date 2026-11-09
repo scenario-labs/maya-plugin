@@ -12,7 +12,7 @@ import pytest
 from scenario_maya.core import errors
 from scenario_maya.core.auth import ACCOUNT_REFRESH, ApiKeyAuth, Credentials, mask, parse_key_pair
 from scenario_maya.core.credstore import FileStore, MacKeychainStore, MemoryStore
-from scenario_maya.core.oauth import PRODUCTION_ISSUER, LoopbackReceiver, OAuthApp, OAuthClient, pkce_pair, selected_app
+from scenario_maya.core.oauth import PRODUCTION_ISSUER, LoopbackReceiver, OAuthApp, OAuthClient, Tokens, pkce_pair, selected_app
 from scenario_maya.core.settings import Settings
 from tests.fake_backend.fake_scenario import CLIENT_ID
 
@@ -141,6 +141,14 @@ def test_a_session_from_another_application_is_forgotten_without_revoking(sessio
     other.sign_out()
     assert refresh not in fake.state.revoked  # its provider is unknown: the token never goes to this one
     assert other.store.get(ACCOUNT_REFRESH) is None
+
+
+def test_signing_in_as_another_application_forgets_the_workspace(session, fake):
+    session.sign_in_browser(browser)
+    session.set_workspace("team_from_before", "project_from_before", "Team", "Project")
+    other = Credentials(session.settings, session.credentials.store, OAuthClient(app=OAuthApp(fake.base, "another_application")))
+    other.save_oauth("another_application", Tokens(access_token="at", refresh_token="rt"))
+    assert [session.settings.get(k) for k in ("team_id", "project_id", "team_name", "project_name")] == ["", "", "", ""]
 
 
 def test_sign_out_forgets_when_the_provider_is_unreachable(session, fake):
