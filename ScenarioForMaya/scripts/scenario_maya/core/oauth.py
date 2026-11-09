@@ -255,10 +255,13 @@ class OAuthClient:
         return tokens
 
     def revoke(self, client_id: str, token: str, hint: str = "refresh_token") -> bool:
-        endpoint = self.metadata().revocation_endpoint
-        if not endpoint or not token:
+        """Best effort: offline or without metadata, sign-out still forgets the token."""
+        if not token:
             return False
         try:
+            endpoint = self.metadata().revocation_endpoint
+            if not endpoint:
+                return False
             status, _ = self._post_form(endpoint, {"token": token, "token_type_hint": hint, "client_id": client_id})
         except errors.ScenarioError:
             return False

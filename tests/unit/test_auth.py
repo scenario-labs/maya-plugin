@@ -134,6 +134,22 @@ def test_sign_out_revokes_and_deletes(session, fake):
     assert not session.signed_in and session.credentials.resolve() is None
 
 
+def test_a_session_from_another_application_is_forgotten_without_revoking(session, fake):
+    session.sign_in_browser(browser)
+    refresh = session.credentials.store.get(ACCOUNT_REFRESH)
+    other = Credentials(session.settings, session.credentials.store, OAuthClient(app=OAuthApp(fake.base, "another_application")))
+    other.sign_out()
+    assert refresh not in fake.state.revoked  # its provider is unknown: the token never goes to this one
+    assert other.store.get(ACCOUNT_REFRESH) is None
+
+
+def test_sign_out_forgets_when_the_provider_is_unreachable(session, fake):
+    session.sign_in_browser(browser)
+    offline = Credentials(session.settings, session.credentials.store, OAuthClient(app=OAuthApp(fake.base + "/unreachable", CLIENT_ID)))
+    offline.sign_out()
+    assert offline.store.get(ACCOUNT_REFRESH) is None and offline.resolve() is None
+
+
 def test_loopback_rejects_wrong_state():
     receiver = LoopbackReceiver("expected", ports=(0,))
     port = receiver.start()

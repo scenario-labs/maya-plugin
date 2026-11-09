@@ -205,7 +205,8 @@ class Credentials:
     def _forget_oauth(self) -> None:
         refresh = self.store.get(ACCOUNT_REFRESH)
         client_id = self.settings.get("oauth_client_id")
-        if refresh and client_id:
+        # A token from another application belongs to a provider we no longer know: forget it only.
+        if refresh and client_id and client_id == self._app_client_id():
             self.oauth.revoke(client_id, refresh)
         self.store.delete(ACCOUNT_REFRESH)
 
