@@ -65,7 +65,7 @@ def test_sign_in_waits_for_a_registered_application(fake):
 def test_developer_override_names_issuer_and_client_together(monkeypatch):
     monkeypatch.delenv("SCENARIO_OAUTH_ISSUER", raising=False)
     monkeypatch.delenv("SCENARIO_OAUTH_CLIENT_ID", raising=False)
-    assert selected_app().issuer == PRODUCTION_ISSUER
+    assert selected_app() == OAuthApp(PRODUCTION_ISSUER, "l6aUFP02nCjsHHDp")
     monkeypatch.setenv("SCENARIO_OAUTH_ISSUER", "https://idp.example.invalid/")
     with pytest.raises(errors.ProtocolError):
         selected_app()

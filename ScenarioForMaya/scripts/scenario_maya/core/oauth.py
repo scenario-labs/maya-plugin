@@ -32,9 +32,9 @@ from . import errors
 from .http import Response, Transport, UrllibTransport, is_secure_url
 
 PRODUCTION_ISSUER = "https://clerk.scenario.com"
-# Maya's OAuth application on the production identity provider. Empty until it is
-# registered there: browser and device sign-in then refuse, API keys keep working.
-PRODUCTION_CLIENT_ID = ""
+# Maya's OAuth application on the production identity provider (a public client: the
+# id is not a secret).
+PRODUCTION_CLIENT_ID = "l6aUFP02nCjsHHDp"
 # The fewest scopes the provider accepts: who the user is, and a refresh token.
 SCOPE = "openid offline_access"
 DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
