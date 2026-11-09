@@ -163,10 +163,12 @@ class DeviceDialog(QtWidgets.QDialog):
         self.where.setText(f"On any device, go to {device.verification_uri} and enter this code. This window closes once you approve.")
         for button in (self.open_button, self.copy_button):
             button.setEnabled(True)
+        self.adjustSize()  # the dialog keeps the height it opened with; wrapped lines would be cut
 
     def _failed(self, error: BaseException) -> None:
         if not self.cancel_event.is_set():
             show_message(self.status, error_text(error), "error")
+            self.adjustSize()
 
     def run(self) -> bool:
         dispatcher = self.runtime.dispatcher
