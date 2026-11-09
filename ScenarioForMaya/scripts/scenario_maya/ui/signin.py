@@ -236,5 +236,6 @@ class ApiKeyDialog(QtWidgets.QDialog):
         def failed(error: BaseException) -> None:
             self.buttons.setEnabled(True)
             show_message(self.status, error_text(error), "error")
+            self.adjustSize()
 
         self.runtime.background(lambda: self.runtime.session.sign_in_api_key(key_id, secret), on_done=lambda _r: self.accept(), on_error=failed)
