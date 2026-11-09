@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..core.workspaces import automatic_choice, load
-from .qt import QtCore, QtWidgets
+from .qt import QtCore, QtWidgets, isValid
 
 
 class WorkspaceDialog(QtWidgets.QDialog):
@@ -51,13 +51,31 @@ class WorkspaceDialog(QtWidgets.QDialog):
         return team, project
 
 
+# One choice at a time per Maya session: the load running (and whether it ends in a
+# question), then the picker it opened.
+_LOADING: dict | None = None
+_PICKER: WorkspaceDialog | None = None
+
+
 def choose(runtime, parent=None, *, ask: bool = False, on_done=None, on_error=None) -> None:
     """Loads teams on a worker, then picks automatically or asks.
 
     The question opens with ``open()``, not ``exec()``: this runs as a
     dispatcher callback, and a nested event loop there would hold the
     dispatcher until the user answers.
+
+    A call while teams load joins that load (and makes it ask if this call
+    asks); a call while the picker is open brings that picker to the front.
     """
+    global _LOADING
+    if _PICKER is not None and isValid(_PICKER):
+        _PICKER.raise_()
+        _PICKER.activateWindow()
+        return
+    if _LOADING is not None:
+        _LOADING["ask"] = _LOADING["ask"] or ask
+        return
+    loading = _LOADING = {"ask": ask}
     session = runtime.session
 
     def use(picked) -> None:
@@ -67,8 +85,10 @@ def choose(runtime, parent=None, *, ask: bool = False, on_done=None, on_error=No
             on_done()
 
     def apply(teams: list) -> None:
+        global _LOADING, _PICKER
+        _LOADING = None
         settings = session.settings
-        picked = None if ask else automatic_choice(teams, settings.get("team_id"), settings.get("project_id"))
+        picked = None if loading["ask"] else automatic_choice(teams, settings.get("team_id"), settings.get("project_id"))
         if picked is not None:
             use(picked)
             return
@@ -78,8 +98,11 @@ def choose(runtime, parent=None, *, ask: bool = False, on_done=None, on_error=No
             return
         dialog = WorkspaceDialog(teams, settings.get("team_id"), settings.get("project_id"), parent)
         dialog.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
+        _PICKER = dialog
 
         def finished(code: int) -> None:
+            global _PICKER
+            _PICKER = None
             choice = dialog.choice() if code == QtWidgets.QDialog.DialogCode.Accepted.value else None
             if choice is not None:
                 use(choice)
@@ -87,4 +110,10 @@ def choose(runtime, parent=None, *, ask: bool = False, on_done=None, on_error=No
         dialog.finished.connect(finished)
         dialog.open()
 
-    runtime.background(lambda: load(session.backend()), on_done=apply, on_error=on_error)
+    def failed(error: BaseException) -> None:
+        global _LOADING
+        _LOADING = None
+        if on_error:
+            on_error(error)
+
+    runtime.background(lambda: load(session.backend()), on_done=apply, on_error=failed)
