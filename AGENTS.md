@@ -149,7 +149,7 @@ Any paid run needs explicit authorization for the project and budget first.
 | `contract.yml` | weekly, PRs changing `core/` or the tool | `tools/contract_check.py` with `SCENARIO_NO_SPEND=1`, 0 CU (test key secrets; skipped with a warning without them) |
 | `links.yml` | weekly, docs PRs | links in Markdown |
 | `scorecard.yml` | weekly, `main` | OpenSSF Scorecard |
-| `project.yml` | PRs ready for review | adds them to the Plugins project (31) |
+| `project.yml` | non-draft PRs, when opened, reopened or marked ready (not Dependabot's) | adds them to the Plugins project (31) |
 
 GitHub runners have no Maya, so `tools/test_maya.sh` and
 `tools/test_maya_gui.sh` run on a Mac with Maya before each release; their

@@ -6,6 +6,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: commitlint-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   # Lints every commit the PR adds on top of its base branch with the same
   # commitlint.config.mjs as the pr-title job in pr-name.yml. The main ruleset
