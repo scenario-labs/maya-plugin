@@ -12,3 +12,32 @@ updates:
         patterns: ["*"]
     commit-message:
       prefix: "ci(deps)"
+    # Only labels that exist: without a list, Dependabot adds one per ecosystem.
+    labels: ["dependencies"]
+  # Node tooling for CI and contributors (commitlint), not the plug-in.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      node:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencies"]
+  # The test group in pyproject.toml (pytest, coverage). The plug-in installs
+  # no packages: it runs on Maya's Python, with truststore vendored.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      python:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencies"]

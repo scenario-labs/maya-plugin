@@ -47,10 +47,64 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      # The test tools and their pins are the test group in pyproject.toml.
       - name: Core unit tests against the fake Scenario server (0 CU)
         env:
           SCENARIO_MAYA_CREDSTORE: memory
-        run: uv run --no-project --python ${{ matrix.python }} --with pytest==8.4.2 pytest -q tests/unit
+        run: uv run --python ${{ matrix.python }} --only-group test pytest -q tests/unit
+
+  # Measures coverage (configured in pyproject.toml) for upload-coverage. On a
+  # PR it tests the head commit, the one upload-coverage reports for, while the
+  # unit legs test the merge commit. Not part of ci-ok: a PR head that predates
+  # the test group fails here without blocking the merge.
+  coverage:
+    name: coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - name: Core unit tests with coverage (0 CU)
+        env:
+          SCENARIO_MAYA_CREDSTORE: memory
+        run: uv run --python 3.13 --only-group test coverage run -m pytest -q tests/unit
+      - name: Coverage report
+        run: |
+          uv run --python 3.13 --only-group test coverage xml -o "$RUNNER_TEMP/coverage/python.xml"
+          uv run --python 3.13 --only-group test coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-python
+          path: ${{ runner.temp }}/coverage/python.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  # A job of its own so code-quality: write never reaches the test code. GitHub
+  # compares a PR against the main branch's last upload. A fork PR's token
+  # cannot write, so it skips. Not part of ci-ok: a failed upload is not a
+  # failed test.
+  upload-coverage:
+    name: upload-coverage
+    needs: coverage
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      code-quality: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-python
+          path: coverage
+      - uses: actions/upload-code-coverage@2b21a77928be8d5168c2b9581a67f2adbebacc52 # v1.4.4
+        with:
+          file: coverage/python.xml
+          language: Python
+          label: code-coverage/python
 
   # The one check branch rules should require from this workflow, so jobs can
   # be added or renamed without touching the rules. Do not rename it.

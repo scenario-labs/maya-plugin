@@ -5,6 +5,10 @@ description = "Scenario for Maya: every Scenario model inside Autodesk Maya, for
 requires-python = ">=3.11"
 license = "MIT"
 
+# Test tools CI installs; Dependabot keeps the pins current.
+[dependency-groups]
+test = ["pytest==8.4.2", "coverage==7.17.0"]
+
 [tool.ruff]
 line-length = 200
 target-version = "py311"
@@ -19,3 +23,21 @@ known-first-party = ["scenario_maya", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/unit"]
+
+# Coverage of the unit suite (CI uploads it to GitHub code coverage). maya/ and
+# ui/ need Maya: their tests run under mayapy (tools/test_maya.sh), not in CI.
+[tool.coverage.run]
+source = ["ScenarioForMaya/scripts/scenario_maya"]
+omit = [
+    "ScenarioForMaya/scripts/scenario_maya/_vendor/*",
+    "ScenarioForMaya/scripts/scenario_maya/maya/*",
+    "ScenarioForMaya/scripts/scenario_maya/ui/*",
+]
+relative_files = true
+data_file = ".cache/coverage/.coverage"
+
+[tool.coverage.report]
+skip_empty = true
+
+[tool.coverage.xml]
+output = ".cache/coverage/python.xml"
