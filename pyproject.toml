@@ -7,7 +7,7 @@ license = "MIT"
 
 # Test tools CI installs; Dependabot keeps the pins current.
 [dependency-groups]
-test = ["pytest==8.4.2", "coverage==7.17.0"]
+test = ["pytest==9.2.0", "coverage==7.17.1"]
 
 [tool.ruff]
 line-length = 200
