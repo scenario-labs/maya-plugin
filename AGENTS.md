@@ -144,7 +144,7 @@ Any paid run needs explicit authorization for the project and budget first.
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `ci.yml` | pull requests, `main` | `lint` (tools/lint.py, ruff), `unit` (pytest on Python 3.11 and 3.13, Linux, macOS, Windows; coverage on one leg); `ci-ok` requires both; `upload-coverage` sends the coverage to GitHub code coverage (skipped on fork PRs) |
+| `ci.yml` | pull requests, `main` | `lint` (tools/lint.py, ruff), `unit` (pytest on Python 3.11 and 3.13, Linux, macOS, Windows); `ci-ok` requires both; `coverage` measures the PR head and `upload-coverage` sends it to GitHub code coverage (skipped on fork PRs), neither required |
 | `pr-name.yml`, `commitlint.yml` | pull requests | `pr-title` and `commits`: the PR title and each commit against `commitlint.config.mjs` |
 | `contract.yml` | weekly, PRs changing `core/` or the tool | `tools/contract_check.py` with `SCENARIO_NO_SPEND=1`, 0 CU (test key secrets; skipped with a warning without them) |
 | `links.yml` | weekly, docs PRs | links in Markdown |
