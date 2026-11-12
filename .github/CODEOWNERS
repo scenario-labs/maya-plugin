@@ -1,15 +1,19 @@
-# Code owners: requested reviewers for release files, repository automation,
-# licence and security texts. Paths are root-anchored; the last match wins.
-# A team can be added once it has write access to this repository.
+# Code owners: requested reviewers. The maintainer reviews every path; the
+# platform team (maintain on this repository) joins on release files,
+# repository automation, licence and security texts. Paths are root-anchored
+# and the last matching line wins, so each path line names the maintainer again.
+
+# Every path
+*                                                   @hervenivon
 
 # Release version and changelog files
-/CHANGELOG.md                                       @hervenivon
-/ScenarioForMaya/scripts/scenario_maya/__init__.py  @hervenivon
+/CHANGELOG.md                                       @hervenivon @scenario-labs/platform
+/ScenarioForMaya/scripts/scenario_maya/__init__.py  @hervenivon @scenario-labs/platform
 
 # Release machinery and repository automation
-/.github/                                           @hervenivon
-/tools/                                             @hervenivon
+/.github/                                           @hervenivon @scenario-labs/platform
+/tools/                                             @hervenivon @scenario-labs/platform
 
 # Licence and security texts
-/LICENSE                                            @hervenivon
-/SECURITY.md                                        @hervenivon
+/LICENSE                                            @hervenivon @scenario-labs/platform
+/SECURITY.md                                        @hervenivon @scenario-labs/platform
