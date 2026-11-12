@@ -71,9 +71,10 @@ def test_developer_override_names_issuer_and_client_together(monkeypatch):
         selected_app()
     monkeypatch.setenv("SCENARIO_OAUTH_CLIENT_ID", "dev_client")
     assert selected_app() == OAuthApp("https://idp.example.invalid", "dev_client")
-    monkeypatch.setenv("SCENARIO_OAUTH_ISSUER", "http://idp.example.invalid")
-    with pytest.raises(errors.ProtocolError):
-        selected_app()
+    for plain_http in ("http://idp.example.invalid", "http://127.0.0.1:8080"):
+        monkeypatch.setenv("SCENARIO_OAUTH_ISSUER", plain_http)
+        with pytest.raises(errors.ProtocolError):
+            selected_app()
 
 
 def test_oauth_calls_carry_workspace_ids(session, fake):

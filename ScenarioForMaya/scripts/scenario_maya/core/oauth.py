@@ -58,7 +58,7 @@ def selected_app() -> OAuthApp:
     client_id = os.environ.get("SCENARIO_OAUTH_CLIENT_ID", "").strip()
     if not issuer and not client_id:
         return OAuthApp(PRODUCTION_ISSUER, PRODUCTION_CLIENT_ID)
-    if not issuer or not client_id or not is_secure_url(issuer):
+    if not issuer or not client_id or not issuer.startswith("https://"):
         raise errors.ProtocolError("Set SCENARIO_OAUTH_ISSUER (HTTPS) and SCENARIO_OAUTH_CLIENT_ID together, or neither.")
     return OAuthApp(issuer, client_id)
 
