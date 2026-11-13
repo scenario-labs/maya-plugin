@@ -10,7 +10,7 @@ Faults are queued per operation: ``server.state.fail("generate", kind)`` where
 kind is one of ``drop`` (job created, connection closed before the reply),
 ``http500``, ``http504``, ``expired`` (the gateway refuses the token before any
 handler runs: 403 with ``x-amzn-errortype``), ``http429``, ``plan_limit``,
-``http400``, ``moderation``, ``no_job`` (a success without a job), ``redirect``.
+``http400``, ``moderation``, ``no_job`` (a success without a job), ``bad_json`` (a success that is not JSON), ``not_found``, ``redirect``.
 Operations: ``teams``, ``projects``, ``models``, ``model``, ``generate``,
 ``job``, ``jobs``, ``asset``, ``download``, ``upload_create``,
 ``upload_action``, ``upload_read``.
@@ -286,6 +286,7 @@ class State:
         self.file_requests: list = []  # (name, Range header) per file GET
         self.file_faults: dict = {}  # name -> list of "503", "cut" (half the bytes, then close), "redirect:<url>"
         self.polls_to_finish = 2
+        self.empty_project_pages = 0  # pages of /projects with no project but a next token, as the API's filtered pages
         self.clients: dict = {CLIENT_ID: {"redirect_uris": ["http://127.0.0.1/callback"], "name": "Scenario for Maya"}}
         self.registrations: list = []
         self.authorize_queries: list = []
@@ -575,6 +576,12 @@ class Handler(BaseHTTPRequestHandler):
         if fault == "http500":
             self._json(500, {"reason": "Internal server error"})
             return
+        if fault == "bad_json":
+            self._send(200, b"<html>gateway</html>", "text/html")
+            return
+        if fault == "not_found":
+            self._json(404, {"reason": "Not found"})
+            return
         if fault == "redirect":
             self._send(302, b"", "text/plain", {"Location": self.base + "/files/elsewhere"})
             return
@@ -610,6 +617,9 @@ class Handler(BaseHTTPRequestHandler):
         return 200, {"teams": [dict(TEAM, projects=[dict(PROJECT)])]}
 
     def _op_projects(self, _id, query, data, who):
+        page = int(query.get("paginationToken") or 0)
+        if page < self.state.empty_project_pages:
+            return 200, {"projects": [], "nextPaginationToken": str(page + 1)}
         return 200, {"projects": [dict(PROJECT, teamId=TEAM["id"], members=[{"email": "member@example.invalid"}])], "nextPaginationToken": ""}
 
     def _op_models(self, _id, query, data, who):

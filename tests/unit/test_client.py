@@ -1,5 +1,7 @@
 """REST client over the SDK: requests, retry rules, error kinds."""
 
+import urllib.request
+
 import pytest
 
 from scenario_maya.core import errors
@@ -75,6 +77,35 @@ def test_a_paid_call_is_never_retried_by_the_sdk(fake):
     with pytest.raises(errors.RateLimited, match="Not sent"):
         backend(fake).run("model_x", {"prompt": "a"})
     assert len(fake.state.calls_to("generate")) == 1
+
+
+def test_a_paid_answer_that_cannot_be_read_is_not_confirmed(fake):
+    fake.state.fail("generate", "bad_json")
+    with pytest.raises(errors.NotConfirmed):
+        backend(fake).run("model_x", {"prompt": "a"})
+    fake.state.fail("models", "bad_json")
+    with pytest.raises(errors.ProtocolError):
+        backend(fake).models()
+
+
+def test_credentials_never_go_to_a_plain_http_address():
+    with pytest.raises(errors.ProtocolError, match="HTTPS"):
+        RestClient(ApiKeyAuth(API_KEY, API_SECRET), "http://api.example.invalid/v1")
+
+
+def test_a_key_finds_its_project_after_many_empty_pages(fake):
+    fake.state.empty_project_pages = 7
+    teams = backend(fake).teams()
+    assert teams[0]["projects"][0]["name"] == "Test project"
+    assert len(fake.state.calls_to("projects")) == 8
+
+
+def test_an_upload_not_readable_yet_is_read_again(fake):
+    api = backend(fake)
+    started = api.upload_start("a.png", "image/png", "image", 3)
+    urllib.request.urlopen(urllib.request.Request(started["parts"][0]["url"], data=b"abc", method="PUT")).read()
+    fake.state.fail("upload_read", "not_found")
+    assert api.upload_complete(started["upload_id"])["asset_id"].startswith("asset_")
 
 
 def test_a_refused_key_is_auth_failed(fake):
