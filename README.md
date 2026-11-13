@@ -389,7 +389,7 @@ sequenceDiagram
     actor You
     participant Panel
     participant Ledger as Job ledger (SQLite)
-    participant Scenario as Scenario MCP
+    participant Scenario as Scenario API
     You->>Panel: edit the prompt or a setting
     Panel->>Scenario: price check (dry run, free)
     Scenario-->>Panel: exact price
@@ -425,9 +425,9 @@ flowchart TB
     artist["Artist<br/>panel, picker, menu"]
     agent["Agent<br/>local MCP server (next)"]
     actions["Action layer, maya/<br/>generate, follow, land, import"]
-    core["core/, no Maya import<br/>Scenario MCP client, sign-in, quotes, job ledger,<br/>schema forms, catalog, downloads, uploads,<br/>glTF reader and writer, topology match"]
+    core["core/, no Maya import<br/>Scenario API client (SDK), sign-in, quotes, job ledger,<br/>schema forms, catalog, downloads, uploads,<br/>glTF reader and writer, topology match"]
     scene["Maya scene<br/>GLB builder, mesh export, materials, cards,<br/>provenance attributes, undo"]
-    scenario["Scenario MCP over HTTPS<br/>models, jobs, assets"]
+    scenario["Scenario REST API over HTTPS<br/>models, jobs, assets"]
     artist --> actions
     agent --> actions
     actions --> core
@@ -453,7 +453,9 @@ flowchart TB
 
 ## Install from a checkout
 
-1. Clone this repository.
+1. Clone this repository and unpack Scenario's Python SDK into it:
+   `python3 tools/vendor_sdk.py` (Python 3.11 or later; it downloads the
+   wheels pinned in `tools/sdk_wheels.json`).
 2. Drag `ScenarioForMaya/scripts/install_scenario.py` onto a Maya viewport. It
    copies the module into your Maya modules folder, loads the plug-in, turns
    on autoload and opens the Scenario panel. No restart and no `userSetup.py`
@@ -501,10 +503,10 @@ What the plug-in sends and stores is in [docs/PRIVACY.md](docs/PRIVACY.md).
 
 | Layer | What it covers | Where it runs |
 | --- | --- | --- |
-| Unit | `core/` against a fake Scenario MCP and OAuth server: money rules, quotes, ledger recovery, downloads, the glTF reader | Python 3.11 and 3.13 on Linux, macOS and Windows (CI) |
+| Unit | `core/` against a fake Scenario REST API and OAuth server: money rules, quotes, ledger recovery, downloads, the glTF reader | Python 3.11 and 3.13 on Linux, macOS and Windows (CI) |
 | `mayapy` | Plug-in load and unload, GLB import with undo and redo, the Image and 3D tabs end to end against the fake server (image upload, viewport capture without an undo step, an Image result sent to 3D), the panel | A Mac with Maya: `tools/test_maya.sh` |
 | GUI | Scripted sessions in the real Maya window: install, sign-in, restart recovery, live generation, undo after a click | A Mac with Maya: `tools/test_maya_gui.sh`, `tools/readme_media.sh` |
-| Contract | Reads and dry runs against the live Scenario MCP, nothing spent | Weekly in CI with a test key |
+| Contract | Reads and dry runs against the live Scenario REST API, nothing spent | Weekly in CI with a test key |
 
 The pictures and recordings on this page come from `tools/readme_media.sh`,
 which drives the panel in a real Maya 2027.2 session with live Scenario

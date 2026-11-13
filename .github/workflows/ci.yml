@@ -47,6 +47,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Unpack the pinned Scenario SDK
+        run: uv run --python ${{ matrix.python }} --no-project python tools/vendor_sdk.py
       # The test tools and their pins are the test group in pyproject.toml.
       - name: Core unit tests against the fake Scenario server (0 CU)
         env:
@@ -67,6 +69,8 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Unpack the pinned Scenario SDK
+        run: uv run --python 3.13 --no-project python tools/vendor_sdk.py
       - name: Core unit tests with coverage (0 CU)
         env:
           SCENARIO_MAYA_CREDSTORE: memory

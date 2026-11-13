@@ -1,13 +1,19 @@
-"""A local stand-in for the hosted Scenario MCP, its OAuth server and its file CDN.
+"""A local stand-in for Scenario's REST API, its OAuth server and its file CDN.
 
 Used by the unit tests, the ``mayapy`` tests and the agent tests, so no test
-spends Creative Units or needs the network. Reply shapes follow recordings of
-the hosted server (version 0.34.0, 2026-10-18), scrubbed of real ids.
+spends Creative Units or needs the network. Model records are derived from
+recordings of the hosted MCP's schema reads (``tests/fixtures/mcp``), turned
+back into the API's own shape; jobs, assets and uploads follow the API's
+documented answers, with placeholder ids.
 
-Faults are queued per tool: ``server.state.fail("model_run", kind)`` where kind
-is one of ``drop`` (job created, connection closed before the reply),
-``http500``, ``http401``, ``http429``, ``tool_error_400``, ``tool_error_500``,
-``tool_error_generic``, ``moderation``, ``session_404``.
+Faults are queued per operation: ``server.state.fail("generate", kind)`` where
+kind is one of ``drop`` (job created, connection closed before the reply),
+``http500``, ``http504``, ``expired`` (the gateway refuses the token before any
+handler runs: 403 with ``x-amzn-errortype``), ``http429``, ``plan_limit``,
+``http400``, ``moderation``, ``no_job`` (a success without a job), ``bad_json`` (a success that is not JSON), ``not_found``, ``redirect``.
+Operations: ``teams``, ``projects``, ``models``, ``model``, ``generate``,
+``job``, ``jobs``, ``asset``, ``download``, ``upload_create``,
+``upload_action``, ``upload_read``.
 """
 
 from __future__ import annotations
@@ -16,6 +22,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import secrets
 import tempfile
 import threading
@@ -258,7 +265,7 @@ def _png(width: int = 8, height: int = 8, rgb=(200, 120, 40)) -> bytes:
 
 
 class ToolFailure(Exception):
-    """A tool's own refusal, answered as the hosted server does (isError with the status)."""
+    """A handler's refusal: the status and the API's ``{reason}`` body."""
 
     def __init__(self, status: int, body: dict) -> None:
         super().__init__(status)
@@ -275,14 +282,11 @@ class State:
         self.assets: dict = {}
         self.files: dict = {}
         self.uploads: dict = {}
-        self.upload_part_size = 6000000  # Scenario's part size; tests lower it to get several parts
         self.upload_puts: list = []  # (upload id, part number, headers) per PUT
         self.file_requests: list = []  # (name, Range header) per file GET
         self.file_faults: dict = {}  # name -> list of "503", "cut" (half the bytes, then close), "redirect:<url>"
         self.polls_to_finish = 2
-        self.reply_mode = "sse"  # or "json"
-        self.issue_sessions = False
-        self.sessions: set = set()
+        self.empty_project_pages = 0  # pages of /projects with no project but a next token, as the API's filtered pages
         self.clients: dict = {CLIENT_ID: {"redirect_uris": ["http://127.0.0.1/callback"], "name": "Scenario for Maya"}}
         self.registrations: list = []
         self.authorize_queries: list = []
@@ -294,21 +298,21 @@ class State:
         self.auto_approve = True
         self.token_lifetime = 3600
 
-    def fail(self, tool: str, kind: str, times: int = 1) -> None:
+    def fail(self, op: str, kind: str, times: int = 1) -> None:
         with self.lock:
-            self.faults.setdefault(tool, []).extend([kind] * times)
+            self.faults.setdefault(op, []).extend([kind] * times)
 
-    def take_fault(self, tool: str) -> str:
+    def take_fault(self, op: str) -> str:
         with self.lock:
-            queue = self.faults.get(tool) or []
+            queue = self.faults.get(op) or []
             return queue.pop(0) if queue else ""
 
     def paid_runs(self) -> list:
-        """Paid requests that got past authentication (a 401 or an expired session refuses before the tool)."""
-        return [c for c in self.calls if c["tool"] == "model_run" and not c["arguments"].get("dry_run") and c.get("fault") not in ("http401", "session_404")]
+        """Paid requests that got past the gateway (a refused token never reaches the handler)."""
+        return [c for c in self.calls if c["op"] == "generate" and c["query"].get("dryRun") != "true" and c.get("fault") != "expired"]
 
-    def tool_calls(self, name: str) -> list:
-        return [c for c in self.calls if c["tool"] == name]
+    def calls_to(self, op: str) -> list:
+        return [c for c in self.calls if c["op"] == op]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -345,32 +349,23 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         return self.rfile.read(length) if length else b""
 
-    def _rpc_reply(self, request_id, result=None, error=None, headers: dict | None = None) -> None:
-        message = {"jsonrpc": "2.0", "id": request_id}
-        if error is not None:
-            message["error"] = error
-        else:
-            message["result"] = result
-        if self.state.reply_mode == "sse":
-            progress = {"jsonrpc": "2.0", "method": "notifications/progress", "params": {"progress": 0.5}}
-            body = f"event: message\ndata: {json.dumps(progress)}\n\nevent: message\ndata: {json.dumps(message)}\n\n".encode()
-            self._send(200, body, "text/event-stream", headers)
-        else:
-            self._json(200, message, headers)
-
-    def _authorized(self) -> bool:
+    def _credentials(self) -> str:
+        """``key`` or ``user`` for accepted credentials, ``""`` for anything else."""
         header = self.headers.get("Authorization") or ""
         if header.startswith("Basic "):
             try:
                 key, _, secret = base64.b64decode(header[6:]).decode().partition(":")
             except ValueError:
-                return False
-            return key == API_KEY and secret == API_SECRET
+                return ""
+            return "key" if key == API_KEY and secret == API_SECRET else ""
         if header.startswith("Bearer "):
-            token = header[7:]
-            expires = self.state.access_tokens.get(token)
-            return bool(expires and expires > time.time())
-        return False
+            expires = self.state.access_tokens.get(header[7:])
+            return "user" if expires and expires > time.time() else ""
+        return ""
+
+    def _denied(self, reason: str = "Forbidden") -> None:
+        """The gateway's refusal: before any handler, with the header the API's gateway adds."""
+        self._json(403, {"reason": reason}, {"x-amzn-errortype": "AccessDeniedException"})
 
     # -- routes ----------------------------------------------------------
 
@@ -395,6 +390,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path.startswith("/files/"):
             self._file(parsed.path[len("/files/") :])
+            return
+        if parsed.path.startswith("/v1/"):
+            self._api("GET", parsed, b"")
             return
         self._send(404)
 
@@ -429,8 +427,8 @@ class Handler(BaseHTTPRequestHandler):
             self.state.revoked.append((form.get("token") or [""])[0])
             self.state.refresh_tokens.pop((form.get("token") or [""])[0], None)
             self._send(200)
-        elif parsed.path == "/mcp":
-            self._mcp(body)
+        elif parsed.path.startswith("/v1/"):
+            self._api("POST", parsed, body)
         else:
             self._send(404)
 
@@ -536,231 +534,176 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._send(200, data, "application/octet-stream", {"Accept-Ranges": "bytes"})
 
-    # -- MCP -------------------------------------------------------------
+    # -- REST API ----------------------------------------------------------
 
-    def _mcp(self, body: bytes) -> None:
-        if not self._authorized():
-            self._send(401, b'{"error":"unauthorized"}', "application/json", {"WWW-Authenticate": 'Bearer resource_metadata="x"'})
+    _ROUTES = (
+        ("GET", r"/v1/teams", "teams"),
+        ("GET", r"/v1/projects", "projects"),
+        ("GET", r"/v1/models", "models"),
+        ("GET", r"/v1/models/(?P<id>[^/]+)", "model"),
+        ("POST", r"/v1/generate/custom/(?P<id>[^/]+)", "generate"),
+        ("GET", r"/v1/jobs", "jobs"),
+        ("GET", r"/v1/jobs/(?P<id>[^/]+)", "job"),
+        ("GET", r"/v1/assets/(?P<id>[^/]+)", "asset"),
+        ("POST", r"/v1/assets/(?P<id>[^/]+)/download", "download"),
+        ("POST", r"/v1/uploads", "upload_create"),
+        ("POST", r"/v1/uploads/(?P<id>[^/]+)/action", "upload_action"),
+        ("GET", r"/v1/uploads/(?P<id>[^/]+)", "upload_read"),
+    )
+
+    def _api(self, method: str, parsed, body: bytes) -> None:
+        found = next(((op, match) for verb, pattern, op in self._ROUTES if verb == method and (match := re.fullmatch(pattern, parsed.path))), None)
+        if found is None:
+            self._json(404, {"reason": "Not found"})
             return
+        op, match = found
+        query = {key: values[0] for key, values in urllib.parse.parse_qs(parsed.query).items()}
         try:
-            message = json.loads(body)
+            data = json.loads(body) if body else {}
         except ValueError:
-            self._json(400, {"error": "bad json"})
+            self._json(400, {"reason": "Invalid JSON body"})
             return
-        session = self.headers.get("Mcp-Session-Id") or ""
-        method = message.get("method")
-        request_id = message.get("id")
-        if method == "initialize":
-            headers = {}
-            if self.state.issue_sessions:
-                session = "sess_" + secrets.token_hex(6)
-                self.state.sessions.add(session)
-                headers["Mcp-Session-Id"] = session
-            self._rpc_reply(
-                request_id,
-                {"protocolVersion": "2025-06-18", "capabilities": {"tools": {}}, "serverInfo": {"name": "fake-scenario-mcp", "version": "0.34.0"}, "instructions": "Fake Scenario MCP for tests."},
-                headers=headers,
-            )
-            return
-        if request_id is None:
-            self._send(202)
-            return
-        if self.state.issue_sessions and session not in self.state.sessions:
-            self._send(404, b'{"error":"session not found"}')
-            return
-        if method == "tools/list":
-            self._rpc_reply(
-                request_id,
-                {
-                    "tools": [
-                        {"name": n, "inputSchema": {"type": "object"}}
-                        for n in (
-                            "teams_list",
-                            "models_list",
-                            "model_schema_get",
-                            "model_run",
-                            "job_get",
-                            "jobs_wait",
-                            "jobs_list",
-                            "asset_get",
-                            "asset_download",
-                            "upload_asset",
-                            "upload_asset_complete",
-                            "recommend",
-                        )
-                    ]
-                },
-            )
-            return
-        if method != "tools/call":
-            self._rpc_reply(request_id, error={"code": -32601, "message": "Method not found"})
-            return
-        params = message.get("params") or {}
-        tool = params.get("name")
-        args = params.get("arguments") or {}
-        fault = self.state.take_fault(tool)
+        who = self._credentials()
+        fault = self.state.take_fault(op)
         with self.state.lock:
-            self.state.calls.append({"tool": tool, "arguments": args, "time": time.time(), "fault": fault})
-        if fault == "session_404":
-            self.state.sessions.discard(session)
-            self._send(404, b'{"error":"session not found"}')
+            self.state.calls.append({"op": op, "id": match.groupdict().get("id") or "", "query": query, "body": data, "auth": who, "time": time.time(), "fault": fault})
+        if not who or fault == "expired":
+            self._denied()
             return
-        if fault == "http401":
-            self._send(401, b'{"error":"expired"}')
+        if op in ("teams",) and who == "key":
+            self._denied("You cannot access this team or project")
             return
         if fault == "http500":
-            self._send(500, b'{"error":"boom"}')
+            self._json(500, {"reason": "Internal server error"})
+            return
+        if fault == "bad_json":
+            self._send(200, b"<html>gateway</html>", "text/html")
+            return
+        if fault == "not_found":
+            self._json(404, {"reason": "Not found"})
+            return
+        if fault == "redirect":
+            self._send(302, b"", "text/plain", {"Location": self.base + "/files/elsewhere"})
+            return
+        if fault == "http504":
+            self._json(504, {"message": "Endpoint request timed out"})
             return
         if fault == "http429":
-            self._send(429, b'{"error":"slow down"}', "application/json", {"Retry-After": "0"})
+            self._json(429, {"reason": "Too many requests, please slow down.", "name": "RateLimitError"})
             return
-        handler = getattr(self, "_tool_" + str(tool), None)
-        if handler is None:
-            self._tool_error(request_id, 404, {"reason": f"Unknown tool {tool}"})
+        if fault == "plan_limit":
+            self._json(429, {"reason": "Your plan's limit is reached.", "name": "PlanLimitReachedError", "details": {"limitScope": "team"}})
             return
-        if fault == "tool_error_400":
-            self._tool_error(request_id, 400, {"reason": "Input prompt is required"})
-            return
-        if fault == "tool_error_500":
-            self._tool_error(request_id, 500, {"reason": "Internal error"})
-            return
-        if fault == "tool_error_generic":
-            self._rpc_reply(request_id, {"content": [{"type": "text", "text": "⚠ Scenario error (trace_id: mcpt_fake). For a diagnostic report, run diagnostics_run."}], "isError": True})
+        if fault == "http400":
+            self._json(400, {"reason": "Input prompt is required"})
             return
         if fault == "moderation":
-            self._tool_error(request_id, 400, {"reason": "Prompt flagged by moderation"})
+            self._json(400, {"reason": "Prompt flagged by moderation"})
             return
         try:
-            result = handler(args)
+            status, result = getattr(self, "_op_" + op)(match.group("id") if "id" in match.groupdict() else "", query, data, who)
         except ToolFailure as failure:
-            self._tool_error(request_id, failure.status, failure.body)
+            self._json(failure.status, failure.body)
             return
         if fault == "drop":
             self.close_connection = True
             self.connection.close()
             return
-        self._rpc_reply(request_id, {"content": [{"type": "text", "text": json.dumps(result)}], "structuredContent": result, "_meta": {"scenario.com/trace_id": "mcpt_fake"}})
+        if fault == "no_job":
+            result = {}
+        self._json(status, result)
 
-    def _tool_error(self, request_id, status: int, body: dict) -> None:
-        self._rpc_reply(
-            request_id,
-            {
-                "content": [
-                    {"type": "text", "text": "⚠ Scenario error (trace_id: mcpt_fake). For a diagnostic report, run diagnostics_run."},
-                    {"type": "text", "text": f"Error: {status} {json.dumps(body)}"},
-                ],
-                "isError": True,
-                "_meta": {"scenario.com/trace_id": "mcpt_fake"},
-            },
-        )
+    def _op_teams(self, _id, query, data, who):
+        return 200, {"teams": [dict(TEAM, projects=[dict(PROJECT)])]}
 
-    # -- tools -----------------------------------------------------------
+    def _op_projects(self, _id, query, data, who):
+        page = int(query.get("paginationToken") or 0)
+        if page < self.state.empty_project_pages:
+            return 200, {"projects": [], "nextPaginationToken": str(page + 1)}
+        return 200, {"projects": [dict(PROJECT, teamId=TEAM["id"], members=[{"email": "member@example.invalid"}])], "nextPaginationToken": ""}
 
-    def _tool_teams_list(self, args):
-        return {"teams": [dict(TEAM, projects=[dict(PROJECT)])]}
+    def _op_models(self, _id, query, data, who):
+        if query.get("privacy") != "public":
+            return 200, {"models": [], "nextPaginationToken": ""}
+        rows = _load_fixture("models_list.json")["models"] + [IMAGE_MODEL, THREE_D_MODEL, IMAGE_TO_3D_MODEL] + [dict(row) for row in EDIT_ROWS + MULTIVIEW_ROWS + MOTION_ROWS]
+        return 200, {"models": rows, "nextPaginationToken": ""}
 
-    def _tool_projects_list(self, args):
-        return {"projects": [dict(PROJECT)]}
-
-    def _tool_models_list(self, args):
-        data = _load_fixture("models_list.json")
-        filters = args.get("filters") or {}
-        if filters.get("modality") == "image" and filters.get("privacy") == "public":
-            data["models"] = data["models"] + [IMAGE_MODEL]
-        if filters.get("modality") == "3d" and filters.get("privacy") == "public":
-            data["models"] = data["models"] + [THREE_D_MODEL, IMAGE_TO_3D_MODEL] + [dict(row) for row in EDIT_ROWS + MULTIVIEW_ROWS + MOTION_ROWS]
-        return data
-
-    def _tool_model_schema_get(self, args):
-        name = f"schema_{args.get('model_id')}.json"
+    def _op_model(self, model_id, query, data, who):
+        name = f"schema_{model_id}.json"
         path = os.path.join(FIXTURES, name)
-        if not os.path.exists(path):
-            return {"model_id": args.get("model_id"), "name": "Test model", "capabilities": ["txt2img"], "parameters": [{"name": "prompt", "type": "string", "required": True, "prompt": True}]}
-        return _load_fixture(name)
+        schema = (
+            _load_fixture(name)
+            if os.path.exists(path)
+            else {"model_id": model_id, "name": "Test model", "capabilities": ["txt2img"], "parameters": [{"name": "prompt", "type": "string", "required": True, "prompt": True}]}
+        )
+        model = {
+            "id": model_id,
+            "name": schema.get("name"),
+            "type": "custom",
+            "capabilities": schema.get("capabilities") or [],
+            "status": "trained",
+            "inputs": [_api_input(p) for p in schema.get("parameters") or []],
+        }
+        return 200, {"model": model}
 
-    def _tool_recommend(self, args):
-        return {"next_step": {"type": "proceed"}, "ranked": [{"model_id": "model_meshy-7-1-txt23d", "name": "Meshy 7.1 - Text-to-3D", "rank": 1}]}
-
-    def _tool_model_run(self, args):
-        model_id = args.get("model_id")
+    def _op_generate(self, model_id, query, params, who):
         cost = PRICES.get(model_id, 10)
         if model_id in IMAGE_INPUT_MODELS:
-            # Like the hosted service, a run checks its required image: it must be an uploaded asset.
-            given = (args.get("parameters") or {}).get("image")
+            # Like the service, a run checks its required image: it must be an uploaded asset.
+            given = params.get("image")
             ids = given if isinstance(given, list) else [given] if given else []
             if not ids or any(asset_id not in self.state.assets for asset_id in ids):
-                raise ToolFailure(400, {"error": "image: Asset not found or not an uploaded image."})
+                raise ToolFailure(400, {"reason": "image: Asset not found or not an uploaded image."})
         if model_id in MULTIVIEW_MODELS:
-            given = {key: value for key, value in (args.get("parameters") or {}).items() if key.endswith("Image")}
+            given = {key: value for key, value in params.items() if key.endswith("Image")}
             if given.get("frontImage") not in self.state.assets or any(value not in self.state.assets for value in given.values()):
-                raise ToolFailure(400, {"error": "frontImage: Asset not found or not an uploaded image."})
+                raise ToolFailure(400, {"reason": "frontImage: Asset not found or not an uploaded image."})
             if model_id.startswith("model_tripo") and len(given) < 2:
-                raise ToolFailure(400, {"error": "Provide the front view with at least one of left, back, right."})
+                raise ToolFailure(400, {"reason": "Provide the front view with at least one of left, back, right."})
         if model_id in EDIT_MODELS:
             field = EDIT_MODELS[model_id][1]
-            given = (args.get("parameters") or {}).get(field)
+            given = params.get(field)
             asset = self.state.assets.get(given) if isinstance(given, str) else None
             if asset is None or asset.get("kind") != "3d":
-                raise ToolFailure(400, {"error": f"{field}: Asset not found or not an uploaded 3D model."})
+                raise ToolFailure(400, {"reason": f"{field}: Asset not found or not an uploaded 3D model."})
         if model_id in MOTION_MODELS:
             field, needed, _name, _caps = MOTION_MODELS[model_id]
-            given = (args.get("parameters") or {}).get(field) if field else None
+            given = params.get(field) if field else None
             if needed and not given:
-                raise ToolFailure(400, {"error": "Provide a reference image or a 3D model."})
+                raise ToolFailure(400, {"reason": "Provide a reference image or a 3D model."})
             if given is not None:
                 asset = self.state.assets.get(given) if isinstance(given, str) else None
                 if asset is None or asset.get("kind") != "3d":
-                    raise ToolFailure(400, {"error": f"{field}: Asset not found or not an uploaded 3D model."})
+                    raise ToolFailure(400, {"reason": f"{field}: Asset not found or not an uploaded 3D model."})
                 cost += 20 if model_id == "model_uthana-text-to-motion-3.0" else 0  # Uthana prices a character in
-        if args.get("dry_run"):
-            return {"dry_run": True, "model_id": model_id, "job": {}, "creativeUnitsCost": cost, "creativeUnitsDiscount": 0}
+        if query.get("dryRun") == "true":
+            return 269, {"creativeUnitsCost": cost, "creativeUnitsDiscount": 0}
         job_id = "job_fake" + secrets.token_hex(8)
-        asset_id = "asset_fake" + secrets.token_hex(8)
         if model_id in THREE_D_MODELS:
-            return self._run_3d(model_id, job_id, cost)
-        if model_id in MOTION_MODELS:
-            return self._run_3d(model_id, job_id, cost, glb=_motion_glb(), meta={"kind": "3d", "faceCount": 4, "boneCount": 2})
-        if model_id in EDIT_MODELS:
+            self._run_3d(model_id, job_id, cost)
+        elif model_id in MOTION_MODELS:
+            self._run_3d(model_id, job_id, cost, glb=_motion_glb(), meta={"kind": "3d", "faceCount": 4, "boneCount": 2})
+        elif model_id in EDIT_MODELS:
             task, field, side, _name = EDIT_MODELS[model_id]
-            source = self.state.files[self.state.assets[args["parameters"][field]]["file"]]
+            source = self.state.files[self.state.assets[params[field]]["file"]]
             glb, triangles, dims = _edited_glb(task, side, source)
-            return self._run_3d(model_id, job_id, cost, glb=glb, meta={"kind": "3d", "faceCount": triangles, "dimensions": dims})
-        with self.state.lock:
-            self.state.jobs[job_id] = {
-                "jobId": job_id,
-                "jobType": "custom",
-                "status": "queued",
-                "progress": 0,
-                "modelId": model_id,
-                "assetIds": [],
-                "cuCost": cost,
-                "createdAt": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
-                "polls": 0,
-                "result_assets": [asset_id],
-            }
-            self.state.files[asset_id + ".png"] = _png()
-            self.state.assets[asset_id] = {"id": asset_id, "mimeType": "image/png", "kind": "image", "file": asset_id + ".png"}
-        return {"model_id": model_id, "job_id": job_id, "status": "queued"}
+            self._run_3d(model_id, job_id, cost, glb=glb, meta={"kind": "3d", "faceCount": triangles, "dimensions": dims})
+        else:
+            asset_id = "asset_fake" + secrets.token_hex(8)
+            with self.state.lock:
+                self.state.jobs[job_id] = _new_job(job_id, model_id, cost, [asset_id])
+                self.state.files[asset_id + ".png"] = _png()
+                self.state.assets[asset_id] = {"id": asset_id, "mimeType": "image/png", "kind": "image", "file": asset_id + ".png"}
+        return 200, {"job": self._job_row(job_id, advance=False)}
 
-    def _run_3d(self, model_id: str, job_id: str, cost, glb: bytes = b"", meta: dict | None = None) -> dict:
-        """Like the hosted service: a GLB, its OBJ and MTL siblings and a texture. The OBJ comes
+    def _run_3d(self, model_id: str, job_id: str, cost, glb: bytes = b"", meta: dict | None = None) -> None:
+        """Like the service: a GLB, its OBJ and MTL siblings and a texture. The OBJ comes
         first here (the service lists the GLB first) so tests prove the pick is by format."""
         data = glb or _glb()
         glb, obj, mtl, png = ("asset_fake" + secrets.token_hex(8) for _ in range(4))
         meta = meta or {"kind": "3d", "faceCount": 2, "dimensions": [1.0, 1.0, 0.0]}
         with self.state.lock:
-            self.state.jobs[job_id] = {
-                "jobId": job_id,
-                "jobType": "custom",
-                "status": "queued",
-                "progress": 0,
-                "modelId": model_id,
-                "assetIds": [],
-                "cuCost": cost,
-                "createdAt": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
-                "polls": 0,
-                "result_assets": [obj, glb, mtl, png],
-            }
+            self.state.jobs[job_id] = _new_job(job_id, model_id, cost, [obj, glb, mtl, png])
             self.state.files[glb + ".glb"] = data
             self.state.files[glb + "_thumb.png"] = _png(16, 16, (90, 160, 90))
             self.state.files[obj + ".obj"] = b"v 0 0 0\nv 1 0 0\nv 1 1 0\nf 1 2 3\n"
@@ -770,9 +713,9 @@ class Handler(BaseHTTPRequestHandler):
             self.state.assets[obj] = {"id": obj, "mimeType": "model/obj", "kind": "3d", "file": obj + ".obj", "metadata": dict(meta, format="obj", parentId=glb)}
             self.state.assets[mtl] = {"id": mtl, "mimeType": "model/mtl", "kind": "3d", "file": mtl + ".mtl", "metadata": {"type": "3d-texture-mtl", "parentId": glb}}
             self.state.assets[png] = {"id": png, "mimeType": "image/png", "kind": "image", "file": png + ".png", "metadata": {"type": "3d-texture-albedo", "parentId": glb}}
-        return {"model_id": model_id, "job_id": job_id, "status": "queued"}
 
     def _job_row(self, job_id: str, advance: bool = True) -> dict:
+        """The job as ``GET /jobs/{id}`` answers it; each read moves it on until it succeeds."""
         with self.state.lock:
             job = self.state.jobs.get(job_id)
             if job is None:
@@ -782,70 +725,138 @@ class Handler(BaseHTTPRequestHandler):
                 if job["polls"] >= self.state.polls_to_finish:
                     job["status"] = "success"
                     job["progress"] = 1
-                    job["assetIds"] = list(job["result_assets"])
+                    job["metadata"]["assetIds"] = list(job["result_assets"])
                 else:
                     job["status"] = "in-progress"
                     job["progress"] = 0.5
-            return {k: v for k, v in job.items() if k not in ("polls", "result_assets")}
+            return json.loads(json.dumps({k: v for k, v in job.items() if k not in ("polls", "result_assets")}))
 
-    def _tool_job_get(self, args):
-        row = self._job_row(args.get("job_id", ""))
-        return {"job": row} if row else {}
+    def _op_job(self, job_id, query, data, who):
+        row = self._job_row(job_id)
+        if not row:
+            raise ToolFailure(404, {"reason": f"Job {job_id} not found"})
+        return 200, {"job": row}
 
-    def _tool_jobs_wait(self, args):
-        rows = [self._job_row(j) for j in args.get("job_ids") or []]
-        pending = [r["jobId"] for r in rows if r and r["status"] not in ("success", "failure")]
-        return {"status": "in_progress" if pending else "completed", "jobs": rows, "pending_job_ids": pending}
-
-    def _tool_jobs_list(self, args):
+    def _op_jobs(self, _id, query, data, who):
         with self.state.lock:
-            rows = [{k: v for k, v in job.items() if k not in ("polls", "result_assets")} for job in self.state.jobs.values()]
+            ids = list(self.state.jobs)
+        rows = [self._job_row(job_id, advance=False) for job_id in ids]
+        if query.get("status"):
+            rows = [row for row in rows if row["status"] == query["status"]]
         rows.sort(key=lambda r: r["createdAt"], reverse=True)
-        return {"jobs": rows[: int(args.get("limit") or 20)]}
+        return 200, {"jobs": rows[: int(query.get("pageSize") or 50)], "nextPaginationToken": ""}
 
-    def _tool_asset_get(self, args):
-        asset = self.state.assets.get(args.get("asset_id"))
+    def _op_asset(self, asset_id, query, data, who):
+        asset = self.state.assets.get(asset_id)
         if not asset:
-            return {}
-        out = {"id": asset["id"], "mimeType": asset["mimeType"], "kind": asset["kind"], "status": "success"}
+            raise ToolFailure(404, {"reason": f"Asset {asset_id} not found"})
+        out = {"id": asset["id"], "url": f"{self.base}/files/{asset['file']}", "mimeType": asset["mimeType"], "kind": asset["kind"], "status": "success"}
         if asset.get("metadata"):
             out["metadata"] = dict(asset["metadata"])
         if asset.get("thumbnail"):
             out["thumbnail"] = {"assetId": asset["id"] + "_thumb", "url": f"{self.base}/files/{asset['thumbnail']}"}
-        return {"asset": out}
+        return 200, {"asset": out}
 
-    def _tool_asset_download(self, args):
-        asset = self.state.assets.get(args.get("asset_id"))
+    def _op_download(self, asset_id, query, data, who):
+        asset = self.state.assets.get(asset_id)
         if not asset:
-            return {}
-        return {"url": f"{self.base}/files/{asset['file']}", "mimeType": asset["mimeType"]}
+            raise ToolFailure(404, {"reason": f"Asset {asset_id} not found"})
+        return 200, {"url": f"{self.base}/files/{asset['file']}", "mimeType": asset["mimeType"]}
 
-    def _tool_upload_asset(self, args):
+    def _op_upload_create(self, _id, query, data, who):
         upload_id = "upl_fake" + secrets.token_hex(6)
-        size = int(args.get("file_size") or 0)
-        part_size = self.state.upload_part_size
-        count = max(1, -(-size // part_size))
+        count = int(data.get("parts") or 1)
         with self.state.lock:
-            self.state.uploads[upload_id] = {"parts": {}, "name": args.get("file_name"), "kind": args.get("kind"), "size": size, "content_type": args.get("content_type")}
-        parts = [
-            {"part_number": n, "upload_url": f"{self.base}/upload/{upload_id}?partNumber={n}&x-amz-checksum-crc32=AAAAAA%3D%3D", "content_length": min(part_size, size - (n - 1) * part_size)}
-            for n in range(1, count + 1)
-        ]
-        return {"upload_id": upload_id, "parts": parts, "part_size": part_size, "total_parts": count}
+            self.state.uploads[upload_id] = {
+                "parts": {},
+                "name": data.get("fileName"),
+                "kind": data.get("kind"),
+                "size": int(data.get("fileSize") or 0),
+                "content_type": data.get("contentType"),
+                "status": "pending",
+                "count": count,
+            }
+        # Signed links carry their signature in the query; a client must PUT them unchanged.
+        parts = [{"number": n, "url": f"{self.base}/upload/{upload_id}?partNumber={n}&X-Amz-Signature=fake", "expires": "2099-01-01T00:00:00.000Z"} for n in range(1, count + 1)]
+        return 200, {"upload": {"id": upload_id, "status": "pending", "fileName": data.get("fileName"), "partsCount": count, "parts": parts}, "creativeUnitsCost": 0}
 
-    def _tool_upload_asset_complete(self, args):
-        upload = self.state.uploads.get(args.get("upload_id"))
+    def _upload_json(self, upload_id: str) -> dict:
+        upload = self.state.uploads[upload_id]
+        out = {"id": upload_id, "status": upload["status"], "fileName": upload["name"]}
+        if upload.get("entityId"):
+            out["entityId"] = upload["entityId"]
+        if upload.get("errorMessage"):
+            out["errorMessage"] = upload["errorMessage"]
+        return out
+
+    def _op_upload_action(self, upload_id, query, data, who):
+        upload = self.state.uploads.get(upload_id)
         if upload is None:
-            return {"status": "failed"}
-        data = b"".join(upload["parts"][n] for n in sorted(upload["parts"]))
-        if len(data) != upload["size"]:
-            return {"status": "failed", "message": f"received {len(data)} of {upload['size']} bytes"}
-        asset_id = "asset_up" + secrets.token_hex(8)
+            raise ToolFailure(400, {"reason": f"Unable to load request upload id {upload_id}"})
+        if data.get("action") != "complete":
+            raise ToolFailure(400, {"reason": "Unknown action"})
+        if upload["status"] != "pending":
+            raise ToolFailure(400, {"reason": f"Unable to complete upload with status: {upload['status']}"})
+        received = b"".join(upload["parts"][n] for n in sorted(upload["parts"]))
         with self.state.lock:
-            upload["data"] = data
-            self.state.files[asset_id] = data
-            self.state.assets[asset_id] = {"id": asset_id, "mimeType": upload["content_type"] or "application/octet-stream", "kind": upload["kind"], "file": asset_id}
-        return {"asset_id": asset_id, "status": "imported"}
+            if len(received) != upload["size"]:
+                upload["status"] = "failed"
+                upload["errorMessage"] = f"received {len(received)} of {upload['size']} bytes"
+            else:
+                asset_id = "asset_up" + secrets.token_hex(8)
+                upload["data"] = received
+                upload["status"] = "imported"
+                upload["entityId"] = asset_id
+                self.state.files[asset_id] = received
+                self.state.assets[asset_id] = {"id": asset_id, "mimeType": upload["content_type"] or "application/octet-stream", "kind": upload["kind"], "file": asset_id}
+        return 200, {"upload": self._upload_json(upload_id)}
+
+    def _op_upload_read(self, upload_id, query, data, who):
+        if upload_id not in self.state.uploads:
+            raise ToolFailure(404, {"reason": "Upload not found"})
+        return 200, {"upload": self._upload_json(upload_id)}
+
+
+def _new_job(job_id: str, model_id: str, cost, result_assets: list) -> dict:
+    now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
+    return {
+        "jobId": job_id,
+        "jobType": "custom",
+        "status": "queued",
+        "progress": 0,
+        "metadata": {"input": {"modelId": model_id}, "assetIds": []},
+        "billing": {"cuCost": cost, "cuDiscount": 0},
+        "createdAt": now,
+        "updatedAt": now,
+        "polls": 0,
+        "result_assets": result_assets,
+    }
+
+
+def _api_input(parameter: dict) -> dict:
+    """A recorded MCP parameter back in the API's own shape (camelCase, ``required.always``)."""
+    renames = {
+        "allowed_values": "allowedValues",
+        "min_length": "minLength",
+        "max_length": "maxLength",
+        "cost_impact": "costImpact",
+        "prompt_spark": "promptSpark",
+        "model_types": "modelTypes",
+        "max_size": "maxSize",
+        "max_duration": "maxDuration",
+    }
+    out = {}
+    for key, value in parameter.items():
+        if key in ("array", "array_note", "background_note"):
+            continue
+        if key == "required":
+            if value:
+                out["required"] = {"always": True}
+        elif key == "fields":
+            out["inputs"] = [_api_input(item) for item in value]
+        else:
+            out[renames.get(key, key)] = value
+    return out
 
 
 def _redirect_allowed(redirect: str, registered: list) -> bool:
@@ -879,7 +890,8 @@ class FakeScenario:
 
     @property
     def endpoint(self) -> str:
-        return self.base + "/mcp"
+        """The API base, as ``SCENARIO_API_URL`` names it."""
+        return self.base + "/v1"
 
     @property
     def metadata_url(self) -> str:

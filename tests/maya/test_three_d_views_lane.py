@@ -108,9 +108,9 @@ def test_capture_views_then_generate_with_one_image_per_view(panel, fake, cmds):
     sent = {view: item["asset_id"] for view, item in page.views.slots.items()}
     page.generate()
     qt_pump_until(lambda: ready(page), timeout=20)
-    run = fake.state.paid_runs()[0]["arguments"]
-    assert run["model_id"] == TRIPO_P2_VIEWS
-    assert {key: value for key, value in run["parameters"].items() if key.endswith("Image")} == {f"{view}Image": asset for view, asset in sent.items()}
+    run = fake.state.paid_runs()[0]
+    assert run["id"] == TRIPO_P2_VIEWS
+    assert {key: value for key, value in run["body"].items() if key.endswith("Image")} == {f"{view}Image": asset for view, asset in sent.items()}
     card = next(iter(page.cards.values()))
     assert card.title.text() == "Views of crate"
     assert card.row["origin"]["views_capture"]["box"] == pytest.approx(cmds.exactWorldBoundingBox("crate"))

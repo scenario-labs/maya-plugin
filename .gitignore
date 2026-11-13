@@ -17,3 +17,5 @@ tests/live/*.local.*
 credentials.json
 .cache/
 uv.lock
+# Unpacked by tools/vendor_sdk.py (pinned in tools/sdk_wheels.json)
+ScenarioForMaya/scripts/scenario_maya/_vendor/sdk/

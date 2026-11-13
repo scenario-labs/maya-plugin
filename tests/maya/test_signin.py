@@ -11,7 +11,7 @@ from tests.maya.conftest import MODULE, PLUGIN, fresh, qt_pump_until
 
 @pytest.fixture
 def runtime(fake, monkeypatch, cmds):
-    monkeypatch.setenv("SCENARIO_MCP_URL", fake.endpoint)
+    monkeypatch.setenv("SCENARIO_API_URL", fake.endpoint)
     cmds.loadPlugin(os.path.join(MODULE, "plug-ins", "scenario_for_maya.py"))
     yield fresh("scenario_maya.maya.runtime").get()
     if cmds.pluginInfo(PLUGIN, query=True, loaded=True):

@@ -1,13 +1,12 @@
 """Free live check that Scenario still answers the way the plug-in expects (0 CU).
 
-Reads and dry runs only. Paid tools are refused here, in this script, before
-any request, and ``SCENARIO_NO_SPEND=1`` is set as well. Checks:
+Reads and dry runs only. Paid calls are refused here, in this script, before
+any request, and ``SCENARIO_NO_SPEND=1`` is set
+as well. Checks, against Scenario's REST API:
 
-- the hosted Scenario MCP initializes and lists every tool the plug-in calls;
-- the API key reads its teams and projects;
-- the catalog lists models;
-- each quick-pick model loads its schema, and prompt-only ones price with a dry run;
-- ``recommend`` answers for each lane capability;
+- the API key reads its project;
+- the catalog lists image and 3D models;
+- each quick-pick model loads its inputs, and prompt-only ones price with a dry run;
 - the plug-in's own session refuses to spend under ``SCENARIO_NO_SPEND``.
 
 Credentials: ``SCENARIO_API_KEY`` and ``SCENARIO_API_SECRET``, or on macOS the
@@ -36,26 +35,10 @@ import test_credentials  # noqa: E402
 
 from scenario_maya.core import errors  # noqa: E402
 from scenario_maya.core.auth import ApiKeyAuth  # noqa: E402
-from scenario_maya.core.backend import McpBackend  # noqa: E402
+from scenario_maya.core.backend import RestBackend  # noqa: E402
 from scenario_maya.core.jsonutil import cu_exact  # noqa: E402
-from scenario_maya.core.mcp import DEFAULT_ENDPOINT, McpClient  # noqa: E402
-
-REQUIRED_TOOLS = (
-    "teams_list",
-    "projects_list",
-    "models_list",
-    "model_schema_get",
-    "model_run",
-    "job_get",
-    "jobs_wait",
-    "jobs_list",
-    "asset_get",
-    "asset_download",
-    "upload_asset",
-    "upload_asset_complete",
-    "recommend",
-)
-PAID_TOOLS = ("model_run", "workflow_run")
+from scenario_maya.core.rest import RestClient  # noqa: E402
+from scenario_maya.core.session import api_url  # noqa: E402
 
 # Quick picks the plug-in relies on. Prompt-only models are priced; models that
 # need an input asset are checked for their schema only (no upload each week).
@@ -68,22 +51,15 @@ QUICK_PICKS = (
     ("model_meshy-remesh", None),
     ("model_meshy-uv-unwrap", None),
 )
-CAPABILITIES = (
-    ("txt2img", "a stone well, stylized"),
-    ("txt23d", "a small wooden crate"),
-    ("img23d", "turn this concept into a mesh"),
-    ("txt2video", "a lantern flickering"),
-    ("txt2audio", "rain on a tin roof"),
-)
 
 
-class GuardedClient(McpClient):
-    """Refuses paid tools before any request, whatever the caller asks."""
+class GuardedClient(RestClient):
+    """Refuses paid calls before any request, whatever the caller asks."""
 
-    def call_tool(self, name, arguments=None, *, paid=False, **kwargs):
-        if paid or (name in PAID_TOOLS and not (arguments or {}).get("dry_run")):
-            raise AssertionError(f"contract check refused a paid call to {name}")
-        return super().call_tool(name, arguments, paid=False, **kwargs)
+    def call(self, op, *, paid=False, **kwargs):
+        if paid:
+            raise AssertionError(f"contract check refused a paid call ({kwargs.get('name') or 'unnamed'})")
+        return super().call(op, paid=False, **kwargs)
 
 
 class Report:
@@ -113,30 +89,26 @@ def main():
     if not (key and secret):
         print("No test key: set SCENARIO_API_KEY and SCENARIO_API_SECRET.")
         return 2
-    endpoint = os.environ.get("SCENARIO_MCP_URL", "").strip() or DEFAULT_ENDPOINT
-    client = GuardedClient(ApiKeyAuth(key, secret, source="environment"), endpoint, client_name="scenario-maya-contract")
-    backend = McpBackend(client)
+    endpoint = api_url()
+    backend = RestBackend(GuardedClient(ApiKeyAuth(key, secret, source="environment"), endpoint))
     report = Report()
 
-    def tools():
-        names = {tool.get("name") for tool in client.list_tools()}
-        missing = [name for name in REQUIRED_TOOLS if name not in names]
-        assert not missing, f"missing tools: {missing}"
-        return f"{len(names)} tools"
-
-    def teams():
+    def project():
         found = backend.teams()
-        assert found and isinstance(found[0].get("projects"), list), "no team with projects"
-        return f"{len(found)} team(s)"
+        assert found and found[0]["projects"] and found[0]["projects"][0].get("id"), "the key reads no project"
+        return "the key's project"
 
-    def catalog():
-        rows, _token = backend.models(limit=20)
-        assert rows and all(row.get("id") for row in rows), "empty catalog"
-        return f"{len(rows)} models"
+    def catalog(modality):
+        def check():
+            rows, _token = backend.models(modality=modality)
+            assert rows and all(row.get("id") and row.get("capabilities") for row in rows), f"no {modality} models"
+            return f"{len(rows)} models"
 
-    report.run("tools listed", tools)
-    report.run("teams and projects", teams)
-    report.run("catalog", catalog)
+        return check
+
+    report.run("key project", project)
+    report.run("catalog image", catalog("image"))
+    report.run("catalog 3d", catalog("3d"))
     for model_id, params in QUICK_PICKS:
 
         def pick(model_id=model_id, params=params):
@@ -151,20 +123,12 @@ def main():
             return f"{cost} CU"
 
         report.run(f"quick pick {model_id}", pick)
-    for capability, prompt in CAPABILITIES:
-
-        def recommend(capability=capability, prompt=prompt):
-            ranked = backend.recommend(capability, prompt, limit=2).get("ranked") or []
-            assert ranked and ranked[0].get("model_id"), "no recommendation"
-            return ranked[0]["model_id"]
-
-        report.run(f"recommend {capability}", recommend)
 
     def no_spend():
         from scenario_maya.core.ledger import Ledger
         from scenario_maya.core.session import Session
 
-        session = Session(ledger=Ledger(), endpoint=endpoint, backend_factory=lambda auth: McpBackend(GuardedClient(auth, endpoint)))
+        session = Session(ledger=Ledger(), endpoint=endpoint, backend_factory=lambda auth: RestBackend(GuardedClient(auth, endpoint)))
         session.sign_in_api_key(key, secret)
         quote = session.price(QUICK_PICKS[0][0], QUICK_PICKS[0][1])
         try:

@@ -6,10 +6,10 @@ Root `AGENTS.md` is the repository rulebook for humans and coding agents.
 
 ## What this repository is
 
-Scenario for Maya: an Autodesk Maya plug-in for Maya 2025 to 2027, pure Python
+Scenario for Maya: an Autodesk Maya plug-in for Maya 2025 to 2027, in Python
 (`maya.cmds`, OpenMaya 2.0, PySide6). It prices and runs every Scenario model
-and workflow through the hosted Scenario MCP (`https://mcp.scenario.com/mcp`:
-JSON-RPC 2.0 over HTTP, SSE or JSON replies, OAuth or an API key and secret),
+and workflow through Scenario's REST API (`https://api.cloud.scenario.com/v1`)
+with Scenario's Python SDK (OAuth or an API key and secret),
 lands the results in the open scene or applies them to the user's meshes as
 undoable commands. People drive it from the Scenario panel; agents drive it
 through a local MCP server inside Maya.
@@ -29,10 +29,13 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
 - `scripts/install_scenario.py`: drag-and-drop installer and `uninstall()`.
   Stands alone (the package is not importable yet when it runs).
 - `scripts/scenario_maya/core/` (no Maya import, unit-tested on plain Python):
-  - `mcp.py`: JSON-RPC client, SSE or JSON replies, session renewal, retry
-    policy (reads only), tool error parsing.
-  - `backend.py`: the `ScenarioBackend` interface and its hosted Scenario MCP
-    implementation; job normalization.
+  - `rest.py`: calls through the SDK (its HTTP client: OS trust store, system
+    proxies, no redirects), workspace query, credential renewal, the paid-call
+    rules, error kinds.
+  - `sdk.py`: loads the vendored SDK, with the `pydantic_core` build for the
+    running Python and platform, at the end of `sys.path`.
+  - `backend.py`: the `ScenarioBackend` interface and its REST implementation;
+    job normalization, model inputs to form fields, upload parts.
   - `session.py`: sign-in state, workspace, price checks, the one paid
     request, Not confirmed reviews. Every caller goes through it.
   - `quotes.py`: single-use quotes bound to payload, workspace and target.
@@ -88,19 +91,22 @@ Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
   `picker.py`, `signin.py`, `workspace.py`, `jobs.py`, `menu.py`,
   `commands.py` (runtime commands), `common.py`, `qt.py`.
 - `scripts/scenario_maya/agent/`: the local MCP server (milestone M5).
-- `scripts/scenario_maya/_vendor/`: `truststore`, unchanged, see
-  `VENDORED.md`.
+- `scripts/scenario_maya/_vendor/`: `truststore`, unchanged, and `sdk/`
+  (Scenario's SDK and its dependencies, unpacked by `tools/vendor_sdk.py`, not
+  in git), see `VENDORED.md`.
 
 `tests/`: `glb_samples.py` (hand-written GLB fixtures), `unit/` (core, any Python), `maya/` (mayapy, headless), `gui/`
-(scripted GUI session), `fake_backend/` (a fake Scenario MCP and OAuth
-server), `fixtures/mcp/` (recorded replies, scrubbed).
+(scripted GUI session), `fake_backend/` (a fake Scenario REST API and OAuth
+server), `fixtures/mcp/` (recorded model schemas, scrubbed; the fake turns them
+back into the API's shape).
 
 ## Spending rules
 
 Every change keeps them. They are enforced in `core/session.py`,
-`core/quotes.py`, `core/ledger.py` and `core/mcp.py`, below every caller.
+`core/quotes.py`, `core/ledger.py` and `core/rest.py`, below every caller.
 
-1. A price check is a dry run (`model_run` with `dry_run: true`). It is free
+1. A price check is a dry run (`POST /generate/custom/{modelId}` with
+   `dryRun=true`, answered 269). It is free
    and returns the exact CU cost. A price check that returns a job stops all
    price checks for the session and the job is tracked.
 2. Generate needs an unused quote for this exact payload, workspace and target
@@ -108,9 +114,10 @@ Every change keeps them. They are enforced in `core/session.py`,
    and `approved_cost` equal to the quote's exact CU string.
 3. The intent row is written to the ledger before the paid request. If it
    cannot be written, nothing is sent.
-4. A paid call is sent once. A 401 or an expired session is refused before
-   the tool runs, so the token or session is renewed and the request sent once
-   more. Any failure where Scenario may have started the work marks the job
+4. A paid call is sent once, with the SDK's retries off. A refused token (403
+   with `x-amzn-errortype: AccessDeniedException`, or 401) is refused by the
+   API's gateway before any handler runs, so the token is renewed and the
+   request sent once more. Any failure where Scenario may have started the work marks the job
    Not confirmed, which blocks an identical request until a person links it to
    a Scenario job or marks it reviewed. A 429 or a 4xx refusal is reported as
    not sent and never retried by itself.
@@ -121,6 +128,7 @@ Every change keeps them. They are enforced in `core/session.py`,
 ## Commands
 
 ```sh
+uv run --python 3.13 --no-project python tools/vendor_sdk.py  # once, and after a pin change: unpack the SDK into _vendor/sdk
 uv run --python 3.13 --with pytest pytest -q   # core unit tests, fake server, 0 CU (also 3.11)
 tools/test_maya.sh                             # mayapy tests, headless (needs a licensed Maya)
 tools/test_maya_gui.sh [install generate restart oauth] # scripted GUI session with screenshots; opens Maya windows; generate spends a few CU

@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from scenario_maya.core import errors, lanes, uploads
+from scenario_maya.core import backend, errors, lanes, uploads
 from scenario_maya.core.schema import ModelForm
 from tests.fake_backend import API_KEY, API_SECRET
 from tests.fake_backend.fake_scenario import _png
@@ -33,8 +33,8 @@ def schema(model_id):
         return json.load(handle)
 
 
-def test_an_image_is_sent_part_by_part_and_reused(signed_in, fake, tmp_path):
-    fake.state.upload_part_size = 100  # several parts, like a large file on the real store
+def test_an_image_is_sent_part_by_part_and_reused(signed_in, fake, tmp_path, monkeypatch):
+    monkeypatch.setattr(backend, "UPLOAD_PART_SIZE", 100)  # several parts, like a large file on the real store
     path = image(tmp_path)
     sent = uploads.upload_file(signed_in, path)
     assert sent["asset_id"].startswith("asset_") and not sent["reused"]
@@ -97,7 +97,7 @@ def test_an_uploaded_image_prices_and_runs_image_to_3d(signed_in, fake, tmp_path
     quote = signed_in.price(MESHY_IMAGE, params, origin={"lane": lanes.THREE_D_IMAGE.id})
     assert quote.cu_cost_exact == "120"
     row = signed_in.submit(quote.quote_id, approved_cost="120", params=params, origin={"lane": lanes.THREE_D_IMAGE.id}, model_name="Meshy 7.1 - Image to 3D", label="concept")
-    assert row["state"] == "remote" and fake.state.paid_runs()[0]["arguments"]["parameters"]["image"] == [sent["asset_id"]]
+    assert row["state"] == "remote" and fake.state.paid_runs()[0]["body"]["image"] == [sent["asset_id"]]
 
 
 def test_the_3d_tab_has_text_image_multi_view_edit_and_motion_modes():

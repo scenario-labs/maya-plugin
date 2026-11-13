@@ -91,8 +91,8 @@ def test_cartwheel_needs_a_character_then_lands_over_it(panel, fake, cmds):  # n
 
     page.generate()
     qt_pump_until(lambda: ready(page), timeout=20)
-    run = fake.state.paid_runs()[0]["arguments"]
-    assert run["model_id"] == CARTWHEEL and run["parameters"]["characterModel"] == asset_id and run["parameters"]["outputFormat"] == "fbx-maya"
+    run = fake.state.paid_runs()[0]
+    assert run["id"] == CARTWHEEL and run["body"]["characterModel"] == asset_id and run["body"]["outputFormat"] == "fbx-maya"
     card = next(iter(page.cards.values()))
     assert card.row["origin"]["character"]["name"] == "robot" and card.row["origin"]["target"] == "|robot"
 

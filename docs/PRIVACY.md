@@ -6,7 +6,7 @@ Scenario for Maya connects Autodesk Maya to the Scenario platform. This page say
 
 ## What is sent to Scenario, and when
 
-Nothing is sent before you sign in. After that, the plug-in sends data to Scenario (`mcp.scenario.com`, `api.cloud.scenario.com` and Scenario's file storage) only for these actions:
+Nothing is sent before you sign in. After that, the plug-in sends data to Scenario (`api.cloud.scenario.com`, `clerk.scenario.com` for sign-in, and Scenario's file storage) only for these actions:
 
 | Action | What is sent |
 |---|---|

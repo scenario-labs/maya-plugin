@@ -200,7 +200,7 @@ class ScenarioPanel(QtWidgets.QWidget):
         if signed_in:
             team = session.settings.get("team_name") or ""
             project = session.settings.get("project_name") or ""
-            label = f"{team} / {project}" if team or project else "Choose a project"
+            label = " / ".join(part for part in (team, project) if part) or "Choose a project"  # a key reads no team name
             self.workspace_button.setText(label + "  ▾")
         self.jobs.refresh()
 

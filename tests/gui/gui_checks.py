@@ -5,6 +5,8 @@ folder and sets:
   SCENARIO_GUI_STAGE  install | restart | oauth
   SCENARIO_GUI_OUT    folder for results.json, screenshots and the log
   SCENARIO_GUI_REPO   repository root
+  SCENARIO_GUI_PROJECT  project the picker chooses (default Plugins Automated Tests)
+  SCENARIO_GUI_URL_FILE  the oauth stage writes the sign-in URL there instead of opening a browser
 Each stage drives Maya with a small step runner on a QTimer, so Maya's event
 loop (and the plug-in's dispatcher) keeps running between steps. A watcher
 records and screenshots every modal dialog Maya shows (for example a secure
@@ -18,6 +20,7 @@ import importlib.util
 import json
 import os
 import subprocess
+import sys
 import time
 import traceback
 
@@ -136,7 +139,7 @@ def pick_test_project(dialog):
     for t in range(dialog.team_box.count()):
         dialog.team_box.setCurrentIndex(t)
         for p in range(dialog.project_box.count()):
-            if dialog.project_box.itemText(p) == "Maya Plugin Tests":
+            if dialog.project_box.itemText(p) == os.environ.get("SCENARIO_GUI_PROJECT", "Plugins Automated Tests"):
                 dialog.project_box.setCurrentIndex(p)
                 QtCore.QTimer.singleShot(400, dialog.accept)
                 return
@@ -281,8 +284,9 @@ def stage_install():
         shot("api_key_error", dialog)
         return
     panel.signin._done()
-    yield (lambda: "/" in panel.workspace_button.text()), 30
-    record("workspace shown", "Maya Plugin Tests" in panel.workspace_button.text(), panel.workspace_button.text())
+    project = runtime_now().session.settings.get("project_name") or ""  # the key's own project
+    yield (lambda: bool(project) and project in panel.workspace_button.text()), 30
+    record("workspace shown", bool(project) and project in panel.workspace_button.text(), panel.workspace_button.text())
     yield 1.0
     shot("panel_signed_in", panel)
     shot("main_signed_in")
@@ -342,6 +346,14 @@ def stage_oauth():
         record("starts signed out", False, runtime.session.status()["method"])
         return
     started = time.time()
+    url_file = os.environ.get("SCENARIO_GUI_URL_FILE")
+    if url_file:  # an agent opens the sign-in page in a browser it drives
+
+        def write_url(url):
+            with open(url_file, "w", encoding="utf-8") as handle:
+                handle.write(url)
+
+        sys.modules[type(panel.signin).__module__].open_url = write_url
     panel.signin.sign_in_browser()
     yield 1.0
     shot("oauth_waiting", panel)
@@ -437,6 +449,8 @@ def stage_generate():
     landed_step = cmds.undoInfo(query=True, undoName=True)
     viewport_shot("viewport_card")
     shot_step = cmds.undoInfo(query=True, undoName=True)
+    if shot_step != landed_step:
+        cmds.undo()  # the playblast's own step, not the user's
     cmds.undo()
     left = cmds.ls("*.scenario_asset_id", recursive=True, objectsOnly=True) or []
     record("one undo removes the card", not left, f"undo step after landing {landed_step!r}, after the playblast {shot_step!r}; left {left[:3]}")

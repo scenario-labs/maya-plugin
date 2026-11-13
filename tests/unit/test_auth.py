@@ -81,8 +81,8 @@ def test_oauth_calls_carry_workspace_ids(session, fake):
     session.sign_in_browser(browser)
     session.set_workspace("team_a", "proj_b")
     session.backend().models()
-    args = fake.state.tool_calls("models_list")[-1]["arguments"]
-    assert args["team_id"] == "team_a" and args["project_id"] == "proj_b"
+    query = fake.state.calls_to("models")[-1]["query"]
+    assert query["teamId"] == "team_a" and query["projectId"] == "proj_b"
 
 
 def test_refresh_rotates_and_is_stored(session, fake):
@@ -105,7 +105,7 @@ def test_stored_session_survives_restart(session, fake):
     session.sign_in_browser(browser)
     session.set_workspace("team_a", "proj_b")
     restarted = Credentials(session.settings, session.credentials.store, session.credentials.oauth).resolve()
-    assert restarted.kind == "oauth" and restarted.workspace_args() == {"team_id": "team_a", "project_id": "proj_b"}
+    assert restarted.kind == "oauth" and restarted.workspace_args() == {"teamId": "team_a", "projectId": "proj_b"}
     assert restarted.authorization().startswith("Bearer ")
 
 

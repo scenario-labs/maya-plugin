@@ -27,7 +27,7 @@ def report(session=None, dispatcher=None, extra: dict | None = None) -> str:
             f"Workspace: {status['team']['name'] or '-'} / {status['project']['name'] or '-'} ({session.workspace() or '-'})",
             f"Spending: {status['spending']}; price checks: {status['price_checks']}",
             f"Credential store: {status['credential_store']}{' (file, owner only)' if status['credential_store_insecure'] else ''}",
-            f"Endpoint: {session.endpoint}",
+            f"API: {session.api_address()}",
         ]
         counts: dict = {}
         for row in session.ledger.list(limit=500):

@@ -1,4 +1,4 @@
-"""Model forms from ``model_schema_get``.
+"""Model forms from a model's inputs (``GET /models/{id}``).
 
 Turns Scenario's parameter list into typed fields the panel renders and the
 agent tools validate against, and builds the ``parameters`` object for a run.
@@ -229,7 +229,7 @@ class ModelForm:
         return out
 
     def build_params(self, values: dict) -> dict:
-        """Parameters for ``model_run``: known fields only, unchanged defaults left out."""
+        """The generation request body: known fields only, unchanged defaults left out."""
         params = {}
         for item in self.fields:
             if item.name not in values:

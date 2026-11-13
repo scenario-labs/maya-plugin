@@ -14,7 +14,7 @@ sys.path.insert(0, ROOT)
 def private_home(tmp_path, monkeypatch):
     monkeypatch.setenv("SCENARIO_MAYA_HOME", str(tmp_path / "home"))
     monkeypatch.setenv("SCENARIO_MAYA_CREDSTORE", "memory")
-    for name in ("SCENARIO_API_KEY", "SCENARIO_API_SECRET", "SCENARIO_NO_SPEND", "SCENARIO_MAYA_OFFLINE", "SCENARIO_TEAM_ID", "SCENARIO_PROJECT_ID", "SCENARIO_MCP_URL"):
+    for name in ("SCENARIO_API_KEY", "SCENARIO_API_SECRET", "SCENARIO_NO_SPEND", "SCENARIO_MAYA_OFFLINE", "SCENARIO_TEAM_ID", "SCENARIO_PROJECT_ID", "SCENARIO_API_URL"):
         monkeypatch.delenv(name, raising=False)
     from scenario_maya.core import credstore
 

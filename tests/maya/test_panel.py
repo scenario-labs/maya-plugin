@@ -10,7 +10,7 @@ from tests.maya.conftest import MODULE, PLUGIN, fresh, pump_until, qt_pump_until
 
 @pytest.fixture
 def page(fake, monkeypatch, cmds, tmp_path):
-    monkeypatch.setenv("SCENARIO_MCP_URL", fake.endpoint)
+    monkeypatch.setenv("SCENARIO_API_URL", fake.endpoint)
     cmds.file(new=True, force=True)
     cmds.undoInfo(state=True, infinity=True)
     os.makedirs(tmp_path / "project", exist_ok=True)

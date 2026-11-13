@@ -1,0 +1,131 @@
+{
+ "$comment": "Written by tools/vendor_sdk.py --update; read by tools/vendor_sdk.py.",
+ "wheels": [
+  {
+   "file": "scenario_sdk-2.5.0-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/83/ed/45f9fa09f7ab8ddaf88a08ede6f58a63c9ae5ed1529c54faaff0fa72a302/scenario_sdk-2.5.0-py3-none-any.whl",
+   "sha256": "1f65a043cf28574af3be6cb7a8d186a20bd13f7762228324a1a17daea6ca0a3b",
+   "tag": ""
+  },
+  {
+   "file": "annotated_types-0.8.0-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl",
+   "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+   "tag": ""
+  },
+  {
+   "file": "anyio-4.16.0-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/a9/16/7757fb84c819accc7d7e9af5291b261e4abb8627ee040f99e7d35ef2457a/anyio-4.16.0-py3-none-any.whl",
+   "sha256": "c66ae634e0b8228396b801741beb3294326d4b6102f7bba4041c0dfb58c29026",
+   "tag": ""
+  },
+  {
+   "file": "certifi-2026.10.23-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/32/d1/a3652fe2c19134d0d15922177821d863cbd7e842d53a21bbe7e8e3a1b5ac/certifi-2026.10.23-py3-none-any.whl",
+   "sha256": "e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1",
+   "tag": ""
+  },
+  {
+   "file": "distro-1.9.0-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl",
+   "sha256": "7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2",
+   "tag": ""
+  },
+  {
+   "file": "h11-0.16.0-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl",
+   "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+   "tag": ""
+  },
+  {
+   "file": "httpcore-1.0.9-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl",
+   "sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55",
+   "tag": ""
+  },
+  {
+   "file": "httpx-0.28.1-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl",
+   "sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad",
+   "tag": ""
+  },
+  {
+   "file": "idna-3.20-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl",
+   "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c",
+   "tag": ""
+  },
+  {
+   "file": "pydantic-2.14.3-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/72/b8/b864503789ef5c58597d2a7b4adbee62c26440ab1e682581fc6838df8947/pydantic-2.14.3-py3-none-any.whl",
+   "sha256": "3f7b347782ab7e4cf4c798496ae3a82787d9f21ec12676a9c564355eeef8daa8",
+   "tag": ""
+  },
+  {
+   "file": "pydantic_core-2.50.4-cp311-cp311-macosx_11_0_arm64.whl",
+   "url": "https://files.pythonhosted.org/packages/a3/f1/438de1fb99d717dcc6521922478dc16ef7b757302d4fc1f7faba3aaeac09/pydantic_core-2.50.4-cp311-cp311-macosx_11_0_arm64.whl",
+   "sha256": "c813ada7a651193acda85b6bc1cf12abd4b37cd25c7c6a75d7183512cc374969",
+   "tag": "cp311-macos-arm64"
+  },
+  {
+   "file": "pydantic_core-2.50.4-cp311-cp311-macosx_10_12_x86_64.whl",
+   "url": "https://files.pythonhosted.org/packages/df/00/85e80811834d7cbd9bc228f9b5cdf8ec0edd69b55351ad720aac8c412d8c/pydantic_core-2.50.4-cp311-cp311-macosx_10_12_x86_64.whl",
+   "sha256": "3e547ceec1da7382f01f9e13963023e53367a71802c88778b21b9645a077cbdf",
+   "tag": "cp311-macos-x64"
+  },
+  {
+   "file": "pydantic_core-2.50.4-cp311-cp311-win_amd64.whl",
+   "url": "https://files.pythonhosted.org/packages/c6/06/cebeeb7a8e87b42a3d8bc189d0d400e47df5d1736cb326764bae8a74c433/pydantic_core-2.50.4-cp311-cp311-win_amd64.whl",
+   "sha256": "15bece43a02ad543c621c8305e67dedb5f27d378c5ba741e5a2c36523f8ef37f",
+   "tag": "cp311-windows-x64"
+  },
+  {
+   "file": "pydantic_core-2.50.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+   "url": "https://files.pythonhosted.org/packages/56/51/cbb7a1bc0196ff94d3478d265eed7449f811759988eb760d41f4edd0893b/pydantic_core-2.50.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+   "sha256": "0574866e05f6adeecc520d87e87dd06210c0a51706341f6ef8421572f5a64444",
+   "tag": "cp311-linux-x64"
+  },
+  {
+   "file": "pydantic_core-2.50.4-cp313-cp313-macosx_11_0_arm64.whl",
+   "url": "https://files.pythonhosted.org/packages/90/a9/fc89a632331882c4cb91b949003418e6f5085ddcf2c9b875d499682bca91/pydantic_core-2.50.4-cp313-cp313-macosx_11_0_arm64.whl",
+   "sha256": "1239daaf063e62213ca1f34d96663900bd7510c42a786e843fd328af70e46445",
+   "tag": "cp313-macos-arm64"
+  },
+  {
+   "file": "pydantic_core-2.50.4-cp313-cp313-macosx_10_12_x86_64.whl",
+   "url": "https://files.pythonhosted.org/packages/1b/21/39f8d97e7ea8e3083606ee9bb1d7f3ec70ded780bb6a872aad76c7eb08b2/pydantic_core-2.50.4-cp313-cp313-macosx_10_12_x86_64.whl",
+   "sha256": "0f87ae9db5ba8d8de40dcb93982cf8dd544e6552a80d3345af51941cc2146b80",
+   "tag": "cp313-macos-x64"
+  },
+  {
+   "file": "pydantic_core-2.50.4-cp313-cp313-win_amd64.whl",
+   "url": "https://files.pythonhosted.org/packages/e7/e0/95b651213e79ffe0cbee855590bf5cfdf8e3a0d90a7fc73a080e63f7cc38/pydantic_core-2.50.4-cp313-cp313-win_amd64.whl",
+   "sha256": "4c29b8f2d6417069bb1f257e6b9113f5d64dc2f554cc200ea90b4fe2c5cdb733",
+   "tag": "cp313-windows-x64"
+  },
+  {
+   "file": "pydantic_core-2.50.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+   "url": "https://files.pythonhosted.org/packages/2b/c0/1c8f2c8f1b03d3fe2fdd7962df8f5a744fe48c90b4c49615e4eb77d04141/pydantic_core-2.50.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+   "sha256": "fb2bb5b557080da398b866408117d98fe9731a12334afd0cdff221b458cdc5dc",
+   "tag": "cp313-linux-x64"
+  },
+  {
+   "file": "sniffio-1.3.1-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl",
+   "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+   "tag": ""
+  },
+  {
+   "file": "typing_extensions-4.16.0-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+   "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+   "tag": ""
+  },
+  {
+   "file": "typing_inspection-0.4.5-py3-none-any.whl",
+   "url": "https://files.pythonhosted.org/packages/de/0c/ea2544850a7c135e15033a5c7a8e7211136184b7ae63e2239d557c2b3019/typing_inspection-0.4.5-py3-none-any.whl",
+   "sha256": "bc210535442b39e1bf2805e0c7a17dfd6a4ace760c84c7f7d16245d23a6b1c39",
+   "tag": ""
+  }
+ ]
+}
