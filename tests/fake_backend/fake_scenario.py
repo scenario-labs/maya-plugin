@@ -28,6 +28,8 @@ FIXTURES = os.path.join(os.path.dirname(HERE), "fixtures", "mcp")
 
 API_KEY = "api_testkey000000000001"
 API_SECRET = "test-secret-not-real"  # not a secret
+# Maya's registered OAuth application, as the identity provider knows it.
+CLIENT_ID = "maya_test_client"
 TEAM = {"id": "team_fake0000000000000001", "name": "Test team"}
 IMAGE_MODEL = {
     "id": "model_openai-gpt-image-2-5-flare",
@@ -281,7 +283,9 @@ class State:
         self.reply_mode = "sse"  # or "json"
         self.issue_sessions = False
         self.sessions: set = set()
-        self.clients: dict = {}
+        self.clients: dict = {CLIENT_ID: {"redirect_uris": ["http://127.0.0.1/callback"], "name": "Scenario for Maya"}}
+        self.registrations: list = []
+        self.authorize_queries: list = []
         self.codes: dict = {}
         self.access_tokens: dict = {}
         self.refresh_tokens: dict = {}
@@ -433,15 +437,17 @@ class Handler(BaseHTTPRequestHandler):
     # -- OAuth -----------------------------------------------------------
 
     def _register(self, data: dict) -> None:
+        self.state.registrations.append(data)
         client_id = "client_" + secrets.token_hex(6)
         self.state.clients[client_id] = {"redirect_uris": data.get("redirect_uris") or [], "name": data.get("client_name")}
         self._json(201, {"client_id": client_id, "redirect_uris": data.get("redirect_uris") or []})
 
     def _authorize(self, query: dict) -> None:
         get = lambda key: (query.get(key) or [""])[0]  # noqa: E731
+        self.state.authorize_queries.append({key: values[0] for key, values in query.items()})
         client = self.state.clients.get(get("client_id"))
         redirect = get("redirect_uri")
-        if client is None or redirect not in client["redirect_uris"] or get("code_challenge_method") != "S256":
+        if client is None or not _redirect_allowed(redirect, client["redirect_uris"]) or get("code_challenge_method") != "S256":
             self._send(400, b"bad request", "text/plain")
             return
         code = "code_" + secrets.token_hex(8)
@@ -454,7 +460,7 @@ class Handler(BaseHTTPRequestHandler):
         refresh = "rt_" + secrets.token_hex(12)
         self.state.access_tokens[access] = time.time() + self.state.token_lifetime
         self.state.refresh_tokens[refresh] = client_id
-        return {"access_token": access, "refresh_token": refresh, "expires_in": self.state.token_lifetime, "token_type": "Bearer", "scope": "profile email offline_access"}
+        return {"access_token": access, "refresh_token": refresh, "expires_in": self.state.token_lifetime, "token_type": "Bearer", "scope": "openid offline_access"}
 
     def _token(self, form: dict) -> None:
         get = lambda key: (form.get(key) or [""])[0]  # noqa: E731
@@ -840,6 +846,20 @@ class Handler(BaseHTTPRequestHandler):
             self.state.files[asset_id] = data
             self.state.assets[asset_id] = {"id": asset_id, "mimeType": upload["content_type"] or "application/octet-stream", "kind": upload["kind"], "file": asset_id}
         return {"asset_id": asset_id, "status": "imported"}
+
+
+def _redirect_allowed(redirect: str, registered: list) -> bool:
+    """Exact match, except that a loopback redirect matches on scheme, host and path (RFC 8252, 7.3)."""
+    if redirect in registered:
+        return True
+    asked = urllib.parse.urlparse(redirect)
+    if asked.scheme != "http" or asked.hostname != "127.0.0.1":
+        return False
+    for uri in registered:
+        known = urllib.parse.urlparse(uri)
+        if known.scheme == "http" and known.hostname == "127.0.0.1" and known.path == asked.path:
+            return True
+    return False
 
 
 class FakeScenario:

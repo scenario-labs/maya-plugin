@@ -36,12 +36,13 @@ def session(fake):
     from scenario_maya.core.auth import Credentials
     from scenario_maya.core.credstore import MemoryStore
     from scenario_maya.core.ledger import Ledger
-    from scenario_maya.core.oauth import OAuthClient
+    from scenario_maya.core.oauth import OAuthApp, OAuthClient
     from scenario_maya.core.session import Session
     from scenario_maya.core.settings import Settings
+    from tests.fake_backend.fake_scenario import CLIENT_ID
 
     settings = Settings()
-    credentials = Credentials(settings, MemoryStore(), OAuthClient(metadata_url=fake.metadata_url, resource=fake.endpoint))
+    credentials = Credentials(settings, MemoryStore(), OAuthClient(app=OAuthApp(fake.base, CLIENT_ID)))
     ledger = Ledger()
     instance = Session(settings=settings, ledger=ledger, credentials=credentials, endpoint=fake.endpoint)
     yield instance

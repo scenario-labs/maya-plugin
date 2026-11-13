@@ -4,6 +4,7 @@ import os
 import stat
 import sys
 import threading
+import urllib.parse
 import urllib.request
 
 import pytest
@@ -11,8 +12,9 @@ import pytest
 from scenario_maya.core import errors
 from scenario_maya.core.auth import ACCOUNT_REFRESH, ApiKeyAuth, Credentials, mask, parse_key_pair
 from scenario_maya.core.credstore import FileStore, MacKeychainStore, MemoryStore
-from scenario_maya.core.oauth import LoopbackReceiver, OAuthClient, pkce_pair
+from scenario_maya.core.oauth import PRODUCTION_ISSUER, LoopbackReceiver, OAuthApp, OAuthClient, Tokens, pkce_pair, selected_app
 from scenario_maya.core.settings import Settings
+from tests.fake_backend.fake_scenario import CLIENT_ID
 
 
 def browser(url):
@@ -35,6 +37,44 @@ def test_browser_sign_in_end_to_end(session, fake):
     settings_text = open(session.settings.path).read()
     assert refresh not in settings_text
     assert session.backend().teams()
+
+
+def test_sign_in_uses_the_registered_application(session, fake):
+    session.sign_in_browser(browser)
+    assert fake.state.registrations == []
+    assert session.settings.get("oauth_client_id") == CLIENT_ID
+    query = fake.state.authorize_queries[-1]
+    assert query["client_id"] == CLIENT_ID and query["scope"] == "openid offline_access"
+    assert "resource" not in query
+    redirect = urllib.parse.urlparse(query["redirect_uri"])
+    assert (redirect.hostname, redirect.path) == ("127.0.0.1", "/callback") and redirect.port
+
+
+def test_a_session_from_another_application_is_not_resumed(session, fake):
+    session.sign_in_browser(browser)
+    other = OAuthClient(app=OAuthApp(fake.base, "a_client_registered_by_an_older_install"))
+    assert Credentials(session.settings, session.credentials.store, other).resolve() is None
+
+
+def test_sign_in_waits_for_a_registered_application(fake):
+    credentials = Credentials(Settings(), MemoryStore(), OAuthClient(app=OAuthApp(fake.base, "")))
+    with pytest.raises(errors.Refused, match="not available in this release yet"):
+        credentials.client_id()
+
+
+def test_developer_override_names_issuer_and_client_together(monkeypatch):
+    monkeypatch.delenv("SCENARIO_OAUTH_ISSUER", raising=False)
+    monkeypatch.delenv("SCENARIO_OAUTH_CLIENT_ID", raising=False)
+    assert selected_app() == OAuthApp(PRODUCTION_ISSUER, "l6aUFP02nCjsHHDp")
+    monkeypatch.setenv("SCENARIO_OAUTH_ISSUER", "https://idp.example.invalid/")
+    with pytest.raises(errors.ProtocolError):
+        selected_app()
+    monkeypatch.setenv("SCENARIO_OAUTH_CLIENT_ID", "dev_client")
+    assert selected_app() == OAuthApp("https://idp.example.invalid", "dev_client")
+    for plain_http in ("http://idp.example.invalid", "http://127.0.0.1:8080"):
+        monkeypatch.setenv("SCENARIO_OAUTH_ISSUER", plain_http)
+        with pytest.raises(errors.ProtocolError):
+            selected_app()
 
 
 def test_oauth_calls_carry_workspace_ids(session, fake):
@@ -93,6 +133,30 @@ def test_sign_out_revokes_and_deletes(session, fake):
     assert refresh in fake.state.revoked
     assert session.credentials.store.get(ACCOUNT_REFRESH) is None
     assert not session.signed_in and session.credentials.resolve() is None
+
+
+def test_a_session_from_another_application_is_forgotten_without_revoking(session, fake):
+    session.sign_in_browser(browser)
+    refresh = session.credentials.store.get(ACCOUNT_REFRESH)
+    other = Credentials(session.settings, session.credentials.store, OAuthClient(app=OAuthApp(fake.base, "another_application")))
+    other.sign_out()
+    assert refresh not in fake.state.revoked  # its provider is unknown: the token never goes to this one
+    assert other.store.get(ACCOUNT_REFRESH) is None
+
+
+def test_signing_in_as_another_application_forgets_the_workspace(session, fake):
+    session.sign_in_browser(browser)
+    session.set_workspace("team_from_before", "project_from_before", "Team", "Project")
+    other = Credentials(session.settings, session.credentials.store, OAuthClient(app=OAuthApp(fake.base, "another_application")))
+    other.save_oauth("another_application", Tokens(access_token="at", refresh_token="rt"))
+    assert [session.settings.get(k) for k in ("team_id", "project_id", "team_name", "project_name")] == ["", "", "", ""]
+
+
+def test_sign_out_forgets_when_the_provider_is_unreachable(session, fake):
+    session.sign_in_browser(browser)
+    offline = Credentials(session.settings, session.credentials.store, OAuthClient(app=OAuthApp(fake.base + "/unreachable", CLIENT_ID)))
+    offline.sign_out()
+    assert offline.store.get(ACCOUNT_REFRESH) is None and offline.resolve() is None
 
 
 def test_loopback_rejects_wrong_state():

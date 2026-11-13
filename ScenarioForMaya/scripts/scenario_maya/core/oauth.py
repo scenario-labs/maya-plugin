@@ -2,11 +2,11 @@
 and the device code grant for machines whose browser cannot reach 127.0.0.1.
 
 Flow (browser):
-1. Discover the authorization server from the hosted Scenario MCP.
-2. Register this install once (dynamic client registration, public client,
-   three fixed loopback redirect URIs), cached in settings by client id.
-3. Open the browser on the authorize URL with ``state``, PKCE S256 and
-   ``resource``; a one-shot listener on 127.0.0.1 receives the code.
+1. Read the endpoints of Scenario's identity provider from its metadata.
+2. Sign in as Maya's registered public OAuth application (fixed client id,
+   one loopback redirect URI whose port the provider does not compare).
+3. Open the browser on the authorize URL with ``state`` and PKCE S256; a
+   one-shot listener on a free 127.0.0.1 port receives the code.
 4. Exchange the code; keep the access token in memory and the refresh token
    in the OS credential store.
 
@@ -19,6 +19,7 @@ import base64
 import hashlib
 import html
 import json
+import os
 import secrets
 import threading
 import time
@@ -30,12 +31,36 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from . import errors
 from .http import Response, Transport, UrllibTransport, is_secure_url
 
-METADATA_URL = "https://mcp.scenario.com/.well-known/oauth-authorization-server"
-RESOURCE = "https://mcp.scenario.com/mcp"
-SCOPE = "profile email offline_access"
-CLIENT_NAME = "Scenario for Maya"
-REDIRECT_PORTS = (38927, 38928, 38929)
+PRODUCTION_ISSUER = "https://clerk.scenario.com"
+# Maya's OAuth application on the production identity provider (a public client: the
+# id is not a secret).
+PRODUCTION_CLIENT_ID = "l6aUFP02nCjsHHDp"
+# The fewest scopes the provider accepts: who the user is, and a refresh token.
+SCOPE = "openid offline_access"
 DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
+
+
+@dataclass(frozen=True)
+class OAuthApp:
+    """An identity provider and the registered OAuth application Maya signs in as."""
+
+    issuer: str
+    client_id: str
+
+    @property
+    def metadata_url(self) -> str:
+        return self.issuer + "/.well-known/oauth-authorization-server"
+
+
+def selected_app() -> OAuthApp:
+    """Production, or the development instance named by both ``SCENARIO_OAUTH_*`` variables."""
+    issuer = os.environ.get("SCENARIO_OAUTH_ISSUER", "").strip().rstrip("/")
+    client_id = os.environ.get("SCENARIO_OAUTH_CLIENT_ID", "").strip()
+    if not issuer and not client_id:
+        return OAuthApp(PRODUCTION_ISSUER, PRODUCTION_CLIENT_ID)
+    if not issuer or not client_id or not issuer.startswith("https://"):
+        raise errors.ProtocolError("Set SCENARIO_OAUTH_ISSUER (HTTPS) and SCENARIO_OAUTH_CLIENT_ID together, or neither.")
+    return OAuthApp(issuer, client_id)
 
 
 @dataclass
@@ -43,13 +68,12 @@ class Metadata:
     issuer: str
     authorization_endpoint: str
     token_endpoint: str
-    registration_endpoint: str = ""
     revocation_endpoint: str = ""
     device_authorization_endpoint: str = ""
 
     @classmethod
     def from_dict(cls, data: dict) -> Metadata:
-        fields = ("authorization_endpoint", "token_endpoint", "registration_endpoint", "revocation_endpoint", "device_authorization_endpoint")
+        fields = ("authorization_endpoint", "token_endpoint", "revocation_endpoint", "device_authorization_endpoint")
         for name in fields:
             url = data.get(name) or ""
             if url and not is_secure_url(url):
@@ -94,12 +118,17 @@ def redirect_uri(port: int) -> str:
 
 
 class OAuthClient:
-    def __init__(self, transport: Transport | None = None, metadata_url: str = METADATA_URL, resource: str = RESOURCE, scope: str = SCOPE):
+    def __init__(self, transport: Transport | None = None, app: OAuthApp | None = None, scope: str = SCOPE):
         self.transport = transport or UrllibTransport()
-        self.metadata_url = metadata_url
-        self.resource = resource
         self.scope = scope
+        self._app = app
         self._metadata: Metadata | None = None
+
+    def app(self) -> OAuthApp:
+        """The provider and application, read from the environment on first use."""
+        if self._app is None:
+            self._app = selected_app()
+        return self._app
 
     # -- plumbing --------------------------------------------------------
 
@@ -117,32 +146,11 @@ class OAuthClient:
 
     def metadata(self) -> Metadata:
         if self._metadata is None:
-            response = self.transport.send("GET", self.metadata_url, {"Accept": "application/json"}, None, 20.0)
+            response = self.transport.send("GET", self.app().metadata_url, {"Accept": "application/json"}, None, 20.0)
             if response.status != 200:
                 raise errors.from_http_status(response.status, "Could not read Scenario's sign-in settings.")
             self._metadata = Metadata.from_dict(self._json(response))
         return self._metadata
-
-    # -- registration ----------------------------------------------------
-
-    def register(self) -> dict:
-        meta = self.metadata()
-        if not meta.registration_endpoint:
-            raise errors.ProtocolError("Scenario does not offer client registration; use an API key.")
-        body = {
-            "client_name": CLIENT_NAME,
-            "redirect_uris": [redirect_uri(port) for port in REDIRECT_PORTS],
-            "grant_types": ["authorization_code", "refresh_token", DEVICE_GRANT],
-            "response_types": ["code"],
-            "token_endpoint_auth_method": "none",
-            "application_type": "native",
-            "scope": self.scope,
-        }
-        response = self.transport.send("POST", meta.registration_endpoint, {"Content-Type": "application/json", "Accept": "application/json"}, json.dumps(body).encode(), 30.0)
-        data = self._json(response)
-        if response.status not in (200, 201) or not data.get("client_id"):
-            raise errors.ProtocolError(f"Client registration failed (HTTP {response.status}): {_oauth_error(data)}")
-        return {"client_id": data["client_id"], "redirect_uris": data.get("redirect_uris") or body["redirect_uris"]}
 
     # -- browser flow ----------------------------------------------------
 
@@ -155,7 +163,6 @@ class OAuthClient:
             "code_challenge": challenge,
             "code_challenge_method": "S256",
             "scope": self.scope,
-            "resource": self.resource,
         }
         return self.metadata().authorization_endpoint + "?" + urllib.parse.urlencode(query)
 
@@ -168,7 +175,6 @@ class OAuthClient:
                 "redirect_uri": redirect,
                 "client_id": client_id,
                 "code_verifier": verifier,
-                "resource": self.resource,
             },
         )
         return _tokens(status, data, "Sign-in")
@@ -199,7 +205,7 @@ class OAuthClient:
         meta = self.metadata()
         if not meta.device_authorization_endpoint:
             raise errors.ProtocolError("Scenario does not offer sign-in on another device; use an API key.")
-        status, data = self._post_form(meta.device_authorization_endpoint, {"client_id": client_id, "scope": self.scope, "resource": self.resource})
+        status, data = self._post_form(meta.device_authorization_endpoint, {"client_id": client_id, "scope": self.scope})
         if status != 200 or not data.get("device_code") or not data.get("user_code"):
             raise errors.ProtocolError(f"Device sign-in could not start (HTTP {status}): {_oauth_error(data)}")
         uri = data.get("verification_uri") or ""
@@ -241,7 +247,7 @@ class OAuthClient:
     def refresh(self, client_id: str, refresh_token: str) -> Tokens:
         status, data = self._post_form(
             self.metadata().token_endpoint,
-            {"grant_type": "refresh_token", "refresh_token": refresh_token, "client_id": client_id, "resource": self.resource},
+            {"grant_type": "refresh_token", "refresh_token": refresh_token, "client_id": client_id},
         )
         tokens = _tokens(status, data, "Session refresh")
         if not tokens.refresh_token:
@@ -249,10 +255,13 @@ class OAuthClient:
         return tokens
 
     def revoke(self, client_id: str, token: str, hint: str = "refresh_token") -> bool:
-        endpoint = self.metadata().revocation_endpoint
-        if not endpoint or not token:
+        """Best effort: offline or without metadata, sign-out still forgets the token."""
+        if not token:
             return False
         try:
+            endpoint = self.metadata().revocation_endpoint
+            if not endpoint:
+                return False
             status, _ = self._post_form(endpoint, {"token": token, "token_type_hint": hint, "client_id": client_id})
         except errors.ScenarioError:
             return False
@@ -291,9 +300,13 @@ main{{max-width:28rem;padding:2rem;text-align:center}}h1{{font-size:1.25rem;marg
 
 
 class LoopbackReceiver:
-    """One-shot HTTP listener on 127.0.0.1 for the OAuth redirect."""
+    """One-shot HTTP listener on 127.0.0.1 for the OAuth redirect.
 
-    def __init__(self, state: str, ports: tuple = REDIRECT_PORTS):
+    Port 0 lets the system pick a free port: the provider matches loopback redirect
+    URIs on scheme, host and path only (RFC 8252, 7.3), so no port is ever busy.
+    """
+
+    def __init__(self, state: str, ports: tuple = (0,)):
         self.state = state
         self.ports = ports
         self._server: HTTPServer | None = None

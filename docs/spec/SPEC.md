@@ -13,7 +13,7 @@ Facts are marked **[verified]** when they were checked on 2026-10-18 in a source
 1. **One action layer, three drivers.** A dockable Scenario panel, a larger Studio window and a quick composer for artists; a local MCP server inside Maya for agents; a Python API for scripts, `mayapy` batch jobs and other tools. All three call the same actions, so the same price checks, approvals, import code, undo and provenance apply whoever drives.
 2. **Pure Python, no compiled code.** `maya.cmds`, OpenMaya API 2.0 and PySide6, one code base for Maya 2025, 2026 and 2027 on Windows, macOS and Linux. No per-version binaries, nothing to sign, and the same code runs in the GUI and in `mayapy`.
 3. **Maya 2025, 2026 and 2027.** Developed and tested live on 2027.2 (macOS, Apple Silicon). 2025 and 2026 share Python 3.11 and PySide6 6.5; 2027 moves to Python 3.13 and PySide6 6.8. The plug-in is written for both.
-4. **Sign in with Scenario in one click.** Browser sign-in (OAuth authorization code with PKCE, loopback redirect) through the hosted Scenario MCP, with a device code fallback for remote machines. API key and secret, and environment variables, for CI and headless use. Secrets live in the OS credential store, never in the scene, the Maya project or Maya's preferences.
+4. **Sign in with Scenario in one click.** Browser sign-in (OAuth authorization code with PKCE, loopback redirect) as Maya's registered OAuth application on Scenario's identity provider, with a device code fallback for remote machines. API key and secret, and environment variables, for CI and headless use. Secrets live in the OS credential store, never in the scene, the Maya project or Maya's preferences.
 5. **The hosted Scenario MCP is the API**, as in the Godot, Unity and Unreal plug-ins: one JSON-RPC client, every model and tool, OAuth accepted. The transport sits behind an interface so the REST API can replace it later.
 6. **GLB lands through our own reader.** Maya 2025 to 2027 ship no glTF importer [verified], and Scenario's 3D outputs are GLB first. A pure-Python GLB reader (prototyped: meshes, UVs, normals, PBR materials, skins, skeletal animation, blend shapes, all matching Maya USD's own import to the centimetre on a reference character [verified]) builds Maya nodes directly. FBX through Maya's FBX plug-in is the fallback and the route for Maya-targeted outputs.
 7. **3D apply modes on the user's own meshes.** Beyond "import as new", a result can replace geometry, replace UVs, replace textures, split the mesh into parts, attach a returned rig and weights, apply returned animation onto an existing skeleton (with HumanIK retargeting for bipeds) or add face shapes, each with preconditions checked first, a review that says exactly what will change, one Ctrl+Z, and a kept original. Every mode was prototyped headless in Maya 2027.2 with exact undo and redo [verified].
@@ -449,15 +449,14 @@ Messages never contain secrets, tokens or full signed URLs. Logs go to Maya's Sc
 | API key + secret | Create a key on the team page, paste two values (or a `key:secret` pair) | Everywhere, including CI and farms | **Alternative** for CI, shared machines and teams that prefer keys |
 | Environment variables | Set `SCENARIO_API_KEY` and `SCENARIO_API_SECRET` | `mayapy`, CI, render farms, Docker | Always read first when set |
 
-Facts **[verified 2026-10-18]**: the hosted Scenario MCP publishes OAuth metadata with grant types `authorization_code`, `refresh_token` and `urn:ietf:params:oauth:grant-type:device_code`, PKCE `S256`, dynamic client registration and public clients. OAuth callers pass `team_id` and `project_id` on each call; an API key is already scoped to its project. The REST API does not accept these tokens yet. **[to verify]**: a full browser round trip from a desktop app and device-code registration, shared with the Unreal and Unity plug-ins.
+Facts **[verified 2026-11-02]**: Scenario's identity provider publishes OAuth metadata with grant types `authorization_code`, `refresh_token` and `urn:ietf:params:oauth:grant-type:device_code` and PKCE `S256`; it matches a loopback redirect URI on scheme, host and path, not the port; the hosted Scenario MCP accepts its access tokens. OAuth callers pass `team_id` and `project_id` on each call; an API key is already scoped to its project. The REST API does not accept these tokens yet. **[verified 2026-11-09]**: a full browser round trip from Maya with Maya's application, on the development and production providers; the device code flow from the core package on the development provider.
 
 ### 5.2 Flow details
 
-- Discovery from `https://mcp.scenario.com/.well-known/oauth-authorization-server`; client registration once per install, cached with its redirect URI; loopback redirect on `http://127.0.0.1:<random port>/callback` served by a one-shot listener on a worker thread; `state` and PKCE verified; `resource=https://mcp.scenario.com/mcp`.
+- Discovery from `https://clerk.scenario.com/.well-known/oauth-authorization-server`; Maya's registered public client id (one redirect URI, `http://127.0.0.1/callback`, scopes `openid offline_access`); loopback redirect on `http://127.0.0.1:<free port>/callback` served by a one-shot listener on a worker thread; `state` and PKCE verified. A session saved by another client id is not resumed.
 - Refresh: one silent refresh on a 401, then one resend. Safe for paid calls because a 401 means the request was refused before dispatch.
 - Workspace: `teams_list` then `projects_list`; the choice is stored per user and per Maya project (ids only, no secret). Switching workspace clears quotes and private catalog entries, and never touches jobs already submitted.
 - Sign out revokes the refresh token, deletes it from the credential store and clears cached private data.
-- When Scenario's shared authorization server serves first-party clients, the plug-in moves to a registered client id with a branded consent page.
 
 ### 5.3 Where secrets live
 
@@ -477,6 +476,7 @@ Read order: environment variables, then the credential store, then the fallback 
 |---|---|
 | `SCENARIO_API_KEY`, `SCENARIO_API_SECRET` | Credentials for CI, farms and `mayapy` |
 | `SCENARIO_TEAM_ID`, `SCENARIO_PROJECT_ID` | Workspace for OAuth tokens supplied by a CI secret manager |
+| `SCENARIO_OAUTH_ISSUER`, `SCENARIO_OAUTH_CLIENT_ID` | Developers: sign in against a development identity provider and application (both together, the issuer over HTTPS), with `SCENARIO_MCP_URL` naming that instance's MCP |
 | `SCENARIO_NO_SPEND=1` | Refuses every paid call and upload locally (price checks still work) |
 | `SCENARIO_MAYA_MCP_PORT`, `SCENARIO_MAYA_MCP_TOKEN` | Agent server port and token for headless runs |
 | `SCENARIO_MAYA_OFFLINE=1` | No network at all (catalog from cache, jobs paused) |
@@ -943,7 +943,7 @@ Each writer replaces only its own `scenario-maya` entry, keeps the file's permis
 
 ### 8.7 Autodesk Marketplace requirements for the server
 
-Autodesk's marketplace asks MCP servers in its listings for an MCP Tool Manifest (a JSON list of every tool), a Publisher Declaration Form, every external domain and every AI provider that receives data, HTTPS for every external connection, and user consent for data sent [verified: Autodesk MCP publisher guide]. So: the release build generates the manifest from the tool registry (CI fails if a tool changes without a manifest change), the tool list is frozen per release, and the declared domains are Scenario's (`mcp.scenario.com`, `api.cloud.scenario.com`, `app.scenario.com`, the asset CDN) plus the release check on GitHub. The model providers Scenario routes to are listed from Scenario's own provider list at submission time [to verify with Autodesk: whether a platform that routes to many providers declares itself or each provider].
+Autodesk's marketplace asks MCP servers in its listings for an MCP Tool Manifest (a JSON list of every tool), a Publisher Declaration Form, every external domain and every AI provider that receives data, HTTPS for every external connection, and user consent for data sent [verified: Autodesk MCP publisher guide]. So: the release build generates the manifest from the tool registry (CI fails if a tool changes without a manifest change), the tool list is frozen per release, and the declared domains are Scenario's (`mcp.scenario.com`, `clerk.scenario.com` for sign-in, `api.cloud.scenario.com`, `app.scenario.com`, the asset CDN) plus the release check on GitHub. The model providers Scenario routes to are listed from Scenario's own provider list at submission time [to verify with Autodesk: whether a platform that routes to many providers declares itself or each provider].
 
 ---
 
@@ -1160,7 +1160,7 @@ The test report lists versions, OS, hardware, what ran, what passed and failed, 
 | No Maya 2025 or 2026 installed here | Version bugs ship | Pure-Python compatibility rules, `compat` module, `pytest` on Python 3.11; mark untested versions in the report |
 | No Windows or Linux machine | Platform bugs ship (credentials, paths, media codecs) | Platform code small and isolated, unit-tested on GitHub runners; marked untested in v0.1 |
 | Hosted MCP replies change | Broken parsing | Defensive parsing, fixtures, weekly contract check, backend interface for a REST swap |
-| OAuth edge cases (redirect ports, consent, device registration) | Sign-in fails for some users | API key path first-class; device code fallback |
+| OAuth edge cases (redirect ports, consent) | Sign-in fails for some users | API key path first-class; device code fallback |
 | Studio pipelines ship other versions of the same Python packages | Import clashes | Only one vendored package, imported under a private name; no global `sys.path` prepend |
 | Importers change scene-wide state (units, up axis, playback range, current namespace) | Silent damage to the user's scene | Every option set explicitly, scene state captured before and restored after, tested per importer |
 | Autodesk Marketplace rejects a plug-in that needs an account, or asks for each AI provider | No store listing | GitHub channel first; early contact with Autodesk; offline features (provenance view, GLB import of any local file) |
@@ -1226,11 +1226,12 @@ Open questions for Scenario (not blocking the start, each with a test in the mil
 - On 2026-10-19, multi-view (6.2): dry-run prices of the three multi-view models (Tripo P2 220 CU, Tripo 3.1 45 CU, Hunyuan 3D Pro 3.1 120 CU); Capture views headless, each side seen from the right camera in Y-up and Z-up scenes, with no undo step and nothing left behind; the two Tripo models live on four captured views, the way their results face and their fit over the source object.
 
 - On 2026-10-19, motion (6.5): dry-run prices of Meshy, Uthana and Cartwheel text to motion with and without a character; six live runs (Meshy alone; Uthana alone and on the robot; Cartwheel on the robot as GLB and as Maya FBX, sent turned, and with `forward` `-Z`), each imported headless in Y-up and Z-up scenes with its joints, skin and clip, exact undo and redo, and the character results fitted over the robot's box; which way each rig and mesh face; vertex colours from Uthana's own character.
+- On 2026-11-09, sign-in (5): in the Maya 2027.2 GUI on macOS, browser sign-in with Maya's application on the development and production providers (production from a release ZIP installed by copy), the team and project question, a catalog read, the session resumed after a restart with a rotated refresh token, and sign-out deleting the Keychain item.
 
 **Not verified yet** (each has a test or a decision point):
 - Anything in the Maya GUI: panel docking and restore, menus and shelf, the composer over the viewport, the Attribute Editor hook, undo in the GUI, secure plug-in loading prompt, keychain prompts between Maya and `mayapy`, UI scaling, sky dome and splat display in the viewport.
 - Maya 2025 and 2026, Windows and Linux, Maya Creative.
-- A full browser OAuth round trip from a desktop app; device code registration.
+- Device code sign-in from the Maya GUI (the flow is verified from the core package).
 - The contents of Scenario's real GLB and FBX outputs for rigs, blend shapes and compression, and what Scenario's conversions keep; the apply modes on meshes above 100,000 vertices; the Hunyuan edit and multi-view models; Tripo 3.1 Multi View's `faceLimit` without `quad`; FBX results with blend shapes from Scenario itself (skins and animation verified on the motion results).
 - The Motion mode's panel in the GUI; whether Uthana and Cartwheel honour a frame rate other than their default; Cartwheel's orientation on other characters; motion on a character that is already skinned (the exporter reads the current pose).
 - Rebinding over an existing skin; face shapes from a head-only result onto a combined body mesh; the abort path inside an apply's undo chunk.
