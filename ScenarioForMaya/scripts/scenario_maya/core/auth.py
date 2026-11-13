@@ -120,11 +120,12 @@ class OAuthAuth:
                 self._refresh_locked()
 
     def workspace_args(self) -> dict:
+        """The query names the API reads the workspace of a user token from."""
         out = {}
         if self.team_id:
-            out["team_id"] = self.team_id
+            out["teamId"] = self.team_id
         if self.project_id:
-            out["project_id"] = self.project_id
+            out["projectId"] = self.project_id
         return out
 
     def refresh_token(self) -> str:

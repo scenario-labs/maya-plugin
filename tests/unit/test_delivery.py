@@ -168,9 +168,9 @@ def test_follow_until_finished_then_download(signed_in, fake, tmp_path):
     sidecar = json.load(open(os.path.join(ready["result"]["folder"], "scenario.json")))
     assert sidecar["job"]["charged_cu"] == "11" and sidecar["files"][0]["sha256"] == files[0]["sha256"]
     assert "path" not in sidecar["files"][0] and "http" not in json.dumps(sidecar)
-    calls = len(fake.state.tool_calls("asset_download"))
+    calls = len(fake.state.calls_to("download"))
     again = delivery.download_results(signed_in, row["local_id"], root)
-    assert again["state"] == "ready" and len(fake.state.tool_calls("asset_download")) == calls
+    assert again["state"] == "ready" and len(fake.state.calls_to("download")) == calls
 
 
 def test_failed_download_can_resume(signed_in, fake, tmp_path):
@@ -205,9 +205,9 @@ def test_3d_results_download_only_the_glb_and_its_thumbnail(signed_in, fake, tmp
     assert downloaded == sorted([os.path.basename(files[0]["path"]), os.path.basename(ready["result"]["thumbnail"]), "scenario.json"])
     sidecar = json.load(open(os.path.join(ready["result"]["folder"], "scenario.json")))
     assert "http" not in json.dumps(sidecar), "no signed links in the sidecar"
-    reads = len(fake.state.tool_calls("asset_get"))
+    reads = len(fake.state.calls_to("asset"))
     again = delivery.download_results(signed_in, row["local_id"], str(tmp_path), formats=lanes.THREE_D.formats)
-    assert again["state"] == "ready" and len(fake.state.tool_calls("asset_get")) == reads, "the pick is kept on the job"
+    assert again["state"] == "ready" and len(fake.state.calls_to("asset")) == reads, "the pick is kept on the job"
 
 
 def test_a_3d_preview_rendered_after_the_download_is_fetched_later(signed_in, fake, tmp_path):

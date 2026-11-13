@@ -15,7 +15,7 @@ TRIPO_P2 = "model_tripo-p2-image-to-3d"
 
 @pytest.fixture
 def panel(fake, monkeypatch, cmds, tmp_path):
-    monkeypatch.setenv("SCENARIO_MCP_URL", fake.endpoint)
+    monkeypatch.setenv("SCENARIO_API_URL", fake.endpoint)
     cmds.file(new=True, force=True)
     cmds.undoInfo(state=True, infinity=True)
     os.makedirs(tmp_path / "project", exist_ok=True)
@@ -77,12 +77,12 @@ def test_add_an_image_then_generate_and_import(panel, fake, cmds, tmp_path):
     assert page.generate_button.text() == "Generate . 120 CU"
     upload = next(iter(fake.state.uploads.values()))
     with open(path, "rb") as handle:
-        assert upload["data"] == handle.read() and upload["name"] == "lantern_concept.png"
+        assert upload["data"] == handle.read() and upload["name"] == "lantern-concept.png"
     asset_id = page.inputs.asset_ids()[0]
     page.generate()
     qt_pump_until(lambda: any(card.row.get("state") == "ready" for card in page.cards.values()), timeout=20)
-    run = fake.state.paid_runs()[0]["arguments"]
-    assert run["model_id"] == "model_meshy-7-1-img23d" and run["parameters"]["image"] == [asset_id]
+    run = fake.state.paid_runs()[0]
+    assert run["id"] == "model_meshy-7-1-img23d" and run["body"]["image"] == [asset_id]
     card = next(iter(page.cards.values()))
     assert card.title.text() == "lantern_concept", "a job without a prompt is named after its image"
     assert panel.lane_pages["3d"].cards, "the Text mode shows the tab's results too"

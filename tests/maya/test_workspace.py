@@ -12,7 +12,7 @@ from tests.maya.conftest import MODULE, PLUGIN, fresh, pump_until, qt_pump_until
 
 @pytest.fixture
 def runtime(fake, monkeypatch, cmds):
-    monkeypatch.setenv("SCENARIO_MCP_URL", fake.endpoint)
+    monkeypatch.setenv("SCENARIO_API_URL", fake.endpoint)
     cmds.loadPlugin(os.path.join(MODULE, "plug-ins", "scenario_for_maya.py"))
     runtime = fresh("scenario_maya.maya.runtime").get()
     signed = runtime.background(lambda: runtime.session.sign_in_api_key(API_KEY, API_SECRET))

@@ -14,7 +14,7 @@ FLARE = "model_openai-gpt-image-2-5-flare"
 
 @pytest.fixture
 def lane(fake, monkeypatch, cmds, tmp_path):
-    monkeypatch.setenv("SCENARIO_MCP_URL", fake.endpoint)
+    monkeypatch.setenv("SCENARIO_API_URL", fake.endpoint)
     cmds.file(new=True, force=True)
     cmds.undoInfo(state=True, infinity=True)
     os.makedirs(tmp_path / "project", exist_ok=True)

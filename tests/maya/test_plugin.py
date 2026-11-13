@@ -68,7 +68,7 @@ def test_load_recovers_a_request_cut_off_by_a_crash(cmds, private_home):
 
 
 def test_api_key_sign_in_through_the_runtime(fake, monkeypatch, cmds):
-    monkeypatch.setenv("SCENARIO_MCP_URL", fake.endpoint)
+    monkeypatch.setenv("SCENARIO_API_URL", fake.endpoint)
     cmds.loadPlugin(os.path.join(MODULE, "plug-ins", "scenario_for_maya.py"))
     try:
         runtime = fresh("scenario_maya.maya.runtime").get()

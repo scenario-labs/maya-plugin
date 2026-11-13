@@ -20,21 +20,33 @@ from __future__ import annotations
 import os
 import threading
 import time
+import urllib.parse
 from datetime import datetime
 
 from . import errors
 from .auth import ApiKeyAuth, Credentials
-from .backend import McpBackend, ScenarioBackend
+from .backend import RestBackend, ScenarioBackend
+from .http import is_secure_url
 from .jsonutil import cu_exact, payload_hash
 from .ledger import Ledger
-from .mcp import DEFAULT_ENDPOINT, McpClient
 from .paths import env_flag
 from .quotes import Quote, QuoteBook
+from .rest import DEFAULT_API_URL, RestClient
 from .settings import Settings
 
 
 def no_spend() -> bool:
     return env_flag("SCENARIO_NO_SPEND")
+
+
+def api_url() -> str:
+    """Scenario's API, or the instance named by ``SCENARIO_API_URL``: HTTPS, or HTTP to this machine (tests)."""
+    url = os.environ.get("SCENARIO_API_URL", "").strip().rstrip("/")
+    if not url:
+        return DEFAULT_API_URL
+    if not is_secure_url(url) or not urllib.parse.urlparse(url).hostname:
+        raise errors.ProtocolError("SCENARIO_API_URL must be an HTTPS address.")
+    return url
 
 
 def _parse_utc(text: str) -> float:
@@ -52,14 +64,12 @@ class Session:
         credentials: Credentials | None = None,
         endpoint: str | None = None,
         backend_factory=None,
-        transport=None,
     ) -> None:
         self.settings = settings or Settings()
         self.ledger = ledger or Ledger()
         self.credentials = credentials or Credentials(self.settings)
-        self.endpoint = endpoint or os.environ.get("SCENARIO_MCP_URL", "").strip() or DEFAULT_ENDPOINT
-        self.transport = transport
-        self._backend_factory = backend_factory or (lambda auth: McpBackend(McpClient(auth, self.endpoint, transport=self.transport)))
+        self.endpoint = endpoint or ""
+        self._backend_factory = backend_factory or (lambda auth: RestBackend(RestClient(auth, self.endpoint or api_url())))
         self.quotes = QuoteBook()
         self._lock = threading.RLock()
         self._auth = None
@@ -97,6 +107,12 @@ class Session:
                 if self._auth is None and not self.load():
                     raise errors.SignInRequired("Sign in to Scenario first.")
             return self._backend
+
+    def api_address(self) -> str:
+        try:
+            return self.endpoint or api_url()
+        except errors.ScenarioError as error:
+            return f"none ({error.message})"
 
     def workspace(self) -> str:
         team = self.settings.get("team_id")

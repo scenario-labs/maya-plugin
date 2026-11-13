@@ -5,6 +5,7 @@ folder and sets:
   SCENARIO_GUI_STAGE  install | restart | oauth
   SCENARIO_GUI_OUT    folder for results.json, screenshots and the log
   SCENARIO_GUI_REPO   repository root
+  SCENARIO_GUI_PROJECT  project the picker chooses (default Plugins Automated Tests)
 Each stage drives Maya with a small step runner on a QTimer, so Maya's event
 loop (and the plug-in's dispatcher) keeps running between steps. A watcher
 records and screenshots every modal dialog Maya shows (for example a secure
@@ -136,7 +137,7 @@ def pick_test_project(dialog):
     for t in range(dialog.team_box.count()):
         dialog.team_box.setCurrentIndex(t)
         for p in range(dialog.project_box.count()):
-            if dialog.project_box.itemText(p) == "Maya Plugin Tests":
+            if dialog.project_box.itemText(p) == os.environ.get("SCENARIO_GUI_PROJECT", "Plugins Automated Tests"):
                 dialog.project_box.setCurrentIndex(p)
                 QtCore.QTimer.singleShot(400, dialog.accept)
                 return

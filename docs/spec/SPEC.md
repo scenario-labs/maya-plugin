@@ -11,10 +11,10 @@ Facts are marked **[verified]** when they were checked on 2026-10-18 in a source
 ## 0. Verdict
 
 1. **One action layer, three drivers.** A dockable Scenario panel, a larger Studio window and a quick composer for artists; a local MCP server inside Maya for agents; a Python API for scripts, `mayapy` batch jobs and other tools. All three call the same actions, so the same price checks, approvals, import code, undo and provenance apply whoever drives.
-2. **Pure Python, no compiled code.** `maya.cmds`, OpenMaya API 2.0 and PySide6, one code base for Maya 2025, 2026 and 2027 on Windows, macOS and Linux. No per-version binaries, nothing to sign, and the same code runs in the GUI and in `mayapy`.
+2. **Python, no compiled code of our own.** `maya.cmds`, OpenMaya API 2.0 and PySide6, one code base for Maya 2025, 2026 and 2027 on Windows, macOS and Linux, the same in the GUI and in `mayapy`. One exception, from Scenario's Python SDK: its `pydantic_core` is compiled, so the plug-in carries its builds for Python 3.11 and 3.13 on each platform and loads the one for the running Maya (`core/sdk.py`).
 3. **Maya 2025, 2026 and 2027.** Developed and tested live on 2027.2 (macOS, Apple Silicon). 2025 and 2026 share Python 3.11 and PySide6 6.5; 2027 moves to Python 3.13 and PySide6 6.8. The plug-in is written for both.
 4. **Sign in with Scenario in one click.** Browser sign-in (OAuth authorization code with PKCE, loopback redirect) as Maya's registered OAuth application on Scenario's identity provider, with a device code fallback for remote machines. API key and secret, and environment variables, for CI and headless use. Secrets live in the OS credential store, never in the scene, the Maya project or Maya's preferences.
-5. **The hosted Scenario MCP is the API**, as in the Godot, Unity and Unreal plug-ins: one JSON-RPC client, every model and tool, OAuth accepted. The transport sits behind an interface so the REST API can replace it later.
+5. **Scenario's REST API is the API**, through Scenario's Python SDK as in the Blender plug-in: every model through the same generation route, the user's OAuth token or an API key. The hosted Scenario MCP is for agents, not a dependency of the plug-in.
 6. **GLB lands through our own reader.** Maya 2025 to 2027 ship no glTF importer [verified], and Scenario's 3D outputs are GLB first. A pure-Python GLB reader (prototyped: meshes, UVs, normals, PBR materials, skins, skeletal animation, blend shapes, all matching Maya USD's own import to the centimetre on a reference character [verified]) builds Maya nodes directly. FBX through Maya's FBX plug-in is the fallback and the route for Maya-targeted outputs.
 7. **3D apply modes on the user's own meshes.** Beyond "import as new", a result can replace geometry, replace UVs, replace textures, split the mesh into parts, attach a returned rig and weights, apply returned animation onto an existing skeleton (with HumanIK retargeting for bipeds) or add face shapes, each with preconditions checked first, a review that says exactly what will change, one Ctrl+Z, and a kept original. Every mode was prototyped headless in Maya 2027.2 with exact undo and redo [verified].
 8. **Price before every paid call, never a double charge.** The Generate button carries the exact price from a free dry run bound to the payload. A quote is used once. Paid calls are never retried; an uncertain submission blocks an identical one until it is reconciled.
@@ -111,8 +111,8 @@ ScenarioForMaya/                      the Maya module (one folder, see 11.1)
   plug-ins/scenario_for_maya.py        Maya plug-in entry: registers commands, menu, shelf,
                                        callbacks, starts the agent server (GUI); thin
   scripts/scenario_maya/
-    core/          No Maya import. Backend client (Scenario MCP over JSON-RPC, SSE, session,
-                   error kinds, retry policy), auth (OAuth PKCE + device code, API key),
+    core/          No Maya import. Backend client (Scenario's REST API through its
+                   Python SDK, error kinds, retry policy), auth (OAuth PKCE + device code, API key),
                    credstore (Keychain, Credential Manager, Secret Service, file), quotes,
                    job ledger, schema forms, catalog cache, downloads, uploads, naming,
                    CU formatting, glTF parser (numpy), provenance records.
@@ -141,7 +141,8 @@ Maya commands and OpenMaya are main-thread only [verified: Autodesk docs]. The p
 
 ```
 Worker threads (ThreadPoolExecutor, 4)            Main thread (Maya)
-  HTTPS to mcp.scenario.com (urllib + truststore)   UI, scene reads, imports, applies
+  HTTPS to api.cloud.scenario.com (urllib +         UI, scene reads, imports, applies
+  truststore)
   downloads to .part, SHA-256, atomic rename        <- results through the dispatcher
   uploads (presigned multipart PUTs)                 dispatcher drained by:
   GLB parsing into numpy arrays                        GUI: a QTimer (30 to 50 ms)
@@ -161,7 +162,7 @@ The **job ledger** is a SQLite database (Python standard library) in the per-use
 
 ### 3.4 Backend interface
 
-`ScenarioBackend` declares what the plug-in needs (catalog, schema, estimate, run, jobs, assets, uploads, downloads, workflows, prompt tools, usage, teams and projects). v1 implements it over the hosted Scenario MCP (`https://mcp.scenario.com/mcp?toolsets=full`, JSON-RPC 2.0, replies in JSON or SSE, `MCP-Protocol-Version` header, session id kept and renewed). Reasons: the hosted MCP accepts OAuth tokens while the REST API does not yet; it is the contract the Godot, Unity and Unreal plug-ins use and test; it brings schema normalization, `recommend` and 3D format conversion. Risk: the MCP is designed for agents and its replies can change, so parsing is defensive (structured content first, then the JSON text block), recorded fixtures cover every call (shared with the other plug-ins), and a weekly free contract check runs in CI. A REST backend can be added later behind the same interface.
+`ScenarioBackend` declares what the plug-in needs (catalog, schema, estimate, run, jobs, assets, uploads, downloads, workflows, prompt tools, usage, teams and projects). It is implemented over Scenario's REST API (`https://api.cloud.scenario.com/v1`) through Scenario's Python SDK (`scenario-sdk`, one method per call, replies read as JSON): `GET /teams` and `/projects`, `GET /models` and `/models/{id}` (inputs turned into form fields here), `POST /generate/custom/{modelId}` (with `dryRun=true` for a price check, answered 269), `GET /jobs` and `/jobs/{id}`, `GET /assets/{id}`, `POST /assets/{id}/download` (3D format conversion with `targetFormat`), and multipart uploads through `/uploads`. An OAuth session names its team and project on each request (`teamId`, `projectId`); an API key is scoped to its project and reads it from `/projects` (`/teams` is not open to keys). Reasons: the API answers with an HTTP status and a JSON reason, so a refusal and an unknown outcome are told apart without reading text; it accepts the user's token from Maya's own OAuth application, so calls are attributed to it; there is no extra hop. The SDK's HTTP client is built by the plug-in: TLS against the OS trust store, the system proxy settings, no redirects (credentials go to the API base only), no retry on a paid call. The SDK and its dependencies go at the end of `sys.path`, so packages a studio installed in Maya's Python keep winning. The API has no model recommendation (the hosted MCP's `recommend` ranks with a language model) and no modality filter (the plug-in filters by capability). Parsing is defensive, recorded fixtures cover every call, and a weekly free contract check runs in CI.
 
 The plug-in identifies itself with `User-Agent: ScenarioMaya/<version> (Maya <x.y>; <OS>)`. No personal or scene data goes in that header.
 
@@ -206,7 +207,7 @@ Scene changes run as undoable commands (section 7.3): one action, one named undo
    quotes, schema forms, catalog,   materials, sky, media,        sidecar JSON,
    downloads, uploads, glTF parse   surface matching, undo         "In this scene" view
         |
-   Hosted Scenario MCP (HTTPS)  ->  Scenario platform (models, jobs, assets, workflows)
+   Scenario REST API (HTTPS)  ->  Scenario platform (models, jobs, assets, workflows)
 ```
 
 ---
@@ -455,7 +456,7 @@ Facts **[verified 2026-11-02]**: Scenario's identity provider publishes OAuth me
 
 - Discovery from `https://clerk.scenario.com/.well-known/oauth-authorization-server`; Maya's registered public client id (one redirect URI, `http://127.0.0.1/callback`, scopes `openid offline_access`); loopback redirect on `http://127.0.0.1:<free port>/callback` served by a one-shot listener on a worker thread; `state` and PKCE verified. A session saved by another client id is not resumed.
 - Refresh: one silent refresh on a 401, then one resend. Safe for paid calls because a 401 means the request was refused before dispatch.
-- Workspace: `teams_list` then `projects_list`; the choice is stored per user and per Maya project (ids only, no secret). Switching workspace clears quotes and private catalog entries, and never touches jobs already submitted.
+- Workspace: `GET /teams` (each team lists its projects; `GET /projects?teamId=` when it does not); the choice is stored per user and per Maya project (ids only, no secret). Switching workspace clears quotes and private catalog entries, and never touches jobs already submitted.
 - Sign out revokes the refresh token, deletes it from the credential store and clears cached private data.
 
 ### 5.3 Where secrets live
@@ -476,7 +477,7 @@ Read order: environment variables, then the credential store, then the fallback 
 |---|---|
 | `SCENARIO_API_KEY`, `SCENARIO_API_SECRET` | Credentials for CI, farms and `mayapy` |
 | `SCENARIO_TEAM_ID`, `SCENARIO_PROJECT_ID` | Workspace for OAuth tokens supplied by a CI secret manager |
-| `SCENARIO_OAUTH_ISSUER`, `SCENARIO_OAUTH_CLIENT_ID` | Developers: sign in against a development identity provider and application (both together, the issuer over HTTPS), with `SCENARIO_MCP_URL` naming that instance's MCP |
+| `SCENARIO_OAUTH_ISSUER`, `SCENARIO_OAUTH_CLIENT_ID` | Developers: sign in against a development identity provider and application (both together, the issuer over HTTPS), with `SCENARIO_API_URL` naming that instance's API |
 | `SCENARIO_NO_SPEND=1` | Refuses every paid call and upload locally (price checks still work) |
 | `SCENARIO_MAYA_MCP_PORT`, `SCENARIO_MAYA_MCP_TOKEN` | Agent server port and token for headless runs |
 | `SCENARIO_MAYA_OFFLINE=1` | No network at all (catalog from cache, jobs paused) |
@@ -767,7 +768,7 @@ Plan a layout from a prompt (named blocks with sizes and positions), build it fr
 | Library | Search the project's assets and collections; drag an asset into a form as a reference; land any library 3D asset like a result | v1 (organizing v1.1) |
 | Prompt Spark | New, Rewrite, Translate with a separate priced Approve. The free price check returns 0 while Scenario's docs say about 2.75 CU per first result [verified], so the price shown is the docs' value marked "about" until the two agree | v1 |
 | Trained models and LoRA | Team models in the picker; LoRA strength; project LoRA defaults | v1 |
-| Recommend | "Suggest a model" uses Scenario's recommendation for the lane and task | v1 |
+| Recommend | "Suggest a model" uses Scenario's recommendation for the lane and task | Later (the REST API has no recommendation) |
 | Balance and usage | Credit balance from Scenario's team limits endpoint when the credentials allow it (API key; OAuth [to verify]), otherwise usage this month | v1 |
 | Cloud history | Project history with Load older; Save for recovery on cloud jobs | v1 |
 | Open on Scenario | Every result and node with provenance links to the web app | v1 |
@@ -822,7 +823,7 @@ Rules:
 - Polling: one read every 2 s; on timeout, lost connection, 408, 429 or 5xx the next read waits 4, 8, 16, 32, then 60 s (or `Retry-After`, up to 300 s) with the note "Status not refreshed; retrying"; after eight transient failures in a row, or any other error, delivery pauses for review.
 - Downloads go to `<file>.part` with HTTP range requests, each attempt with a fresh signed link (signed links are never stored, and Scenario's signed links expire at the end of the month [verified]); each finished file gets a SHA-256 receipt and is renamed atomically. Existing receipts are rehashed, never downloaded again. A per-job OS lock tells a live download from an interrupted one across Maya sessions.
 - Cancel is offered only where Scenario accepts it; most generation jobs refuse it today [verified], so the UI usually shows "Scenario cannot cancel this job; it will finish and be charged."
-- Long jobs: the hosted MCP's wait call returns after about 180 s [verified], so the poller handles any length (some world models run close to an hour).
+- Long jobs: the poller reads `GET /jobs/{id}` with back-off for any length (some world models run close to an hour).
 - Adopting a finished cloud job ("Save for recovery") creates a local record with no fabricated quote, so results generated elsewhere (web app, another machine) can be applied in Maya.
 
 ### 7.5 What leaves the machine
@@ -943,7 +944,7 @@ Each writer replaces only its own `scenario-maya` entry, keeps the file's permis
 
 ### 8.7 Autodesk Marketplace requirements for the server
 
-Autodesk's marketplace asks MCP servers in its listings for an MCP Tool Manifest (a JSON list of every tool), a Publisher Declaration Form, every external domain and every AI provider that receives data, HTTPS for every external connection, and user consent for data sent [verified: Autodesk MCP publisher guide]. So: the release build generates the manifest from the tool registry (CI fails if a tool changes without a manifest change), the tool list is frozen per release, and the declared domains are Scenario's (`mcp.scenario.com`, `clerk.scenario.com` for sign-in, `api.cloud.scenario.com`, `app.scenario.com`, the asset CDN) plus the release check on GitHub. The model providers Scenario routes to are listed from Scenario's own provider list at submission time [to verify with Autodesk: whether a platform that routes to many providers declares itself or each provider].
+Autodesk's marketplace asks MCP servers in its listings for an MCP Tool Manifest (a JSON list of every tool), a Publisher Declaration Form, every external domain and every AI provider that receives data, HTTPS for every external connection, and user consent for data sent [verified: Autodesk MCP publisher guide]. So: the release build generates the manifest from the tool registry (CI fails if a tool changes without a manifest change), the tool list is frozen per release, and the declared domains are Scenario's (`clerk.scenario.com` for sign-in, `api.cloud.scenario.com`, `app.scenario.com`, the asset CDN) plus the release check on GitHub. The model providers Scenario routes to are listed from Scenario's own provider list at submission time [to verify with Autodesk: whether a platform that routes to many providers declares itself or each provider].
 
 ---
 
@@ -1117,7 +1118,7 @@ Before any push, on a real Maya. Maya version, OS and hardware are stated in the
 | 1. Core unit tests | Backend client (JSON and SSE replies, session renewal, error kinds, retry allow-list), quotes and fingerprints, ledger state machine (intent, Not confirmed, candidates, link, restart), schema forms, naming and paths, OAuth helpers (PKCE vectors, callback parsing, state), credential stores, glTF parser on the fixtures, MCP protocol (Host, Origin, token, initialize, tools/list, tools/call, body limit, `null` arguments), tool-size budget | `pytest` on Python 3.11 and 3.13, any OS, recorded fixtures, fake backend | 0 CU |
 | 2. Maya headless | Plug-in load and unload; dispatcher and pump; every landing from local fixtures (PNG, EXR, PBR set with DirectX and OpenGL normals, static GLB, PBR GLB, rigged and animated GLB, morph GLB, FBX, OBJ, WAV, MP3, MP4, MOV, 2:1 PNG and EXR panoramas, PLY splat); every apply mode on fixture meshes, including refusals (6.4); undo and redo of each; scene state preserved (units, up axis, playback range, current namespace, selection); provenance after save and reopen, reference and duplicate; MCP tools against the fake backend | `mayapy` 2027.2 (and 2025, 2026 when installed) | 0 CU |
 | 3. Maya GUI | Panel docks and restores after restart; menu, shelf and runtime commands; composer over the viewport; Attribute Editor section; secure plug-in loading prompt; keychain prompts between Maya and `mayapy`; undo in the GUI for every landing and apply mode; no main-thread slice above 16 ms during polling and downloads; UI scale 100, 150, 200 percent; screenshots of every view and state | Scripted GUI session on the development Mac, driven by a test script, with screenshots | 0 CU |
-| 4. Free contract check | Sign-in (API key and OAuth), workspace listing, every quick pick resolves its schema and prices, `recommend` per lane, `SCENARIO_NO_SPEND` refusal | Script against the live service | 0 CU |
+| 4. Free contract check | Sign-in (API key and OAuth), workspace listing, every quick pick resolves its inputs and prices, `SCENARIO_NO_SPEND` refusal | Script against the live REST API | 0 CU |
 | 5. Paid acceptance | One real generation per v1 lane and per 3D task with low-cost models and small settings: image; text to 3D; image to 3D; remesh, UV unwrap, retexture, rig, animate, parts, edit by prompt on a small test mesh; text to motion; material; environment; video (shortest, lowest resolution); audio; render image; render video; a splat; a workflow; Prompt Spark. Each result landed with its apply modes, checked by eye in the GUI, charge compared with quote | Live, ledger in `tests/live/LEDGER.md`; no single run above a few dollars of credits without asking first | Low-cost models, small settings |
 | 6. Recovery | Quit Maya during a generation and during a download; relaunch; the job resumes, the download resumes, nothing is charged twice; kill Maya during an apply: the job shows Needs review. An injected transport failure on submit gives Not confirmed and blocks a resend | Live (one low-cost run) plus fake backend | One low-cost run |
 | 7. Error paths | 401 (revoked token), 403 (blocked model), 429, offline, partial download, expired link, moderation, wrong mesh format for a model (refused before upload), over the face cap | Fake backend for most; revoked token and offline live | 0 CU |
@@ -1159,7 +1160,7 @@ The test report lists versions, OS, hardware, what ran, what passed and failed, 
 | Secure plug-in loading prompt at first load | Extra click, possible block in studios | Tested in M1; quick start shows it; studio deployment docs name the trusted-path setting |
 | No Maya 2025 or 2026 installed here | Version bugs ship | Pure-Python compatibility rules, `compat` module, `pytest` on Python 3.11; mark untested versions in the report |
 | No Windows or Linux machine | Platform bugs ship (credentials, paths, media codecs) | Platform code small and isolated, unit-tested on GitHub runners; marked untested in v0.1 |
-| Hosted MCP replies change | Broken parsing | Defensive parsing, fixtures, weekly contract check, backend interface for a REST swap |
+| API replies change | Broken parsing | Defensive parsing, fixtures, weekly contract check, backend interface |
 | OAuth edge cases (redirect ports, consent) | Sign-in fails for some users | API key path first-class; device code fallback |
 | Studio pipelines ship other versions of the same Python packages | Import clashes | Only one vendored package, imported under a private name; no global `sys.path` prepend |
 | Importers change scene-wide state (units, up axis, playback range, current namespace) | Silent damage to the user's scene | Every option set explicitly, scene state captured before and restored after, tested per importer |
@@ -1199,7 +1200,7 @@ Open questions for Scenario (not blocking the start, each with a test in the mil
 - Which mesh formats does each edit model accept beyond GLB, and could the catalog say so?
 - Does Scenario refund a job that fails on input format after charging it (the failed job record keeps its price)?
 - Prompt Spark: the free price check says 0, the docs say about 2.75 CU. Which is right?
-- Can the hosted MCP's OAuth token read the team limits endpoint for the balance?
+- Can the user's OAuth token read the team limits endpoint for the balance?
 - Would Scenario add an idempotency key to model runs? It would let the plug-in resolve most Not confirmed submissions without asking the person.
 
 ---

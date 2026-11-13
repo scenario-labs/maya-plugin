@@ -65,11 +65,11 @@ def test_no_spend_refuses_before_sending(signed_in, fake, monkeypatch):
     assert not fake.state.paid_runs()
 
 
-@pytest.mark.parametrize("fault", ["drop", "http500", "tool_error_500", "tool_error_generic"])
+@pytest.mark.parametrize("fault", ["drop", "http500", "http504", "no_job"])
 def test_unknown_outcome_is_not_confirmed_and_never_resent(signed_in, fake, fault):
     params = {"prompt": "a crate"}
     quote = signed_in.price("model_meshy-7-1-txt23d", params)
-    fake.state.fail("model_run", fault)
+    fake.state.fail("generate", fault)
     with pytest.raises(errors.NotConfirmed):
         signed_in.submit(quote.quote_id, approved_cost="120", params=params)
     assert len(fake.state.paid_runs()) == 1, "a paid call is sent exactly once"
@@ -83,7 +83,7 @@ def test_unknown_outcome_is_not_confirmed_and_never_resent(signed_in, fake, faul
 
 def test_a_different_payload_is_not_blocked(signed_in, fake):
     quote = signed_in.price("model_meshy-7-1-txt23d", {"prompt": "a crate"})
-    fake.state.fail("model_run", "drop")
+    fake.state.fail("generate", "drop")
     with pytest.raises(errors.NotConfirmed):
         signed_in.submit(quote.quote_id, approved_cost="120")
     other = signed_in.price("model_meshy-7-1-txt23d", {"prompt": "a barrel"})
@@ -93,7 +93,7 @@ def test_a_different_payload_is_not_blocked(signed_in, fake):
 def test_definite_refusal_fails_without_blocking(signed_in, fake):
     params = {"prompt": "a crate"}
     quote = signed_in.price("model_meshy-7-1-txt23d", params)
-    fake.state.fail("model_run", "tool_error_400")
+    fake.state.fail("generate", "http400")
     with pytest.raises(errors.ToolError, match="prompt is required"):
         signed_in.submit(quote.quote_id, approved_cost="120", params=params)
     assert signed_in.ledger.list(states=("failed",))
@@ -103,7 +103,7 @@ def test_definite_refusal_fails_without_blocking(signed_in, fake):
 
 def test_moderation_is_blocked_and_failed(signed_in, fake):
     quote = signed_in.price("model_openai-gpt-image-2-5-flare", {"prompt": "x"})
-    fake.state.fail("model_run", "moderation")
+    fake.state.fail("generate", "moderation")
     with pytest.raises(errors.Blocked):
         signed_in.submit(quote.quote_id, approved_cost="11")
     row = signed_in.ledger.list(states=("failed",))[0]
@@ -113,7 +113,7 @@ def test_moderation_is_blocked_and_failed(signed_in, fake):
 def test_review_not_confirmed_person_only(signed_in, fake):
     params = {"prompt": "a crate"}
     quote = signed_in.price("model_meshy-7-1-txt23d", params)
-    fake.state.fail("model_run", "drop")
+    fake.state.fail("generate", "drop")
     with pytest.raises(errors.NotConfirmed):
         signed_in.submit(quote.quote_id, approved_cost="120", params=params)
     row = signed_in.ledger.list(states=("uncertain",))[0]
@@ -131,7 +131,7 @@ def test_review_not_confirmed_person_only(signed_in, fake):
 def test_mark_reviewed_unblocks(signed_in, fake):
     params = {"prompt": "a crate"}
     quote = signed_in.price("model_meshy-7-1-txt23d", params)
-    fake.state.fail("model_run", "http500")
+    fake.state.fail("generate", "http500")
     with pytest.raises(errors.NotConfirmed):
         signed_in.submit(quote.quote_id, approved_cost="120", params=params)
     row = signed_in.ledger.list(states=("uncertain",))[0]
@@ -158,14 +158,13 @@ def test_workspace_change_clears_quotes(signed_in):
 
 
 def test_price_check_returning_a_job_stops_price_checks(signed_in, fake, monkeypatch):
-    original = fake.httpd.RequestHandlerClass._tool_model_run
+    original = fake.httpd.RequestHandlerClass._op_generate
 
-    def leaky(handler, args):
-        args = dict(args)
-        args.pop("dry_run", None)
-        return original(handler, args)
+    def leaky(handler, model_id, query, params, who):
+        status, body = original(handler, model_id, {}, params, who)  # runs the job, whatever the flag says
+        return 269, dict(body, creativeUnitsCost=11)
 
-    monkeypatch.setattr(fake.httpd.RequestHandlerClass, "_tool_model_run", leaky)
+    monkeypatch.setattr(fake.httpd.RequestHandlerClass, "_op_generate", leaky)
     with pytest.raises(errors.ProtocolError, match="ALARM"):
         signed_in.price("model_openai-gpt-image-2-5-flare", {"prompt": "x"})
     with pytest.raises(errors.Refused, match="stopped"):
@@ -177,7 +176,7 @@ def test_price_check_returning_a_job_stops_price_checks(signed_in, fake, monkeyp
 def test_rate_limited_paid_call_is_not_sent_and_not_retried(signed_in, fake):
     params = {"prompt": "a crate"}
     quote = signed_in.price("model_meshy-7-1-txt23d", params)
-    fake.state.fail("model_run", "http429")
+    fake.state.fail("generate", "http429")
     with pytest.raises(errors.RateLimited, match="Not sent"):
         signed_in.submit(quote.quote_id, approved_cost="120", params=params)
     assert len(fake.state.paid_runs()) == 1

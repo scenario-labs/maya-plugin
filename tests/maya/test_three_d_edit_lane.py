@@ -64,8 +64,8 @@ def test_uv_unwrap_a_selected_mesh_then_import_it_over_the_mesh(panel, fake, cmd
 
     page.generate()
     qt_pump_until(lambda: ready(page), timeout=20)
-    run = fake.state.paid_runs()[0]["arguments"]
-    assert run["model_id"] == SMART_UV and run["parameters"]["model"] == asset_id
+    run = fake.state.paid_runs()[0]
+    assert run["id"] == SMART_UV and run["body"]["model"] == asset_id
     card = next(iter(page.cards.values()))
     assert card.title.text() == "UV unwrap crate"
     assert card.row["origin"]["target"].endswith("crate")
@@ -152,8 +152,8 @@ def test_retexture_needs_a_prompt(panel, fake, cmds):  # noqa: F811
     qt_pump_until(lambda: page.generate_button.isEnabled(), timeout=10)
     page.generate()
     qt_pump_until(lambda: ready(page), timeout=20)
-    run = fake.state.paid_runs()[0]["arguments"]
-    assert run["parameters"]["textStylePrompt"] == "weathered oak crate, iron bands"
+    run = fake.state.paid_runs()[0]
+    assert run["body"]["textStylePrompt"] == "weathered oak crate, iron bands"
     card = next(iter(page.cards.values()))
     page.land(card.row, "model")
     assert ", over crate" in page.message.text(), page.message.text()
