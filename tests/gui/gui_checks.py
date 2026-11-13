@@ -6,6 +6,7 @@ folder and sets:
   SCENARIO_GUI_OUT    folder for results.json, screenshots and the log
   SCENARIO_GUI_REPO   repository root
   SCENARIO_GUI_PROJECT  project the picker chooses (default Plugins Automated Tests)
+  SCENARIO_GUI_KEEP_SIGNED_IN=1  the oauth stage stays signed in, for a generate stage after it
   SCENARIO_GUI_URL_FILE  the oauth stage writes the sign-in URL there instead of opening a browser
 Each stage drives Maya with a small step runner on a QTimer, so Maya's event
 loop (and the plug-in's dispatcher) keeps running between steps. A watcher
@@ -372,6 +373,8 @@ def stage_oauth():
     yield 1.0
     shot("oauth_signed_in", panel)
     record("refresh token in Keychain", keychain_has("oauth_refresh_token"))
+    if os.environ.get("SCENARIO_GUI_KEEP_SIGNED_IN") == "1":
+        return  # a generate stage runs next in the same prefs folder
     done = []
     runtime.background(runtime.session.sign_out, on_done=lambda _r: done.append(True), on_error=lambda e: done.append(e))
     yield (lambda: done), 30

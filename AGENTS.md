@@ -14,9 +14,11 @@ lands the results in the open scene or applies them to the user's meshes as
 undoable commands. People drive it from the Scenario panel; agents drive it
 through a local MCP server inside Maya.
 
-The Maya module is `ScenarioForMaya/`. A release ZIP holds that folder and
-`install_scenario.py`; `ScenarioForMaya.mod` at the repository root points
-Maya at the checkout for development (`MAYA_MODULE_PATH=<repo>`).
+The Maya module is `ScenarioForMaya/`. A release ZIP (`tools/package.py`)
+holds that folder, its vendored SDK and `install_scenario.py`;
+`ScenarioForMaya.mod` at the repository root points Maya at the checkout for
+development (`MAYA_MODULE_PATH=<repo>`). Releases are automated:
+[RELEASING.md](RELEASING.md).
 
 ## Code map
 
@@ -137,6 +139,7 @@ MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --turn 60 --gif ou
 python3 tools/lint.py                          # no em dashes, no secrets, JSON parses
 uvx ruff check . && uvx ruff format --check .
 python3 tools/contract_check.py                # free live check, needs a test key
+uv run --python 3.13 --no-project python tools/package.py  # dist/scenario-maya-<version>.zip, the release ZIP
 ```
 
 Every Maya run sets `MAYA_DISABLE_CER=1` so a crash never opens Autodesk's
@@ -158,6 +161,8 @@ Any paid run needs explicit authorization for the project and budget first.
 | `links.yml` | weekly, docs PRs | links in Markdown |
 | `scorecard.yml` | weekly, `main` | OpenSSF Scorecard |
 | `project.yml` | non-draft PRs, when opened, reopened or marked ready (not Dependabot's) | adds them to the Plugins project (31) |
+| `release-please.yml` | push to `main` | the release PR; once merged, builds, checks, attests and attaches the ZIP to a draft, checks it again on macOS, publishes it (RELEASING.md) |
+| `publish-changelog.yml` | release published, or by hand | posts the release notes to www.scenario.com/changelog |
 
 GitHub runners have no Maya, so `tools/test_maya.sh` and
 `tools/test_maya_gui.sh` run on a Mac with Maya before each release; their
