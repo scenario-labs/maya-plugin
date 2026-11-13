@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## Hand-written history
+
+Written before release automation. From the first release on, release-please writes each entry above this one from the pull request titles.
 
 ### Features
 

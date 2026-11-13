@@ -451,6 +451,21 @@ flowchart TB
   sourceimages/scenario/<name>/    images, and the textures written from a GLB
 ```
 
+## Install a release
+
+1. Download `scenario-maya-<version>.zip` from the
+   [latest release](https://github.com/scenario-labs/maya-plugin/releases/latest)
+   and unzip it.
+2. Drag `install_scenario.py` from the unzipped folder onto a Maya viewport. It
+   copies the module into your Maya modules folder, loads the plug-in, turns
+   on autoload and opens the Scenario panel.
+3. Maya 2027 asks whether to load a plug-in from a location it does not trust
+   yet. Choose **Allow**.
+
+Each release lists the ZIP's SHA-256 in `SHA256SUMS`; `gh attestation verify
+scenario-maya-<version>.zip --repo scenario-labs/maya-plugin` checks it was
+built from this repository.
+
 ## Install from a checkout
 
 1. Clone this repository and unpack Scenario's Python SDK into it:
