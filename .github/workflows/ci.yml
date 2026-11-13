@@ -33,6 +33,22 @@ jobs:
           uvx ruff@0.17.1 check .
           uvx ruff@0.17.1 format --check .
 
+  # The Vercel middleware behind maya.scenario.com, run as TypeScript through
+  # Node's type stripping (the Node of .nvmrc; Vercel runs it on Node 24).
+  site:
+    name: site proxy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Download counts and the /download/latest redirect
+        run: node --test tests/site/*.test.js
+
   unit:
     name: unit (${{ matrix.os }}, Python ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
@@ -115,7 +131,7 @@ jobs:
   ci-ok:
     name: ci-ok
     if: always()
-    needs: [lint, unit]
+    needs: [lint, site, unit]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

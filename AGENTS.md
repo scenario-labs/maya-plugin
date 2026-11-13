@@ -97,7 +97,7 @@ development (`MAYA_MODULE_PATH=<repo>`). Releases are automated:
   (Scenario's SDK and its dependencies, unpacked by `tools/vendor_sdk.py`, not
   in git), see `VENDORED.md`.
 
-`tests/`: `glb_samples.py` (hand-written GLB fixtures), `unit/` (core, any Python), `maya/` (mayapy, headless), `gui/`
+`tests/`: `glb_samples.py` (hand-written GLB fixtures), `site/` (the Vercel middleware of maya.scenario.com, Node's test runner), `unit/` (core, any Python), `maya/` (mayapy, headless), `gui/`
 (scripted GUI session), `fake_backend/` (a fake Scenario REST API and OAuth
 server), `fixtures/mcp/` (recorded model schemas, scrubbed; the fake turns them
 back into the API's shape).
@@ -137,6 +137,7 @@ tools/test_maya_gui.sh [install generate restart oauth] # scripted GUI session w
 tools/readme_media.sh <signed-in MAYA_APP_DIR> # README pictures, GIFs and videos from a real session; opens Maya; spends one image and one 3D model
 MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --turn 60 --gif out/turn.gif  # Viewport 2.0 stills or a turntable of a GLB or FBX, headless, 0 CU
 python3 tools/lint.py                          # no em dashes, no secrets, JSON parses
+node --test tests/site/*.test.js               # the maya.scenario.com proxy (Node of .nvmrc)
 uvx ruff check . && uvx ruff format --check .
 python3 tools/contract_check.py                # free live check, needs a test key
 uv run --python 3.13 --no-project python tools/package.py  # dist/scenario-maya-<version>.zip, the release ZIP
@@ -155,7 +156,7 @@ Any paid run needs explicit authorization for the project and budget first.
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `ci.yml` | pull requests, `main` | `lint` (tools/lint.py, ruff), `unit` (pytest on Python 3.11 and 3.13, Linux, macOS, Windows); `ci-ok` requires both; `coverage` measures the PR head and `upload-coverage` sends it to GitHub code coverage (skipped on fork PRs), neither required |
+| `ci.yml` | pull requests, `main` | `lint` (tools/lint.py, ruff), `site proxy` (`tests/site/` on the Node of `.nvmrc`), `unit` (pytest on Python 3.11 and 3.13, Linux, macOS, Windows); `ci-ok` requires all three; `coverage` measures the PR head and `upload-coverage` sends it to GitHub code coverage (skipped on fork PRs), neither required |
 | `pr-name.yml`, `commitlint.yml` | pull requests | `pr-title` and `commits`: the PR title and each commit against `commitlint.config.mjs` |
 | `contract.yml` | weekly, PRs changing `core/` or the tool | `tools/contract_check.py` with `SCENARIO_NO_SPEND=1`, 0 CU (test key secrets; skipped with a warning without them) |
 | `links.yml` | weekly, docs PRs | links in Markdown |
@@ -163,6 +164,7 @@ Any paid run needs explicit authorization for the project and budget first.
 | `project.yml` | non-draft PRs, when opened, reopened or marked ready (not Dependabot's) | adds them to the Plugins project (31) |
 | `release-please.yml` | push to `main` | the release PR; once merged, builds, checks, attests and attaches the ZIP to a draft, checks it again on macOS, publishes it (RELEASING.md) |
 | `publish-changelog.yml` | release published, or by hand | posts the release notes to www.scenario.com/changelog |
+| `pages.yml` | after `release-please`, changes to `site/` or `docs/media/`, by hand | publishes maya.scenario.com: the release's page, `docs/media`, the release ZIP under `/download/` (RELEASING.md, Site) |
 
 GitHub runners have no Maya, so `tools/test_maya.sh` and
 `tools/test_maya_gui.sh` run on a Mac with Maya before each release; their

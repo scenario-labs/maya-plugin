@@ -2,3 +2,5 @@
 ^https://app\.scenario\.com/
 # These exact repository forms redirect to GitHub login when unauthenticated.
 ^https://github\.com/scenario-labs/maya-plugin/(issues/new/choose|security/advisories/new)$
+# maya.scenario.com answers once its Vercel project and DNS record exist (RELEASING.md, Site).
+^https://maya\.scenario\.com

@@ -1,0 +1,136 @@
+# GitHub Pages publish for https://maya.scenario.com, as photoshop-plugin does
+# for photoshop.scenario.com: the page in site/ at the root, docs/media under
+# /media/, and the latest release's ZIP under /download/. Runs after each
+# release, on every push to main that changes the page or its pictures, and by
+# hand. The page and its pictures come from the newest published release, so
+# the site never describes a feature people cannot download yet.
+# Pages serves it at https://scenario-labs.github.io/maya-plugin/; the Vercel
+# project on tools/site_proxy holds maya.scenario.com and forwards every path
+# there. RELEASING.md ("Site") lists what an administrator sets once.
+name: Publish site
+
+on:
+  # workflow_run is safe here: the build checks out main, never the
+  # triggering run's head_sha, uses none of its artifacts, keeps no
+  # credentials, and runs only after a successful push run on main.
+  workflow_run:
+    workflows: [release-please]
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/media/**"
+      - "tools/release/stamp_site.py"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Only this repository publishes, and only after a release run that
+    # succeeded on a push to main.
+    if: >-
+      github.repository == 'scenario-labs/maya-plugin' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      attestations: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      # The newest published release: its page and pictures replace main's, and
+      # its version and tag fill the page's {{version}} and {{ref}}. Before the
+      # first release, main's own, with no download.
+      - name: Take the page and its pictures from the newest published release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # An empty answer means no release yet; an error from GitHub fails the
+          # step rather than publishing the site without its download.
+          tag="$(gh release list --repo "$GITHUB_REPOSITORY" --json tagName,isLatest --jq '[.[] | select(.isLatest)][0].tagName // ""')"
+          if [ -z "$tag" ]; then
+            echo "::notice::No release yet: main's page, with no download"
+            version="$(python3 -c 'import sys; sys.path.insert(0, "tools"); import package; print(package.version())')"
+            { echo "tag="; echo "version=$version"; echo "ref=main"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          version="${tag#maya-plugin-v}"
+          [[ "$tag" == "maya-plugin-v$version" && "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected release tag $tag"; exit 1; }
+          git fetch --no-tags --depth=1 origin "refs/tags/$tag:refs/tags/$tag"
+          commit="$(git rev-parse "refs/tags/$tag^{commit}")"
+          # A release from before the site has no page: main's is published
+          # for it, with the release's version and links to main.
+          if git cat-file -e "$commit:site/index.html" 2>/dev/null; then
+            git restore --source="$commit" -- site docs/media
+            ref="$tag"
+          else
+            echo "::warning::$tag has no site/: publishing main's page with version $version"
+            ref=main
+          fi
+          { echo "tag=$tag"; echo "version=$version"; echo "ref=$ref"; } >> "$GITHUB_OUTPUT"
+      - name: Put the page and its pictures together
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          REF: ${{ steps.release.outputs.ref }}
+        run: |
+          set -euo pipefail
+          cp -R site "$RUNNER_TEMP/site"
+          cp -R docs/media "$RUNNER_TEMP/site/media"
+          python3 tools/release/stamp_site.py "$RUNNER_TEMP/site/index.html" "$VERSION" "$REF"
+      # The latest release's ZIP, served from the site's own domain at
+      # download/scenario-maya-X.Y.Z.zip, where the Vercel middleware
+      # (tools/site_proxy/middleware.ts) counts downloads; download/latest.json
+      # names its version and /download/latest redirects to it. Checked
+      # against the release's SHA256SUMS and its build attestation first.
+      - name: Add the latest release's ZIP
+        if: steps.release.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          tag: ${{ steps.release.outputs.tag }}
+          version: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          file="scenario-maya-$version.zip"
+          dir="$RUNNER_TEMP/release"
+          mkdir -p "$dir" "$RUNNER_TEMP/site/download"
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir "$dir" --pattern SHA256SUMS --pattern "$file"
+          grep -E "^[0-9a-f]{64}  $file\$" "$dir/SHA256SUMS" > "$RUNNER_TEMP/site/download/SHA256SUMS"
+          (cd "$dir" && sha256sum -c "$RUNNER_TEMP/site/download/SHA256SUMS")
+          # Built by this repository's release workflow from the tagged commit.
+          gh attestation verify "$dir/$file" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-please.yml"
+          cp "$dir/$file" "$RUNNER_TEMP/site/download/"
+          printf '{ "version": "%s" }\n' "$version" > "$RUNNER_TEMP/site/download/latest.json"
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

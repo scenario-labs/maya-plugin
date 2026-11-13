@@ -45,6 +45,18 @@ gh attestation verify scenario-maya-X.Y.Z.zip --repo scenario-labs/maya-plugin
 
 It checks the answer for this release's version, since an HTTP 200 alone can carry a processing error. `queued` means accepted for processing, which is asynchronous; `already exists` means the version was received before, not that it shows. Either way, check that the entry appears at [scenario.com/changelog](https://www.scenario.com/changelog). After a timeout or an ingest error, check the changelog and the run before re-running: the workflow never posts twice by itself nor asks for an overwrite.
 
+## Site
+
+`.github/workflows/pages.yml` publishes https://maya.scenario.com after each release, on changes to `site/` or `docs/media/`, and by hand: the page from the newest published release (stamped with its version by `tools/release/stamp_site.py`), its pictures under `/media/`, and the release's ZIP under `/download/` with `download/latest.json`. The Vercel project on `tools/site_proxy` holds the domain, forwards every path to GitHub Pages, counts downloads in PostHog and answers `/download/latest`.
+
+Set once by an administrator:
+
+- Repository Settings > Pages: source "GitHub Actions" and no custom domain (one would make Pages redirect the proxy's requests back to it).
+- Vercel, Scenario team: project `maya-plugin-site`, Root Directory `tools/site_proxy`, framework Other, no build or install command, production branch `main`, Ignored Build Step `git diff --quiet HEAD^ HEAD -- .`, Web Analytics on, the domain `maya.scenario.com`, and `POSTHOG_PROJECT_TOKEN` (the PostHog project the other plug-ins count downloads in; without it nothing is counted). `POSTHOG_HOST` and `SITE_ORIGIN` are optional. `tools/site_proxy` holds only `vercel.json` and `middleware.ts`: Vercel would serve any other file there instead of forwarding its path.
+- DNS for scenario.com (Route 53, scenario-labs/management `lib/dns-records-scenario.com.ts`, as for photoshop.scenario.com): a CNAME `maya` to the target Vercel shows for the domain.
+
+Until then the workflow still publishes to the Pages address, and `/download/latest` exists only behind the proxy.
+
 ## When a release run fails
 
 Re-run the failed jobs of that same workflow run (Actions > release-please). A draft has no tag yet, which hides it from release-please, so `tools/release/find_draft.py` hands the draft back to the run of its own commit only; a run for a later push to `main` stops with "Rerun the original release workflow for <sha>" instead of building the draft from newer code. The assets job also refuses to build anything but the release commit, so the attestation always names it. Recovery is tested with fake GitHub answers (`tests/unit/test_release.py`), not on GitHub.
