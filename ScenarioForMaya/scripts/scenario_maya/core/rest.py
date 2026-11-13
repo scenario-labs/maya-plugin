@@ -43,11 +43,14 @@ _MODERATION = re.compile(r"moderation|flagged|nsfw|content policy|safety", re.IG
 class Auth(Protocol):
     kind: str
 
-    def authorization(self) -> str: ...
+    def authorization(self) -> str:
+        """The ``Authorization`` header value."""
 
-    def refresh(self) -> bool: ...
+    def refresh(self) -> bool:
+        """Renews the credentials; False when they cannot be renewed."""
 
-    def workspace_args(self) -> dict: ...
+    def workspace_args(self) -> dict:
+        """``teamId`` and ``projectId`` for a user session, ``{}`` for a key."""
 
 
 @dataclass
@@ -177,7 +180,7 @@ def _classify(response: Response, paid: bool, name: str) -> errors.ScenarioError
         return errors.RateLimited("Not sent: Scenario asked to slow down. Try again.", status=429, retry_after=retry_after_seconds(response))
     if status in (403, 404, 408) or status >= 500:
         return errors.from_http_status(status, message, retry_after=retry_after_seconds(response))
-    if 400 <= status < 500:
+    if status >= 400:  # 408, 429 and 5xx are handled above
         details = body.get("details") if isinstance(body.get("details"), dict) else {}
         if details.get("reason") == "task-id-required":
             return errors.ToolError(message or "This project requires a task id.", hint="Paid requests from Maya cannot name a task yet; use a project that does not require one.", status=status)
