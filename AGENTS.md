@@ -1,8 +1,9 @@
 # maya-plugin: agent instructions
 
 Root `AGENTS.md` is the repository rulebook for humans and coding agents.
-[README.md](README.md) describes the plug-in for users; the design is in
-[docs/spec/SPEC.md](docs/spec/SPEC.md).
+[README.md](README.md) and [docs/USER_GUIDE.md](docs/USER_GUIDE.md) describe the
+plug-in for users (the handbook is built from them, `handbook.config.json`);
+the design is in [docs/spec/SPEC.md](docs/spec/SPEC.md).
 
 ## What this repository is
 

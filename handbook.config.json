@@ -4,7 +4,7 @@
   "repository": "scenario-labs/maya-plugin",
   "files": "scenario-maya",
   "site": "https://maya.scenario.com",
-  "description": "User handbook for Scenario for Maya {version}: install, sign in, every mode with real results (3D from a prompt, an image or views, mesh edits, motion, images), prices and privacy.",
+  "description": "User handbook for Scenario for Maya {version}: install, the panel, every mode with real results (3D from a prompt, an image or views, mesh edits, motion, images), prices, jobs, files, privacy and troubleshooting.",
   "version": {
     "file": "ScenarioForMaya/scripts/scenario_maya/__init__.py",
     "pattern": "__version__ = \"([^\"]+)\""
@@ -16,14 +16,18 @@
       "/download/latest"
     ],
     [
-      "Install",
-      "#install"
+      "Quick start",
+      "#quick-start"
     ]
   ],
   "nav": [
     [
       "Install",
       "#install"
+    ],
+    [
+      "Quick start",
+      "#quick-start"
     ],
     [
       "Downloads",
@@ -58,26 +62,27 @@
     "AGENTS.md": "contributor guide",
     "SUPPORT.md": "Support",
     "SECURITY.md": "Security",
-    "CONTRIBUTING.md": "Contributing"
+    "CONTRIBUTING.md": "Contributing",
+    "docs/USER_GUIDE.md": "User Guide"
   },
   "chapters": [
+    {
+      "id": "what-it-does",
+      "title": "What it does",
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "What it does"
+        }
+      ]
+    },
     {
       "id": "install",
       "title": "Install",
       "parts": [
         {
           "file": "README.md",
-          "section": "Install a release"
-        }
-      ]
-    },
-    {
-      "id": "sign-in",
-      "title": "Sign in",
-      "parts": [
-        {
-          "file": "README.md",
-          "section": "Sign in"
+          "section": "Install"
         }
       ]
     },
@@ -87,33 +92,53 @@
       "generated": "downloads"
     },
     {
-      "id": "generate-a-3d-model",
-      "title": "Generate a 3D model",
-      "newPage": true,
+      "id": "quick-start",
+      "title": "Quick start",
       "parts": [
         {
-          "file": "README.md",
-          "section": "Generate a 3D model"
+          "file": "docs/USER_GUIDE.md",
+          "section": "Quick start"
         }
       ]
     },
     {
-      "id": "turn-an-image-into-a-3d-model",
-      "title": "Turn an image into a 3D model",
+      "id": "find-your-way-around",
+      "title": "Find your way around",
       "parts": [
         {
-          "file": "README.md",
-          "section": "Turn an image into a 3D model"
+          "file": "docs/USER_GUIDE.md",
+          "section": "Find your way around"
         }
       ]
     },
     {
-      "id": "turn-views-of-an-object-into-a-3d-model",
-      "title": "Turn views of an object into a 3D model",
+      "id": "3d-from-a-prompt",
+      "title": "3D from a prompt",
       "parts": [
         {
-          "file": "README.md",
-          "section": "Turn views of an object into a 3D model"
+          "file": "docs/USER_GUIDE.md",
+          "section": "3D from a prompt"
+        }
+      ],
+      "newPage": true
+    },
+    {
+      "id": "3d-from-an-image",
+      "title": "3D from an image",
+      "parts": [
+        {
+          "file": "docs/USER_GUIDE.md",
+          "section": "3D from an image"
+        }
+      ]
+    },
+    {
+      "id": "3d-from-views-of-an-object",
+      "title": "3D from views of an object",
+      "parts": [
+        {
+          "file": "docs/USER_GUIDE.md",
+          "section": "3D from views of an object"
         }
       ]
     },
@@ -122,7 +147,7 @@
       "title": "Quad meshes and FBX results",
       "parts": [
         {
-          "file": "README.md",
+          "file": "docs/USER_GUIDE.md",
           "section": "Quad meshes and FBX results"
         }
       ]
@@ -130,54 +155,84 @@
     {
       "id": "edit-a-mesh-of-the-scene",
       "title": "Edit a mesh of the scene",
-      "newPage": true,
       "parts": [
         {
-          "file": "README.md",
+          "file": "docs/USER_GUIDE.md",
           "section": "Edit a mesh of the scene"
         }
-      ]
+      ],
+      "newPage": true
     },
     {
       "id": "animate-a-character",
       "title": "Animate a character",
-      "newPage": true,
       "parts": [
         {
-          "file": "README.md",
+          "file": "docs/USER_GUIDE.md",
           "section": "Animate a character"
         }
-      ]
+      ],
+      "newPage": true
     },
     {
       "id": "generate-an-image",
       "title": "Generate an image",
-      "newPage": true,
       "parts": [
         {
-          "file": "README.md",
+          "file": "docs/USER_GUIDE.md",
           "section": "Generate an image"
         }
-      ]
+      ],
+      "newPage": true
     },
     {
       "id": "choose-a-model",
       "title": "Choose a model",
       "parts": [
         {
-          "file": "README.md",
+          "file": "docs/USER_GUIDE.md",
           "section": "Choose a model"
         }
       ]
     },
     {
-      "id": "how-a-request-is-paid",
-      "title": "How a request is paid",
-      "newPage": true,
+      "id": "prices-and-spending",
+      "title": "Prices and spending",
       "parts": [
         {
-          "file": "README.md",
-          "section": "How a request is paid"
+          "file": "docs/USER_GUIDE.md",
+          "section": "Prices and spending"
+        }
+      ],
+      "newPage": true
+    },
+    {
+      "id": "jobs-and-recovery",
+      "title": "Jobs and recovery",
+      "parts": [
+        {
+          "file": "docs/USER_GUIDE.md",
+          "section": "Jobs and recovery"
+        }
+      ]
+    },
+    {
+      "id": "files-and-folders",
+      "title": "Files and folders",
+      "parts": [
+        {
+          "file": "docs/USER_GUIDE.md",
+          "section": "Files and folders"
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "parts": [
+        {
+          "file": "docs/USER_GUIDE.md",
+          "section": "Settings"
         }
       ]
     },
@@ -192,17 +247,23 @@
       ]
     },
     {
-      "id": "how-it-is-built",
-      "title": "How it is built",
-      "newPage": true,
+      "id": "troubleshooting",
+      "title": "Troubleshooting",
       "parts": [
         {
-          "file": "README.md",
-          "section": "How it is built"
-        },
+          "file": "docs/USER_GUIDE.md",
+          "section": "Troubleshooting"
+        }
+      ],
+      "newPage": true
+    },
+    {
+      "id": "known-limits",
+      "title": "Known limits",
+      "parts": [
         {
-          "file": "README.md",
-          "only": "Tests"
+          "file": "docs/USER_GUIDE.md",
+          "section": "Known limits"
         }
       ]
     },
@@ -222,10 +283,80 @@
       "parts": [
         {
           "file": "README.md",
-          "section": "More"
+          "section": "License"
         }
       ],
       "generated": "licence"
     }
-  ]
+  ],
+  "flow": {
+    "from": {
+      "label": "From your scene",
+      "items": [
+        [
+          "A prompt",
+          "#3d-from-a-prompt"
+        ],
+        [
+          "An image, or the viewport",
+          "#3d-from-an-image"
+        ],
+        [
+          "Views of an object",
+          "#3d-from-views-of-an-object"
+        ],
+        [
+          "A mesh",
+          "#edit-a-mesh-of-the-scene"
+        ],
+        [
+          "A character",
+          "#animate-a-character"
+        ]
+      ]
+    },
+    "models": {
+      "label": "Scenario models",
+      "items": [
+        [
+          "Text, image or views to 3D",
+          "#3d-from-a-prompt"
+        ],
+        [
+          "Remesh, UV unwrap, retexture",
+          "#edit-a-mesh-of-the-scene"
+        ],
+        [
+          "Text to motion",
+          "#animate-a-character"
+        ],
+        [
+          "Text to image",
+          "#generate-an-image"
+        ]
+      ],
+      "note": "Priced on the button before you click."
+    },
+    "to": {
+      "label": "Back in Maya",
+      "items": [
+        [
+          "A model on the ground, at real size"
+        ],
+        [
+          "A result over the object or mesh it came from"
+        ],
+        [
+          "New UVs, material or geometry on your mesh"
+        ],
+        [
+          "A rigged, animated character"
+        ],
+        [
+          "A card, a material or an image plane"
+        ]
+      ]
+    },
+    "note": "Each landing is one Ctrl+Z."
+  }
 }
