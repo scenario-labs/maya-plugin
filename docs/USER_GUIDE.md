@@ -16,15 +16,16 @@ Maya 2027.2 with live Scenario models.
 2. In the Scenario panel, choose **Sign in with Scenario** and approve in your
    browser. If your account has several teams or projects, pick one.
 3. Open the **3D** tab, keep the **Text** mode and its default model, Meshy
-   7.1, and write a prompt: `a brass lantern with a glass cage`.
+   7.1, and write a prompt: `weathered brass ship lantern, game prop`.
 4. The button shows the price once Scenario has checked it, for example
    `Generate . 120 CU`; the check is free. Press it.
-5. When the card says Ready to apply, press **Import**. The lantern lands on the ground
-   in front of the camera at its real size. Ctrl+Z removes it in one step.
+5. When the card says Ready to apply, press **Import**. The lantern lands on
+   the ground in front of the camera at its real size. Ctrl+Z removes it in
+   one step.
 
 ## Find your way around
 
-![The Scenario panel on the 3D tab: workspace at the top, the Text mode with Meshy 7.1, a prompt, the price on Generate and a result card](media/panel-3d-priced.png)
+<p align="center"><img src="media/panel-3d-priced.png" width="320" alt="The Scenario panel on the 3D tab: workspace at the top, the Text mode with Meshy 7.1, a prompt, the price on Generate and the job list"></p>
 
 ### The panel
 
@@ -42,13 +43,15 @@ and comes back with your workspace layout. From top to bottom:
   when the model takes none; the model's settings, read from Scenario; and the
   **Generate** button with its price. Ctrl+Enter presses it.
 - **Results**: one card per job of this mode, with its status, its price and
-  the actions valid now (Import, Apply..., Card, Retry download). The **...**
-  menu of a card has Show file, Open on Scenario, Re-run settings (fills the
-  form with that job's settings, sends nothing) and Copy details.
+  the actions valid now (Import or Apply... for 3D; Card, Material or Image
+  plane for an image; Retry download). Before the first result, example
+  prompts to start from. The **...** menu of a card has Show file, Open on
+  Scenario, Re-run settings (fills the form with that job's settings, sends
+  nothing) and Copy details.
 - **Jobs**: every job of the project, from every Maya session (see
   [Jobs and recovery](#jobs-and-recovery)).
 
-The **...** button at the top right has Workspace..., Refresh jobs, Copy
+The **☰** button at the top right has Workspace..., Refresh jobs, Copy
 diagnostics, the handbook, Privacy, Report a problem and Sign out.
 
 ### The Scenario menu
@@ -105,7 +108,7 @@ is sped up; everything else plays in real time. Videos:
 
 **Import** adds the model as a new group at the size Scenario returns, its
 bottom centre on the ground below the camera's centre of interest. Materials
-are openPBR, with their textures written to `sourceimages/scenario/`. The
+are OpenPBR, with their textures written to `sourceimages/scenario/`. The
 card reports the import checks: size, materials and textures, non-manifold
 edges, missing textures. One Ctrl+Z removes the whole import; redo brings it
 back.
@@ -318,7 +321,7 @@ All five results above apply onto the crate.
   overwrite new UVs, and before giving one material to a mesh that has
   several.
 - It refuses deformed (skinned), referenced and locked meshes in this
-  version, and Replace geometry refuses instanced ones. **Import** still works
+  version, and a remesh refuses instanced ones. **Import** still works
   on them.
 
 ## Animate a character
@@ -406,10 +409,10 @@ Image with the image in place: concept, then mesh, without leaving Maya.
 
 **Change** opens the picker for the current mode: the mode's quick picks
 first, the ones this guide compares, then the other models of that kind in
-Scenario's catalog, with search, a **Team models** filter for your team's own
-models, and legacy models on request. The settings below the prompt follow
-the model you pick, read from Scenario; the catalog is kept for a day per
-project.
+Scenario's catalog, with search, a **Team models** filter for your team's
+own models, and **Show legacy** for older models. The settings below the
+prompt follow the model you pick, read from Scenario; the catalog is kept
+for a day per project.
 
 ## Prices and spending
 
@@ -425,8 +428,8 @@ failed; nothing was spent.
 - A price is valid for the exact request it was checked for, for two
   minutes. Any edit asks for a new price.
 - The job is saved on your computer before the request is sent, and it is
-  sent once. If Maya crashes or the connection drops while it is being sent, the
-  job shows as **Not confirmed** (see below) rather than being sent again.
+  sent once. If Maya crashes or the connection drops while it is being sent,
+  the job shows as **Not confirmed** (see below) rather than being sent again.
 - The plug-in sets no spending cap of its own. Your team's limits on Scenario
   apply.
 
@@ -448,10 +451,10 @@ and Scenario job ids, prices, times, the error and its hint), for a support
 request.
 
 A job goes through Preparing, Submitting, Queued, Starting, Generating (with
-a percentage when Scenario reports one), Finalizing and Downloading to Ready
-to apply, then Applied once it is in the scene. It can also end as Failed,
-Blocked (refused by Scenario's content rules), Download failed, Canceled or
-Not confirmed.
+a percentage when Scenario reports one), Finalizing, Finished and
+Downloading to Ready to apply, then Applied once it is in the scene. It can
+also end as Failed, Blocked (refused by Scenario's content rules), Download
+failed, Canceled or Not confirmed.
 
 ### When Maya closes
 
@@ -495,7 +498,9 @@ logs) are in `scenario/` inside Maya's user folder (`MAYA_APP_DIR`).
 ## Settings
 
 The panel has no settings page yet. The few settings live in
-`<Maya user folder>/scenario/settings.json`, which never holds a secret:
+`<Maya user folder>/scenario/settings.json`, which never holds a secret.
+Edit it with Maya closed: Maya writes the file and would overwrite the
+change.
 
 | Setting | Default | Effect |
 | --- | --- | --- |

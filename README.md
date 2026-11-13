@@ -48,9 +48,6 @@ modes headless only so far).
 | Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
 | Other lanes | | Materials, environment (sky domes), render a view, video, audio |
 
-Each mode, with real results and model comparisons, is in the
-[User Guide](docs/USER_GUIDE.md).
-
 ## Install
 
 You need Maya 2025, 2026 or 2027 and a Scenario account on a plan with API
