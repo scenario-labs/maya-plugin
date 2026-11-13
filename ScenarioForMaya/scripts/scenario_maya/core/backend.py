@@ -12,6 +12,7 @@ import math
 import re
 import time
 from collections.abc import Callable
+from decimal import Decimal
 from typing import Any
 
 from . import errors
@@ -49,6 +50,14 @@ def job_id_in(value: Any) -> str:
 
 
 def cost_in(value: dict) -> str | None:
+    billing = value.get("billing")
+    details = billing.get("cuCostDetails") if isinstance(billing, dict) else None
+    if isinstance(details, dict) and details:
+        # A job's cuCost is its main action only; add-ons (quality gate, IP detection) are charged beside it.
+        try:
+            return cu_exact(sum((Decimal(cu_exact(amount)) for amount in details.values()), Decimal(0)))
+        except ValueError:
+            return None
     for key in ("creativeUnitsCost", "cuCost", "cu_cost", "cost"):
         if key in value and value[key] is not None:
             try:

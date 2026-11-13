@@ -183,3 +183,11 @@ def test_rate_limited_paid_call_is_not_sent_and_not_retried(signed_in, fake):
     assert signed_in.ledger.list(states=("failed",))
     again = signed_in.price("model_meshy-7-1-txt23d", params)
     assert signed_in.submit(again.quote_id, approved_cost="120", params=params)["state"] == "remote"
+
+
+def test_a_job_charge_includes_its_add_ons():
+    from scenario_maya.core.backend import normalize_job
+
+    row = {"jobId": "job_x", "status": "success", "billing": {"cuCost": 11, "cuCostDetails": {"inference-images": 11, "quality-gate": 1.75}}}
+    assert normalize_job({"job": row})["cu_cost"] == "12.75", "the main action alone understates the charge"
+    assert normalize_job({"job": {"jobId": "job_y", "billing": {"cuCost": 11}}})["cu_cost"] == "11"
