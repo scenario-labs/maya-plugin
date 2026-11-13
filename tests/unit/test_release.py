@@ -113,3 +113,15 @@ def test_the_check_finds_a_changed_file(tmp_path):
             target.writestr(info, data + b"#" if info.filename.endswith("install_scenario.py") else data)
     assert "install_scenario.py differs from the checkout" in check_package.check(str(changed), version)
     assert any("not 9.9.9" in p for p in check_package.check(path, "9.9.9"))
+
+
+def test_the_check_refuses_a_name_twice(tmp_path):
+    path = package.build(str(tmp_path))
+    doubled = tmp_path / "doubled" / os.path.basename(path)
+    doubled.parent.mkdir()
+    with zipfile.ZipFile(path) as source, zipfile.ZipFile(doubled, "w") as target:
+        for info in source.infolist():
+            if info.filename.endswith("install_scenario.py"):
+                target.writestr(info.filename, b"tampered")
+            target.writestr(info, source.read(info))
+    assert any("more than once" in p for p in check_package.check(str(doubled), package.version()))

@@ -31,6 +31,10 @@ def check(path, expected_version):
     expected = dict(package.contents())
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
+        duplicates = sorted({name for name in names if names.count(name) > 1})
+        if duplicates:
+            # Reads by name return the last entry, so an earlier copy would never be compared.
+            problems.append(f"{len(duplicates)} names appear more than once, first {duplicates[0]}")
         outside = [name for name in names if not name.startswith(top)]
         if outside:
             problems.append(f"{len(outside)} entries outside {top}")
