@@ -119,7 +119,7 @@ def test_the_check_refuses_a_name_twice(tmp_path):
     path = package.build(str(tmp_path))
     doubled = tmp_path / "doubled" / os.path.basename(path)
     doubled.parent.mkdir()
-    with zipfile.ZipFile(path) as source, zipfile.ZipFile(doubled, "w") as target:
+    with zipfile.ZipFile(path) as source, zipfile.ZipFile(doubled, "w") as target, pytest.warns(UserWarning, match="Duplicate name"):
         for info in source.infolist():
             if info.filename.endswith("install_scenario.py"):
                 target.writestr(info.filename, b"tampered")
