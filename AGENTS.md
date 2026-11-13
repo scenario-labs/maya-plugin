@@ -164,7 +164,7 @@ Any paid run needs explicit authorization for the project and budget first.
 | `project.yml` | non-draft PRs, when opened, reopened or marked ready (not Dependabot's) | adds them to the Plugins project (31) |
 | `release-please.yml` | push to `main` | the release PR; once merged, builds, checks, attests and attaches the ZIP to a draft, checks it again on macOS, publishes it (RELEASING.md) |
 | `publish-changelog.yml` | release published, or by hand | posts the release notes to www.scenario.com/changelog |
-| `pages.yml` | after `release-please`, changes to `site/` or `docs/media/`, by hand | publishes maya.scenario.com: the release's page, `docs/media`, the release ZIP under `/download/` (RELEASING.md, Site) |
+| `pages.yml` | after `release-please`, changes to the docs, by hand | publishes maya.scenario.com with scenario-labs/plugin-site: the handbook from the release's docs (`handbook.config.json`), the release ZIP under `/download/` (RELEASING.md, Site) |
 
 GitHub runners have no Maya, so `tools/test_maya.sh` and
 `tools/test_maya_gui.sh` run on a Mac with Maya before each release; their

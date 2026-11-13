@@ -1,0 +1,231 @@
+{
+  "product": "Scenario for Maya",
+  "brand": "for Maya",
+  "repository": "scenario-labs/maya-plugin",
+  "files": "scenario-maya",
+  "site": "https://maya.scenario.com",
+  "description": "User handbook for Scenario for Maya {version}: install, sign in, every mode with real results (3D from a prompt, an image or views, mesh edits, motion, images), prices and privacy.",
+  "version": {
+    "file": "ScenarioForMaya/scripts/scenario_maya/__init__.py",
+    "pattern": "__version__ = \"([^\"]+)\""
+  },
+  "analytics": "/page.js",
+  "cta": [
+    [
+      "Download for Maya 2025 to 2027",
+      "/download/latest"
+    ],
+    [
+      "Install",
+      "#install"
+    ]
+  ],
+  "nav": [
+    [
+      "Install",
+      "#install"
+    ],
+    [
+      "Downloads",
+      "#downloads"
+    ],
+    [
+      "Changelog",
+      "#changelog"
+    ]
+  ],
+  "cover": [
+    [
+      "Maya",
+      "2025 to 2027, tested on 2027.2 on macOS"
+    ]
+  ],
+  "downloads": [
+    "The plug-in: `scenario-maya-{version}.zip` from [maya.scenario.com/download/latest](https://maya.scenario.com/download/latest), installed as described in [Install](#install). Each release lists its SHA-256 in `SHA256SUMS`."
+  ],
+  "trademarks": "Autodesk and Maya are trademarks of Autodesk. This project is not affiliated with or endorsed by Autodesk.",
+  "checks": {
+    "prefixed": [
+      [
+        "MCP",
+        "Scenario"
+      ]
+    ]
+  },
+  "fileNames": {
+    "docs/PRIVACY.md": "Privacy",
+    "docs/spec/SPEC.md": "design specification",
+    "AGENTS.md": "contributor guide",
+    "SUPPORT.md": "Support",
+    "SECURITY.md": "Security",
+    "CONTRIBUTING.md": "Contributing"
+  },
+  "chapters": [
+    {
+      "id": "install",
+      "title": "Install",
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Install a release"
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "title": "Sign in",
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Sign in"
+        }
+      ]
+    },
+    {
+      "id": "downloads",
+      "title": "Downloads",
+      "generated": "downloads"
+    },
+    {
+      "id": "generate-a-3d-model",
+      "title": "Generate a 3D model",
+      "newPage": true,
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Generate a 3D model"
+        }
+      ]
+    },
+    {
+      "id": "turn-an-image-into-a-3d-model",
+      "title": "Turn an image into a 3D model",
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Turn an image into a 3D model"
+        }
+      ]
+    },
+    {
+      "id": "turn-views-of-an-object-into-a-3d-model",
+      "title": "Turn views of an object into a 3D model",
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Turn views of an object into a 3D model"
+        }
+      ]
+    },
+    {
+      "id": "quad-meshes-and-fbx-results",
+      "title": "Quad meshes and FBX results",
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Quad meshes and FBX results"
+        }
+      ]
+    },
+    {
+      "id": "edit-a-mesh-of-the-scene",
+      "title": "Edit a mesh of the scene",
+      "newPage": true,
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Edit a mesh of the scene"
+        }
+      ]
+    },
+    {
+      "id": "animate-a-character",
+      "title": "Animate a character",
+      "newPage": true,
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Animate a character"
+        }
+      ]
+    },
+    {
+      "id": "generate-an-image",
+      "title": "Generate an image",
+      "newPage": true,
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Generate an image"
+        }
+      ]
+    },
+    {
+      "id": "choose-a-model",
+      "title": "Choose a model",
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "Choose a model"
+        }
+      ]
+    },
+    {
+      "id": "how-a-request-is-paid",
+      "title": "How a request is paid",
+      "newPage": true,
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "How a request is paid"
+        }
+      ]
+    },
+    {
+      "id": "what-leaves-your-machine",
+      "title": "What leaves your machine",
+      "newPage": true,
+      "parts": [
+        {
+          "file": "docs/PRIVACY.md"
+        }
+      ]
+    },
+    {
+      "id": "how-it-is-built",
+      "title": "How it is built",
+      "newPage": true,
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "How it is built"
+        },
+        {
+          "file": "README.md",
+          "only": "Tests"
+        }
+      ]
+    },
+    {
+      "id": "changelog",
+      "title": "Changelog",
+      "newPage": true,
+      "parts": [
+        {
+          "file": "CHANGELOG.md"
+        }
+      ]
+    },
+    {
+      "id": "licence",
+      "title": "Licence",
+      "parts": [
+        {
+          "file": "README.md",
+          "section": "More"
+        }
+      ],
+      "generated": "licence"
+    }
+  ]
+}
