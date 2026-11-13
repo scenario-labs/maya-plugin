@@ -348,6 +348,7 @@ def stage_oauth():
     started = time.time()
     url_file = os.environ.get("SCENARIO_GUI_URL_FILE")
     if url_file:  # an agent opens the sign-in page in a browser it drives
+
         def write_url(url):
             with open(url_file, "w", encoding="utf-8") as handle:
                 handle.write(url)
