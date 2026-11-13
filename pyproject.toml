@@ -1,6 +1,6 @@
 [project]
 name = "scenario-maya"
-version = "0.1.0"
+version = "1.0.0"
 description = "Scenario for Maya: every Scenario model inside Autodesk Maya, for artists and agents."
 requires-python = ">=3.11"
 license = "MIT"
