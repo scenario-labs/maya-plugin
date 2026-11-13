@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from . import errors, sdk
-from .http import Response, retry_after_seconds, ssl_context, user_agent
+from .http import Response, is_secure_url, retry_after_seconds, ssl_context, user_agent
 from .paths import env_flag
 
 DEFAULT_API_URL = "https://api.cloud.scenario.com/v1"
@@ -93,6 +93,8 @@ def system_proxy(url: str) -> str:
 
 class RestClient:
     def __init__(self, auth: Auth, base_url: str = DEFAULT_API_URL, http_client: Any = None) -> None:
+        if not is_secure_url(base_url):
+            raise errors.ProtocolError("Scenario's API address must be HTTPS.")
         self.auth = auth
         self.base_url = base_url.rstrip("/")
         self._http = http_client
@@ -143,7 +145,12 @@ class RestClient:
                     raise errors.NotConfirmed(f"{name}: the request was sent but no answer came back ({type(failure).__name__}).") from None
                 kind = "timed out" if isinstance(failure, module.APITimeoutError) else "connection failed"
                 raise errors.NetworkError(f"Could not reach Scenario ({kind}).") from None
-            return Reply(raw.status_code, _json_object(raw.text()))
+            try:
+                return Reply(raw.status_code, _json_object(raw.text()))
+            except errors.ProtocolError as error:
+                if paid:  # the request was accepted: the work may have started
+                    raise errors.NotConfirmed(f"{name}: Scenario's answer could not be read; the outcome is unknown.") from error
+                raise
 
 
 def _response(http_response) -> Response:

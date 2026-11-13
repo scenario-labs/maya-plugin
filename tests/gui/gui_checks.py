@@ -283,8 +283,9 @@ def stage_install():
         shot("api_key_error", dialog)
         return
     panel.signin._done()
-    yield (lambda: "/" in panel.workspace_button.text()), 30
-    record("workspace shown", "Maya Plugin Tests" in panel.workspace_button.text(), panel.workspace_button.text())
+    project = runtime_now().session.settings.get("project_name") or ""  # the key's own project
+    yield (lambda: bool(project) and project in panel.workspace_button.text()), 30
+    record("workspace shown", bool(project) and project in panel.workspace_button.text(), panel.workspace_button.text())
     yield 1.0
     shot("panel_signed_in", panel)
     shot("main_signed_in")

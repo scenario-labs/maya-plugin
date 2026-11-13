@@ -170,12 +170,14 @@ class RestBackend(ScenarioBackend):
     def teams(self) -> list:
         """Teams with their projects. An API key reads only its own project (``/teams`` is not open to keys)."""
         if getattr(self.client.auth, "kind", "") == "api_key":
-            project, token = None, ""
-            for _ in range(5):  # pages are filtered after paging: an empty page may still have a next one
+            project, token, seen = None, "", set()
+            # Pages are filtered after paging: an empty page may still have a next one.
+            while project is None and token not in seen:
+                seen.add(token)
                 data = self._read(lambda c, q, token=token: c.projects.with_raw_response.list(**_given(page_size=100, pagination_token=token), extra_query=q), workspace="none")
                 project = next((p for p in data.get("projects") or [] if isinstance(p, dict) and p.get("id")), None)
                 token = data.get("nextPaginationToken") or ""
-                if project is not None or not token:
+                if not token:
                     break
             if project is None:
                 return []
@@ -291,7 +293,10 @@ class RestBackend(ScenarioBackend):
                 raise
         deadline = time.monotonic() + wait
         while True:
-            upload = self._read(lambda c, q: c.uploads.with_raw_response.retrieve(upload_id, extra_query=q)).get("upload") or {}
+            try:
+                upload = self._read(lambda c, q: c.uploads.with_raw_response.retrieve(upload_id, extra_query=q)).get("upload") or {}
+            except errors.NotFound:
+                upload = {}  # not readable yet right after the complete: read again until the deadline
             status = str(upload.get("status") or "")
             if upload.get("entityId"):
                 return {"asset_id": str(upload["entityId"]), "status": status or "imported"}
