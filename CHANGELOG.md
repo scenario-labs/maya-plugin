@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/scenario-labs/maya-plugin/compare/maya-plugin-v0.1.0...maya-plugin-v0.2.0) (2026-11-16)
+
+
+### Documentation
+
+* **docs:** give maya.scenario.com its link-preview card ([3f2d615](https://github.com/scenario-labs/maya-plugin/commit/3f2d615b38059049db7dac0be2a017b5f4221d2a))
+* **docs:** mention the link-preview card in RELEASING.md ([a816169](https://github.com/scenario-labs/maya-plugin/commit/a816169d52c010ab7aa54c2c3547d2afe7051678)), closes [#23](https://github.com/scenario-labs/maya-plugin/issues/23)
+
+
+### Continuous Integration
+
+* **ci:** build maya.scenario.com with plugin-site's components-lib ([ded429a](https://github.com/scenario-labs/maya-plugin/commit/ded429a77261e59253723b842c46327213f9bf63))
+
 ## 0.1.0 (2026-11-16)
 
 
