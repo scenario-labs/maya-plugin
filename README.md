@@ -60,10 +60,7 @@ access.
 3. Maya 2027 asks whether to load a plug-in from a location it does not trust
    yet. Choose **Allow**.
 
-**Scenario > Scenario Panel** opens the panel later. Each release lists the
-ZIP's SHA-256 in `SHA256SUMS`, and
-`gh attestation verify scenario-maya-<version>.zip --repo scenario-labs/maya-plugin`
-checks it was built from this repository.
+**Scenario > Scenario Panel** opens the panel later.
 
 To uninstall, run `import install_scenario; install_scenario.uninstall()` in
 the Script Editor (Python). Your settings, job list and results stay.

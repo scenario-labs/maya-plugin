@@ -43,8 +43,8 @@ and comes back with your workspace layout. From top to bottom:
   when the model takes none; the model's settings, read from Scenario; and the
   **Generate** button with its price. Ctrl+Enter presses it.
 - **Results**: one card per job of this mode, with its status, its price and
-  the actions valid now (Import or Apply... for 3D; Card, Material or Image
-  plane for an image; Retry download). Before the first result, example
+  the actions valid now (Import, and Apply... for an edit; Card, Material or
+  Image plane for an image; Retry download). Before the first result, example
   prompts to start from. The **...** menu of a card has Show file, Open on
   Scenario, Re-run settings (fills the form with that job's settings, sends
   nothing) and Copy details.
@@ -73,9 +73,7 @@ Help (Handbook, Privacy, Report a Problem, Copy Diagnostics, About).
 
 Secrets go to the system's credential store (macOS Keychain, Windows
 Credential Manager or Secret Service), never to the scene or Maya's
-preferences. Scripts and render farms can set `SCENARIO_API_KEY` and
-`SCENARIO_API_SECRET` in the environment instead. Nothing is sent to
-Scenario until you sign in.
+preferences. Nothing is sent to Scenario until you sign in.
 
 <br clear="right">
 
@@ -243,8 +241,8 @@ robot views: 8,153 faces, 8,132 of them quads. 53 CU.*
 - Cleans up the names the FBX format mangles.
 - Keeps the importer's materials, with colour textures in sRGB and the other
   maps Raw.
-- Lets skinned meshes follow their joints only, so a rig lands upright in a
-  Z-up scene and in one piece wherever it is placed.
+- Lands a rigged character upright and in one piece, in a Y-up or a Z-up
+  scene.
 - Starts a clip on the scene's start frame, as for a GLB, and reports the same
   import checks.
 
@@ -313,7 +311,7 @@ what needs your confirmation. One Ctrl+Z undoes the whole apply.
 | Retexture | A new material from the result's maps (base colour, metal and roughness, normal) is assigned to the mesh; UVs too if the model changed them | The old material, unassigned; Maya's default material is never edited |
 | Remesh | The mesh's shape is replaced by the result's mesh, under your transform and with your shape's name; it gets the result's material when the result has textures | The transform (name, place, attributes, parent, sets, connections); the old shape, hidden, as `<shape>_scnPrev` with its history |
 
-All five results above apply onto the crate.
+All five results above were applied onto the crate this way.
 
 ### What Apply asks or refuses
 
@@ -411,8 +409,7 @@ Image with the image in place: concept, then mesh, without leaving Maya.
 first, the ones this guide compares, then the other models of that kind in
 Scenario's catalog, with search, a **Team models** filter for your team's
 own models, and **Show legacy** for older models. The settings below the
-prompt follow the model you pick, read from Scenario; the catalog is kept
-for a day per project.
+prompt follow the model you pick, read from Scenario.
 
 ## Prices and spending
 
@@ -553,13 +550,14 @@ with the job's **Copy details**. Or write to support@scenario.com.
 ## Known limits
 
 - Agents: a local Scenario MCP server inside Maya, so Claude Code, Codex or
-  Cursor drive the same actions, is next.
+  Cursor can drive the same actions, is not built yet.
 - 3D: rigging without a motion, splitting into parts, putting a motion onto a
   rig already in the scene (retargeting, HumanIK), video to motion.
 - Images: editing, upscale, LoRAs.
-- Other lanes: materials, sky domes, video, audio.
-- A settings page, a results history and an "In this scene" view.
+- Other kinds of result: materials, sky domes, video, audio.
+- A settings page, a history of past results, and a list of the Scenario
+  assets in the open scene.
 - Linking a Not confirmed job to a Scenario job from the panel.
 - Tested on Maya 2027.2 on macOS. Maya 2025 and 2026, Windows and Linux are
-  supported by the code but not yet checked by hand; the Multi-view, Edit
-  selection and Motion modes were checked headless.
+  supported but not yet checked by hand; the Multi-view, Edit selection and
+  Motion modes were checked in automated runs of Maya, not by hand.
