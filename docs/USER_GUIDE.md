@@ -469,15 +469,17 @@ Changing anything in the request sends a new one.
 Results go into the current Maya project (**File > Set Project**), so they
 travel with your scene:
 
-```
-<Maya project>/
-  scenario/<date>/<name>/          each result: the GLB or FBX and its scenario.json record
-  sourceimages/scenario/<name>/    images, and the textures written from a 3D result
-  images/scenario/captures/        viewport captures, views and the meshes sent for an edit
-```
+- **3D results**: `scenario/<date>/<name>/` in the project, the GLB or FBX
+  with a `scenario.json` record of how it was made.
+- **Images, and the textures of 3D results**: `sourceimages/scenario/<name>/`.
+- **Captures, views and the meshes sent for an edit**:
+  `images/scenario/captures/`.
+
+Results are also in your Scenario project, so you find them again on
+[app.scenario.com](https://app.scenario.com).
 
 Every node the plug-in creates carries its provenance (model, prompt, price,
-job and asset ids) as plain string attributes, so the scene opens on machines
+job and asset ids) as attributes, so the scene opens on machines
 without the plug-in and anyone can tell where an asset came from. Anyone you
 send the scene to can read those prompts.
 
