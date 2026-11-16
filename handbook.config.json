@@ -348,5 +348,9 @@
       ]
     },
     "note": "Each landing is one Ctrl+Z."
+  },
+  "og": {
+    "picture": "docs/media/og-keyvisual.jpg",
+    "subtitle": "3D models, mesh edits, motion and images, inside Maya."
   }
 }
