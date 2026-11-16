@@ -47,7 +47,7 @@ It checks the answer for this release's version, since an HTTP 200 alone can car
 
 ## Site
 
-`.github/workflows/pages.yml` publishes https://maya.scenario.com after each release, on changes to `site/` or `docs/media/`, and by hand: the page from the newest published release (stamped with its version by `tools/release/stamp_site.py`), its pictures under `/media/`, and the release's ZIP under `/download/` with `download/latest.json`. The Vercel project on `tools/site_proxy` holds the domain, forwards every path to GitHub Pages, counts downloads in PostHog and answers `/download/latest`.
+`.github/workflows/pages.yml` publishes https://maya.scenario.com after each release, on changes to the docs, and by hand, through [scenario-labs/plugin-site](https://github.com/scenario-labs/plugin-site), the site tooling the plug-ins share: the handbook built from the newest published release's docs (chapters in `handbook.config.json`), its pictures under `/media/`, and the release's ZIP under `/download/` with `download/latest.json`. Preview it from a checkout with `npx github:scenario-labs/plugin-site handbook --no-pdf --out build/handbook`. The Vercel project on `tools/site_proxy` holds the domain, forwards every path to GitHub Pages, counts downloads in PostHog and answers `/download/latest`.
 
 Set once by an administrator:
 
