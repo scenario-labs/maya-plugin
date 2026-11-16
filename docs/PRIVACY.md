@@ -56,8 +56,11 @@ The plug-in sends nothing else: no usage data, no update check.
   plug-in.
 - **Uninstall** (in Maya's Script Editor, Python:
   `import install_scenario; install_scenario.uninstall()`) removes the
-  plug-in and keeps your settings, job list and results; delete `scenario/` in Maya's user
-  folder to remove them, and sign out first to remove the stored secret.
+  plug-in and keeps your data. To remove it too: sign out first (the stored
+  secret), delete `scenario/` in Maya's user folder (settings, job list,
+  logs), and in each Maya project you used, `scenario/`,
+  `sourceimages/scenario/` and `images/scenario/` (results, captures and the
+  meshes sent).
 
 ## Contact
 
