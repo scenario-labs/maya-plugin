@@ -55,7 +55,9 @@ The plug-in sends nothing else: no usage data, no update check.
   secret), delete `scenario/` in Maya's user folder (settings, job list,
   logs), and in each Maya project you used, `scenario/`,
   `sourceimages/scenario/` and `images/scenario/` (results, captures and the
-  meshes sent).
+  meshes sent). Scenes you saved keep the prompts and ids on their nodes,
+  in the attributes whose names start with `scenario_`: delete those
+  attributes (Attribute Editor, Extra Attributes) or the nodes.
 
 ## Contact
 
