@@ -31,7 +31,7 @@ which carry their own authorization, never your Scenario credentials.
 | Item | Where |
 |---|---|
 | Sign-in token or API secret | Your operating system's credential store (macOS Keychain, Windows Credential Manager, Secret Service on Linux). If none is available, a file readable only by your user account |
-| Settings, model catalog cache, job list, logs | `scenario/` in Maya's user folder (`MAYA_APP_DIR`) |
+| Settings, model catalog cache, job list, logs | `scenario/` in Maya's user folder |
 | Results, captures and the meshes sent for an edit | Your Maya project, in `scenario/`, `sourceimages/scenario/` and `images/scenario/` |
 | Provenance (model, prompt, price, job and asset ids) | Attributes on the nodes the plug-in creates, saved inside your `.ma` or `.mb` file |
 
@@ -39,8 +39,7 @@ Secrets are never written into scenes, Maya preferences, `Maya.env`, project
 files, settings or logs.
 
 Provenance travels with your scene file: anyone you send the scene to can
-read the prompts and ids stored on its nodes. Setting `store_prompts_on_nodes`
-to `false` in `settings.json` leaves the prompts out.
+read the prompts and ids stored on its nodes.
 
 The plug-in sends nothing else: no usage data, no update check.
 
@@ -50,10 +49,6 @@ The plug-in sends nothing else: no usage data, no update check.
   from your credential store.
 - **API keys** can be revoked at any time from your team page on
   [app.scenario.com](https://app.scenario.com/team).
-- **Offline mode** (`SCENARIO_MAYA_OFFLINE=1`) stops all network access from
-  the plug-in; importing a local GLB still works.
-- **No spending** (`SCENARIO_NO_SPEND=1`) refuses every paid request from the
-  plug-in.
 - **Uninstall** (in Maya's Script Editor, Python:
   `import install_scenario; install_scenario.uninstall()`) removes the
   plug-in and keeps your data. To remove it too: sign out first (the stored

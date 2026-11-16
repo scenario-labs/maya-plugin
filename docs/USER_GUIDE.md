@@ -430,13 +430,6 @@ failed; nothing was spent.
 - The plug-in sets no spending cap of its own. Your team's limits on Scenario
   apply.
 
-### Ask before spending, or never spend
-
-- `confirm_above_cu` in the [settings file](#settings) makes Generate ask
-  before any request priced above that many CU.
-- `SCENARIO_NO_SPEND=1` in Maya's environment refuses every paid request; the
-  button then reads `Spending off` beside the price.
-
 ## Jobs and recovery
 
 ### The job list
@@ -486,31 +479,11 @@ travel with your scene:
 Every node the plug-in creates carries its provenance (model, prompt, price,
 job and asset ids) as plain string attributes, so the scene opens on machines
 without the plug-in and anyone can tell where an asset came from. Anyone you
-send the scene to can read those prompts; set `store_prompts_on_nodes` to
-`false` in the settings to leave them out.
+send the scene to can read those prompts.
 
 The plug-in's own files (settings, the job list, the model catalog cache and
-logs) are in `scenario/` inside Maya's user folder (`MAYA_APP_DIR`).
-
-## Settings
-
-The panel has no settings page yet. The few settings live in
-`<Maya user folder>/scenario/settings.json`, which never holds a secret.
-Edit it with Maya closed: Maya writes the file and would overwrite the
-change.
-
-| Setting | Default | Effect |
-| --- | --- | --- |
-| `confirm_above_cu` | `0` (never ask) | Generate asks before a request priced above this |
-| `store_prompts_on_nodes` | `true` | Prompts saved on the nodes the plug-in creates |
-
-Environment variables, set before Maya starts:
-
-| Variable | Effect |
-| --- | --- |
-| `SCENARIO_NO_SPEND=1` | Refuses every paid request |
-| `SCENARIO_MAYA_OFFLINE=1` | No network access at all; Import GLB still works |
-| `SCENARIO_API_KEY`, `SCENARIO_API_SECRET` | Sign in with an API key without storing it |
+logs) are in `scenario/` inside Maya's user folder (`Documents/maya` on Windows,
+`~/Library/Preferences/Autodesk/maya` on macOS, `~/maya` on Linux).
 
 ## Troubleshooting
 

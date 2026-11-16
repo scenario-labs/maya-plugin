@@ -227,16 +227,6 @@
       ]
     },
     {
-      "id": "settings",
-      "title": "Settings",
-      "parts": [
-        {
-          "file": "docs/USER_GUIDE.md",
-          "section": "Settings"
-        }
-      ]
-    },
-    {
       "id": "what-leaves-your-machine",
       "title": "What leaves your machine",
       "newPage": true,
