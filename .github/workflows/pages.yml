@@ -59,7 +59,7 @@ jobs:
       # The handbook from the newest release's docs, and its ZIP once the
       # release's SHA256SUMS and build attestation verify.
       - id: site
-        uses: scenario-labs/plugin-site@1acb13a05820668eca37ce8f2e787432ad597457 # main, before v0.1.0
+        uses: scenario-labs/plugin-site@38365000dc3fe0ef796edb63310fbb388e7664ee # main, before v0.1.0
         with:
           download: scenario-maya-{version}.zip
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
