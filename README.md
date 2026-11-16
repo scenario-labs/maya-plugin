@@ -34,19 +34,16 @@ result lands in the open scene as one undo step.
   you click, every request is sent once and recorded on disk, and every
   landing is one Ctrl+Z.
 
-**Status:** early version. Tested on Maya 2027.2 on macOS, in the real Maya
-window and headless with `mayapy` (the Multi-view, Edit selection and Motion
-modes headless only so far).
-
-| Area | Today | Next |
+| Modes in this build | From | Lands in Maya as |
 | --- | --- | --- |
-| Sign-in | Browser (OAuth), a code on another device, or an API key; secrets in the system keychain | |
-| Panel | Docked beside the Channel Box and restored with the workspace; team and project picker; model picker; job list | Studio window, quick composer over the viewport |
-| 3D | Text to 3D (Meshy 7.1, Meshy T2.5, Tripo P2, Rodin Gen-2.5) and image to 3D (Meshy 7.1, Tripo P2, Rodin Gen-2.5, Tripo 3.1, Hunyuan 3D Pro 3.1) from a file, a viewport capture or an Image result; multi-view to 3D from views captured around a selected object (Tripo P2, Tripo 3.1, Hunyuan 3D Pro 3.1), landed over it; edits of a selected mesh (remesh, UV unwrap, retexture), imported fitted over it or applied onto it (new UVs, a new material or new geometry, reviewed first, one Ctrl+Z); motion from a prompt (Meshy, Uthana, Cartwheel), on the model's own character or one selected in the scene, landed with its joints, skin and clip; quad meshes, delivered as FBX; GLB import with PBR materials, skins, blend shapes and animation, FBX through Maya's importer; import checks | Rig, animate, split into parts; motion onto an existing rig; video to motion |
-| Image | Text to image with Scenario's image models; lands as a card, a material or an image plane | Image editing, upscale, LoRAs |
-| Jobs | One job list for every Maya session; downloads resume; results that finish while Maya is closed are offered on the next start | Results history, an "In this scene" view |
-| Agents | | A local Scenario MCP server inside Maya, so Claude Code, Codex or Cursor drive the same actions |
-| Other lanes | | Materials, environment (sky domes), render a view, video, audio |
+| 3D, Text | A prompt | A model on the ground in front of the camera, at real size |
+| 3D, Image | An image file, a viewport capture or an Image result | A model on the ground in front of the camera |
+| 3D, Multi-view | Views captured around a selected object | A model over the object, at its size |
+| 3D, Edit selection | A selected mesh: remesh, UV unwrap or retexture | A result over the mesh, or applied onto it |
+| 3D, Motion | A prompt, and your character if you want | A rigged, animated character |
+| Image | A prompt | A card, a material or an image plane |
+
+What is not built yet: [Known limits](docs/USER_GUIDE.md#known-limits).
 
 ## Install
 
