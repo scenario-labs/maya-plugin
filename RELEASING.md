@@ -18,7 +18,7 @@ Releases are made by `.github/workflows/release-please.yml`, which follows photo
 
    **publish-changelog** (`.github/workflows/publish-changelog.yml`) runs on the published release: see [Public changelog](#public-changelog).
 
-There is no release before the first one: `.release-please-manifest.json` starts at 0.0.0, so the first release is 0.1.0 and its entry covers every commit since the repository started.
+There is no release before the first one: with no earlier release, release-please starts at `initial-version` (0.1.0 in `release-please-config.json`; its own default would be 1.0.0), and that entry covers every commit since the repository started.
 
 Before merging a release pull request, run `tools/test_maya.sh` and `tools/test_maya_gui.sh` on a Mac with Maya (no runner has Maya), install the ZIP the release will build (`python3 tools/package.py`) by dragging `install_scenario.py` onto a viewport, and put the reports under `tests/reports/`.
 
