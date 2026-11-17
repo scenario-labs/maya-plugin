@@ -1,6 +1,6 @@
 # GitHub Pages publish for https://maya.scenario.com: the handbook built from
 # the docs (handbook.config.json) at the root, and the latest release's ZIP
-# under /download/, by scenario-labs/plugin-site, the site tooling the Scenario
+# under /download/, by scenario-labs/components, the site tooling the Scenario
 # plug-ins share. Runs after each release, on every push to main that changes
 # the docs, and by hand. The handbook comes from the newest published release,
 # so the site never describes a feature people cannot download yet.
@@ -59,7 +59,7 @@ jobs:
       # The handbook from the newest release's docs, and its ZIP once the
       # release's SHA256SUMS and build attestation verify.
       - id: site
-        uses: scenario-labs/plugin-site@1807c4bd604ece17037eacda98df8ccde345503c # main, before v0.1.0
+        uses: scenario-labs/components@8e8b57ca00e126ffd09211eb13be666395a2fcc1 # main, before v0.1.0
         with:
           download: scenario-maya-{version}.zip
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
