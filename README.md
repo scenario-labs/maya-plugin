@@ -84,8 +84,10 @@ The full walkthrough, with every mode, is in the
   prices, jobs and recovery, where results are saved, settings,
   troubleshooting.
 - [Privacy](docs/PRIVACY.md): what leaves your computer and what stays.
-- Handbook: the guide, the privacy notes and the changelog as one page, a
-  single HTML file and a PDF, at [maya.scenario.com](https://maya.scenario.com).
+- [maya.scenario.com](https://maya.scenario.com): the launch film, the
+  example scene step by step, the illustrated guide (PDF), and the handbook
+  (the guide, the privacy notes and the changelog as one page) under
+  [/handbook/](https://maya.scenario.com/handbook/).
 - [Changelog](CHANGELOG.md).
 
 ## Install from a checkout

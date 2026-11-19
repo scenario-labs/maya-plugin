@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Scenario for Maya: the launch film and one example scene in eleven steps, with clips, pictures and four results to turn in 3D. The full manual is the handbook under /handbook/.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Scenario">
+<meta property="og:title" content="Scenario for Maya">
+<meta property="og:description" content="Scenario's 3D, motion, mesh edit and image models inside Maya, priced on the button, landed as one undo step.">
+<meta property="og:url" content="https://maya.scenario.com/">
+<meta property="og:image" content="https://maya.scenario.com/assets/img/og-maya.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="675">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/scenario-logo.svg">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Scenario for Maya</title>
+<script>
+window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/page.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* The Scenario plugin sites' look, from photoshop.scenario.com: warm paper, terracotta, Instrument Serif
+   headings, mono eyebrows, a plain contents rail, one reading column of 760 px. Maya touches: the MAYA chip
+   in the handbook's chip colours, the plugin's buttons drawn in Maya's panel grey.
+   Light only: every color is set here. */
+:root {
+  --bg: #faf8f7; --fg: #252322; --card: #f5f2f0; --surface: #f0edea; --border: #e8e4e0; --line: #dcd6d0;
+  --primary: #a94e36; --primary-hover: #923f2a; --primary-light: #da9078; --primary-soft: #f6e9e4; --primary-fg: #faf8f7;
+  --muted: #645e59;
+  --amber-soft: #fdf1dc; --amber-text: #8a4b00; --amber-line: #f3d9a8; --amber: #c98a12;
+  /* the MAYA chip, as the handbook under /handbook/ draws it */
+  --chip: #645e59; --chip-ink: #3d3935; --chip-soft: #f0edea; --chip-line: #dcd6d0;
+  --done: #2f6b38;
+  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 4px; --header: 64px;
+  --shadow: 0 1px 2px rgba(37,35,34,.05), 0 24px 48px -24px rgba(37,35,34,.22);
+  /* the plugin's own panel, as Maya draws it */
+  --my-bg: #444444; --my-btn: #5d5d5d; --my-text: #eeeeee; --my-dim: #bdbdbd;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header) + 1rem); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 16px/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--primary); text-decoration: underline; text-decoration-color: var(--primary-light); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--primary); }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 2px; }
+img, video { max-width: 100%; height: auto; display: block; }
+figure { margin: 0; }
+code, kbd, pre { font-family: var(--mono); font-variant-ligatures: none; }
+code { font-size: .84em; background: var(--surface); color: var(--fg); border-radius: 3px; padding: .12em .38em; overflow-wrap: anywhere; }
+kbd { font-size: .78em; background: var(--card); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 3px; padding: 0 .35em; color: var(--fg); }
+pre { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; margin: .8rem 0 1.1rem; overflow-x: auto; line-height: 1.55; }
+pre code { background: none; padding: 0; font-size: .82rem; white-space: pre; overflow-wrap: normal; }
+td pre { padding: .7rem .8rem; }
+td pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+mark { background: var(--primary-soft); color: var(--fg); border-radius: 2px; padding: 0 .1em; }
+strong, b { font-weight: 600; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip { position: absolute; left: -10000px; }
+.skip:focus { left: 1rem; top: .75rem; z-index: 40; background: var(--bg); padding: .5rem .75rem; border: 1px solid var(--border); }
+
+/* type: muted body, ink for headings and the labels you look for */
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; color: var(--fg); text-wrap: balance; letter-spacing: -.01em; }
+h1 { font-size: clamp(2.6rem, 5.5vw, 4.25rem); line-height: 1.02; letter-spacing: -.02em; margin: .9rem 0 1.6rem; }
+h1 .it { font-style: italic; color: var(--primary); }
+h2 { font-size: 2.35rem; line-height: 1.1; margin: 0 0 1rem; }
+h3 { font-size: 1.6rem; line-height: 1.2; margin: 2.8rem 0 .7rem; }
+h4 { font: 600 1rem/1.35 var(--sans); margin: 1.4rem 0 .4rem; }
+:is(h2, h3):target { color: var(--primary); }
+p { margin: 0 0 .9rem; }
+main p, main li, main dd { color: var(--muted); }
+main b, main strong, main dt, main td b { color: var(--fg); }
+.lede { font-size: 1.15rem; line-height: 1.6; }
+.what { font-size: 1.12rem; line-height: 1.55; }
+main .what { color: var(--fg); }
+.small { font-size: .875rem; }
+.muted { color: var(--muted); }
+ul.list, ol.list { margin: 0 0 1rem; padding-left: 1.3rem; }
+ul.list li, ol.list li { margin: .35rem 0; }
+ul.list li::marker { color: var(--primary-light); }
+ol.list li::marker { font: 500 .8rem var(--mono); color: var(--primary); }
+.eyebrow { font: 500 .7rem/1.3 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--primary); margin: 0 0 .9rem; }
+
+/* numbered steps: the panel's own labels in bold */
+ol.steps { list-style: none; margin: 0 0 1rem; padding: 0; counter-reset: s; }
+ol.steps > li { counter-increment: s; position: relative; padding-left: 2.35rem; margin: 0 0 .75rem; }
+ol.steps > li::before { content: counter(s); position: absolute; left: 0; top: .1rem; width: 1.55rem; height: 1.55rem; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font: 600 .75rem/1.55rem var(--mono); text-align: center; }
+ul.defs { list-style: none; margin: 0 0 1rem; padding: 0; }
+ul.defs > li { margin: 0 0 .6rem; padding-left: .9rem; border-left: 2px solid var(--border); }
+
+/* the plugin's buttons, drawn as the panel draws them */
+.go { display: inline-block; font: 600 .86em/1.2 var(--sans); color: var(--my-text); background: var(--my-btn); border-radius: 3px; padding: .22em .6em; white-space: nowrap; }
+main .go { color: var(--my-text); }
+
+/* page buttons */
+.button, .btn-go, .btn-pill { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font: 600 .9rem/1.65 var(--sans); text-decoration: none; border-radius: var(--radius); cursor: pointer; white-space: nowrap; }
+.button, .btn-go { background: var(--primary); color: var(--primary-fg); border: 0; padding: .6rem 1.1rem; }
+.button:hover, .btn-go:hover { background: var(--primary-hover); color: var(--primary-fg); }
+.btn-pill { background: var(--bg); color: var(--fg); border: 1px solid var(--border); font-weight: 500; padding: .6rem 1rem; }
+.btn-pill:hover { background: var(--card); border-color: var(--line); }
+.cta .btn-go, .cta .btn-pill, .kit-act .btn-go, .kit-act .btn-pill { min-height: 44px; padding-inline: 1.15rem; }
+
+/* ---------- header ---------- */
+.site-header { position: sticky; top: 0; z-index: 30; background: rgba(250,248,247,.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.site-header .bar { max-width: 1240px; margin: 0 auto; padding: 0 max(2rem, env(safe-area-inset-right, 0px)) 0 max(2rem, env(safe-area-inset-left, 0px)); height: var(--header); display: flex; align-items: center; gap: 1.5rem; }
+.brand { display: flex; align-items: center; gap: .6rem; text-decoration: none; color: var(--fg); flex-shrink: 0; }
+.wordmark { display: block; width: 112px; height: 28px; color: var(--fg); }
+.chip { font: 500 .62rem/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; padding: .36rem .5rem; border-radius: 3px; border: 1px solid; white-space: nowrap; }
+.chip.product { color: var(--chip-ink); background: var(--chip-soft); border-color: var(--chip-line); }
+.chip.version { color: var(--amber-text); background: var(--amber-soft); border-color: var(--amber-line); letter-spacing: .08em; }
+.site-nav { display: flex; align-items: center; gap: 1.4rem; margin-left: auto; font-size: .9rem; }
+.site-nav a { color: var(--muted); text-decoration: none; white-space: nowrap; }
+.site-nav a:hover { color: var(--fg); }
+.site-nav a.button, .site-nav a.button:hover { color: var(--primary-fg); }
+
+/* search */
+.search { position: relative; flex: 0 1 300px; min-width: 0; }
+.search input { width: 100%; font: inherit; font-size: .9rem; color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: .5rem 2.2rem .5rem .8rem; outline: none; -webkit-appearance: none; appearance: none; }
+.search input::placeholder { color: var(--muted); }
+.search input:focus { background: var(--bg); border-color: var(--primary-light); box-shadow: 0 0 0 3px var(--primary-soft); }
+.search input::-webkit-search-cancel-button { display: none; }
+.search-key { position: absolute; right: .55rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--muted); }
+.search input:focus + .search-key { display: none; }
+.search-panel { position: absolute; top: calc(100% + .5rem); left: 0; width: min(540px, calc(100vw - 2rem)); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); overflow: hidden; z-index: 35; }
+.search-panel ul { list-style: none; margin: 0; padding: .35rem; max-height: min(460px, 65vh); overflow-y: auto; }
+.search-panel ul:empty { display: none; }
+.search-panel li a { display: flex; flex-direction: column; gap: .1rem; padding: .6rem .75rem; border-radius: 4px; color: var(--fg); text-decoration: none; }
+.search-panel li[aria-selected="true"] a, .search-panel li a:hover { background: var(--card); }
+.s-trail { font: 500 .62rem/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--primary); }
+.s-title { font-family: var(--serif); font-size: 1.2rem; line-height: 1.25; }
+.s-snip { font-size: .84rem; line-height: 1.5; color: var(--muted); }
+.search-status { margin: 0; padding: .55rem 1.1rem; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--border); }
+.search-panel ul:empty + .search-status { border-top: 0; padding: 1rem 1.1rem; }
+.search-status:empty { display: none; }
+
+/* ---------- page and contents rail ---------- */
+.page { max-width: 1240px; margin: 0 auto; padding: 3.5rem max(2rem, env(safe-area-inset-right, 0px)) 5rem max(2rem, env(safe-area-inset-left, 0px)); display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 4rem; }
+main { min-width: 0; max-width: 760px; }
+.toc { position: sticky; top: calc(var(--header) + 2rem); align-self: start; max-height: calc(100vh - var(--header) - 3rem); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; font-size: .875rem; padding-right: .5rem; }
+.toc summary { list-style: none; cursor: default; padding-bottom: .9rem; margin: 0; }
+.toc summary::-webkit-details-marker { display: none; }
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc ul ul { padding-left: .9rem; margin: .1rem 0 .35rem; border-left: 1px solid var(--border); }
+.toc a { display: block; padding: .28rem 0; color: var(--muted); text-decoration: none; line-height: 1.35; }
+.toc ul ul a { padding: .22rem 0 .22rem .2rem; font-size: .84rem; }
+.toc a:hover { color: var(--primary); }
+.toc a.in, .toc a[aria-current] { color: var(--fg); }
+.toc ul ul a[aria-current] { color: var(--primary); }
+.toc .grp { display: block; margin: 1rem 0 .3rem; font: 500 .6rem/1.3 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--primary); }
+
+/* ---------- sections ---------- */
+section { margin-top: 4.5rem; padding-top: 2.5rem; border-top: 1px solid var(--border); }
+.part { margin: 5.5rem 0 0; padding: 1.1rem 0 0; border-top: 2px solid var(--fg); display: flex; justify-content: space-between; align-items: baseline; gap: .5rem 1rem; flex-wrap: wrap; }
+.part span { font: 500 .7rem var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--primary); }
+.part em { font: italic 400 1.35rem var(--serif); color: var(--muted); }
+.part + section { border-top: 0; margin-top: 0; padding-top: 2rem; }
+
+/* ---------- hero ---------- */
+.cta { display: flex; flex-wrap: wrap; gap: .6rem; margin: 1.6rem 0 2.2rem; }
+.film { position: relative; border-radius: 6px; overflow: hidden; background: #1a1817; border: 1px solid var(--border); box-shadow: var(--shadow); aspect-ratio: 16 / 9; }
+.film video { width: 100%; height: 100%; object-fit: cover; }
+.film-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: .7rem; padding: .7rem 1.3rem .7rem .7rem; border: 0; border-radius: 999px; background: rgba(250,248,247,.95); color: var(--fg); font: 600 1rem/1 var(--sans); cursor: pointer; box-shadow: 0 12px 30px -10px rgba(0,0,0,.55); min-height: 48px; white-space: nowrap; }
+.film-play:hover { background: #fff; }
+.film-play .tri { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); display: grid; place-items: center; }
+.film-play .tri::before { content: ""; border-left: 10px solid #fff; border-top: 6px solid transparent; border-bottom: 6px solid transparent; margin-left: 3px; }
+@media (max-width: 520px) { .film-play { font-size: .875rem; padding: .5rem 1rem .5rem .5rem; min-height: 44px; gap: .55rem; } .film-play .tri { width: 28px; height: 28px; } }
+.film-tag { position: absolute; left: 12px; top: 12px; font: 500 .62rem/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: #fff; background: rgba(37,35,34,.62); padding: .42rem .55rem; border-radius: 3px; }
+.film[data-state="playing"] .film-play, .film[data-state="playing"] .film-tag { display: none; }
+@media (max-width: 640px) { .film-tag { top: auto; bottom: 10px; } }
+.film-msg { position: absolute; left: 50%; top: calc(50% + 40px); transform: translateX(-50%); font: 500 .84rem var(--sans); color: #fff; background: rgba(37,35,34,.75); padding: .5rem .8rem; border-radius: 4px; white-space: nowrap; display: none; }
+.film[data-state="missing"] .film-msg { display: block; }
+figcaption { font-size: .84rem; color: var(--muted); margin-top: .6rem; line-height: 1.5; }
+.fig { margin: 1.4rem 0 1.6rem; }
+.fig.narrow { max-width: 560px; }
+.fig.tall { max-width: 420px; }
+
+/* ---------- how it works: the diagram ---------- */
+.flow { margin: 1.6rem 0 1.4rem; padding: 1.2rem; border: 1px solid var(--border); border-radius: 6px; background-color: var(--card); background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 32px 32px; display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1.2fr) 24px minmax(0, 1fr); align-items: center; gap: 0 .35rem; }
+.flow > * { min-width: 0; }
+.flow h4 { font: 500 .6rem/1.3 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 .55rem; }
+.flow ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; }
+.flow li { background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--chip); border-radius: 3px; padding: .42rem .6rem; font-size: .82rem; line-height: 1.3; color: var(--fg); }
+.flow .out li { border-left-color: var(--done); }
+.flow .arr { text-align: center; color: var(--muted); font: 400 1rem/1 var(--mono); }
+.flow .arr::before { content: "\2192"; }
+.flow .mid { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: .85rem; box-shadow: var(--shadow); }
+.flow .acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3rem; }
+.flow .acts span { background: var(--surface); border-radius: 3px; font-size: .78rem; line-height: 1.25; text-align: center; padding: .38rem .3rem; color: var(--fg); }
+.flow .more { font-size: .75rem; color: var(--muted); margin: .45rem 0 0; text-align: center; }
+.flow .pbtn { margin-top: .65rem; }
+.flow .pnote { display: block; font-size: .75rem; color: var(--muted); text-align: center; margin-top: .35rem; }
+.flow .foot { grid-column: 1 / -1; margin-top: 1rem; display: grid; gap: .3rem; font-size: .82rem; color: var(--muted); }
+.flow .foot b { color: var(--fg); margin-right: .35rem; }
+@media (max-width: 700px) {
+  .flow { grid-template-columns: minmax(0, 1fr); padding: .9rem; }
+  .flow .arr { padding: .45rem 0; }
+  .flow .arr::before { content: "\2193"; }
+}
+
+/* the four words */
+dl.terms { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: .7rem 1.2rem; margin: 1rem 0 1.2rem; }
+dl.terms dt { font-weight: 600; }
+dl.terms dd { margin: 0; }
+@media (max-width: 560px) { dl.terms { grid-template-columns: minmax(0, 1fr); gap: .1rem; } dl.terms dd { margin-bottom: .8rem; } }
+
+/* ---------- the example: eleven steps ---------- */
+.steps8 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; margin-top: 1.6rem; }
+@media (max-width: 700px) { .steps8 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.step { display: flex; flex-direction: column; text-decoration: none; color: var(--fg); background: #fff; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; min-width: 0; transition: border-color .15s, box-shadow .15s; }
+.step:hover { border-color: var(--primary-light); box-shadow: var(--shadow); }
+.step .ph { aspect-ratio: 4 / 3; background: var(--surface); overflow: hidden; }
+.step .ph img { width: 100%; height: 100%; object-fit: cover; }
+.step .tx { padding: .6rem .7rem .7rem; display: flex; flex-direction: column; gap: .1rem; }
+.step .tx b { font-size: .92rem; line-height: 1.3; }
+.step .tx b span { font: 500 .72rem var(--mono); color: var(--primary); margin-right: .35rem; }
+.step .tx small { font-size: .78rem; color: var(--muted); line-height: 1.35; }
+
+/* ---------- how to: steps beside one panel crop ---------- */
+.how { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 2rem; align-items: start; margin: 1.3rem 0 1.4rem; }
+.how > * { min-width: 0; }
+.how ol.steps, .how ul.defs { margin-bottom: 0; }
+@media (max-width: 760px) {
+  .how { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .how .pc { max-width: 300px; }
+}
+
+/* ---------- media ---------- */
+.q2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+.q2 > * { min-width: 0; }
+@media (max-width: 560px) { .q2 { grid-template-columns: minmax(0, 1fr); } }
+.fig.mid { max-width: 620px; }
+.tile { position: relative; border-radius: 6px; overflow: hidden; background: var(--card); border: 1px solid var(--border); }
+.tile img { width: 100%; }
+.tile.dark { background: #1a1c1e; border-color: #1a1c1e; }
+.lab { position: absolute; left: 7px; top: 7px; font: 500 .62rem/1 var(--mono); letter-spacing: .06em; color: #fff; background: rgba(37,35,34,.7); padding: .36rem .45rem; border-radius: 3px; max-width: calc(100% - 14px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lab.r { left: auto; right: 7px; }
+.lab.b { top: auto; bottom: 7px; }
+.pc { max-width: 300px; }
+.pc img { border-radius: 6px; box-shadow: 0 0 0 1px rgba(37,35,34,.3), var(--shadow); background: var(--my-bg); width: 100%; }
+.shot img, .shot video { border-radius: 6px; border: 1px solid var(--border); box-shadow: var(--shadow); width: 100%; background: var(--card); }
+.shot video { background: #1a1817; aspect-ratio: 16 / 9; }
+
+/* wipe */
+.wipe { position: relative; border-radius: 6px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.wipe img { width: 100%; display: block; }
+.wipe img.over { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--cut, 50%)); }
+.wipe .line { position: absolute; top: 0; bottom: 0; left: var(--cut, 50%); width: 2px; background: #fff; transform: translateX(-1px); box-shadow: 0 0 12px rgba(0,0,0,.35); pointer-events: none; }
+.wipe .knob { position: absolute; top: 50%; left: var(--cut, 50%); width: 40px; height: 40px; transform: translate(-50%, -50%); border-radius: 50%; background: var(--bg); display: grid; place-items: center; font: 600 .875rem var(--mono); color: var(--primary); pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.wipe input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+
+/* notes: one label, one or two sentences */
+.note { border: 1px solid var(--border); border-left: 3px solid var(--primary-light); background: var(--card); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.1rem 0 1.2rem; }
+.note p { margin: 0; font-size: .92rem; }
+.note p + p { margin-top: .5rem; }
+.note .nk { display: block; font: 500 .6rem/1.3 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--primary); margin-bottom: .3rem; }
+.note.look { border-left-color: var(--amber); }
+.note.look .nk { color: var(--amber-text); }
+
+/* annotated panel */
+.anno { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 3.2rem; align-items: start; margin-top: 1.2rem; }
+.anno-pic { position: relative; max-width: 280px; }
+.pin.alt { right: -38px; }
+.pin { position: absolute; right: -12px; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: var(--primary-fg); font: 600 .75rem/24px var(--mono); text-align: center; box-shadow: 0 0 0 3px var(--bg); transform: translateY(-50%); }
+.anno ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; counter-reset: a; }
+.anno li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: .6rem; font-size: .95rem; }
+.anno li::before { counter-increment: a; content: counter(a); width: 24px; height: 24px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font: 600 .75rem/24px var(--mono); text-align: center; }
+@media (max-width: 760px) { .anno { grid-template-columns: minmax(0, 1fr); } }
+
+/* tables */
+.tbl { overflow-x: auto; margin: 1rem 0 1.2rem; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: .9rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+th, td { text-align: left; padding: .65rem .9rem; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--fg); }
+tr:last-child td { border-bottom: 0; }
+th { font: 500 .66rem/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+thead tr:first-child th:first-child { border-top-left-radius: var(--radius); }
+thead tr:first-child th:last-child { border-top-right-radius: var(--radius); }
+td:first-child { font-weight: 500; min-width: 140px; }
+@media (max-width: 520px) { table { font-size: .84rem; } th, td { padding: .55rem .7rem; } td:first-child { min-width: 108px; } }
+
+/* cards */
+.cards3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 1.1rem 0; }
+@media (max-width: 860px) { .cards3 { grid-template-columns: minmax(0, 1fr); } }
+.card { border: 1px solid var(--border); border-radius: 6px; padding: .9rem 1rem; background: var(--card); min-width: 0; font-size: .9rem; }
+.card b { display: block; margin-bottom: .3rem; font: 400 1.3rem/1.2 var(--serif); }
+.card p { margin: 0; }
+.cols2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.8rem; }
+.cols2 > * { min-width: 0; }
+@media (max-width: 760px) { .cols2 { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+
+/* ---------- agents ---------- */
+.tool-names { font: 400 .68rem/1.65 var(--mono); color: var(--muted); overflow-wrap: break-word; }
+.tools { margin: 1.1rem 0; padding: .75rem; border: 1px solid var(--border); border-radius: 6px; background-color: var(--card); background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 32px 32px; }
+.tool-family { display: grid; gap: .55rem; align-content: start; padding: .8rem .9rem .9rem; background: #fff; border: 1px solid var(--line); border-radius: 5px; min-width: 0; }
+.tf-head { display: flex; align-items: baseline; gap: .55rem; font-weight: 600; line-height: 1.1; }
+.tf-head b { font-size: 1.9rem; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
+.tool-family p { margin: 0; font-size: .84rem; line-height: 1.5; color: var(--muted); }
+.tool-family .tool-names { font-size: .78rem; }
+.anat { display: flex; flex-wrap: wrap; gap: 16px 18px; align-items: flex-start; margin: 1rem 0 1.4rem; padding: 18px; background: var(--my-bg); border-radius: 6px; }
+.anat > div { display: flex; flex-direction: column; gap: 7px; align-items: flex-start; }
+.anat small { font: 400 11.5px var(--mono); color: var(--my-dim); }
+.pbtn { text-align: center; font: 600 13px/1 var(--sans); background: var(--my-btn); color: var(--my-text); padding: 11px 10px; border-radius: 3px; }
+.pbtn.wait { color: var(--my-dim); font-weight: 500; }
+.anat .pbtn { padding: 11px 16px; font-size: 14px; }
+.addr { font-family: var(--mono); font-size: .8rem; user-select: all; }
+
+/* ---------- the guide ---------- */
+.kit { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-top: 1.6rem; }
+.kit-card { min-width: 0; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); overflow: hidden; }
+.kit-media { position: relative; display: block; width: 100%; padding: 0; border: 0; border-bottom: 1px solid var(--border); background: var(--card); cursor: pointer; }
+.kit-body { padding: 1.1rem 1.2rem 1.2rem; display: flex; flex-direction: column; gap: .6rem; flex: 1; }
+.kit-body h3 { margin: 0; font-size: 1.5rem; line-height: 1.15; }
+.kit-body p { margin: 0; font-size: .95rem; }
+.kit-meta { font: 500 .62rem/1.3 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--primary); }
+.kit-act { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: auto; padding-top: .4rem; }
+.kit-note { font-size: .8rem; color: var(--muted); }
+.kit-guide .kit-media { overflow: hidden; background-color: var(--card); background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 32px 32px; }
+.kit-guide.wide { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+.kit-guide.wide .kit-media { border-bottom: 0; border-right: 1px solid var(--border); min-height: 340px; }
+.kit-guide .kit-media img { position: absolute; top: 9%; left: 50%; height: 82%; width: auto; display: block; border-radius: 3px; box-shadow: 0 14px 30px -14px rgba(37,35,34,.45); transition: transform .25s ease; }
+.kit-guide .kit-media .pg-c { z-index: 2; transform: translateX(-50%); }
+.kit-guide .kit-media .pg-l { transform: translateX(-112%) rotate(-5deg) scale(.88); }
+.kit-guide .kit-media .pg-r { transform: translateX(12%) rotate(5deg) scale(.88); }
+.kit-guide .kit-media:hover .pg-c { transform: translateX(-50%) translateY(-6px); }
+@media (max-width: 860px) { .kit-guide.wide { grid-template-columns: minmax(0, 1fr); } .kit-guide.wide .kit-media { border-right: 0; border-bottom: 1px solid var(--border); min-height: 0; aspect-ratio: 4 / 3; } }
+.reader { position: fixed; inset: 0; z-index: 50; background: #161413; display: flex; flex-direction: column; color: #f4f2ef;
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(16px, env(safe-area-inset-left, 0px)); }
+.reader-bar { display: flex; align-items: center; gap: 12px; min-height: 56px; }
+.reader-bar b { font: 400 1.25rem var(--serif); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #f4f2ef; }
+.reader-bar span { font: 500 .75rem var(--mono); letter-spacing: .08em; color: #c9c2bc; }
+.reader button { cursor: pointer; border: 1px solid rgba(255,255,255,.3); background: rgba(37,35,34,.75); color: #fff; border-radius: 999px; min-height: 44px; min-width: 44px; padding: 0 16px; font: 500 .875rem var(--sans); }
+.reader button:hover { background: var(--primary); }
+.reader button:focus-visible { outline: 2px solid #fff; }
+.reader-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 12px; padding-bottom: 16px; }
+.reader-stage img { max-height: 100%; max-width: calc(100% - 128px); width: auto; height: auto; object-fit: contain; background: #fff; border-radius: 3px; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+@media (max-width: 640px) { .reader-stage { flex-wrap: wrap; align-content: center; } .reader-stage img { max-width: 100%; max-height: calc(100% - 64px); order: -1; flex-basis: 100%; object-fit: contain; } }
+
+/* ---------- footer ---------- */
+.site-footer { background: var(--surface); border-top: 1px solid var(--border); }
+.site-footer .bar { max-width: 1240px; margin: 0 auto; padding: 2.5rem max(2rem, env(safe-area-inset-right, 0px)) calc(2.5rem + env(safe-area-inset-bottom, 0px)) max(2rem, env(safe-area-inset-left, 0px)); display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.6rem; font-size: .85rem; color: var(--muted); }
+.site-footer .wordmark { width: 92px; height: 23px; margin-right: .6rem; }
+.site-footer a { color: var(--muted); text-decoration: none; }
+.site-footer a:hover { color: var(--primary); }
+.site-footer .legal { margin-left: auto; }
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 960px) {
+  html { scroll-padding-top: 1rem; }
+  .site-header { position: static; }
+  .site-header .bar { height: auto; flex-wrap: wrap; padding: .7rem max(1rem, env(safe-area-inset-right, 0px)) .7rem max(1rem, env(safe-area-inset-left, 0px)); gap: .7rem .9rem; }
+  .wordmark { width: 92px; height: 23px; }
+  .search { order: 3; flex: 1 1 100%; }
+  .site-nav { gap: 1rem; }
+  .site-nav .optional { display: none; }
+  .page { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 2rem max(1rem, env(safe-area-inset-right, 0px)) 4rem max(1rem, env(safe-area-inset-left, 0px)); }
+  main { max-width: none; }
+  .toc { position: static; max-height: none; overflow: visible; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: .9rem 1rem; }
+  .toc summary { cursor: pointer; padding-bottom: 0; margin: 0; display: flex; justify-content: space-between; min-height: 24px; align-items: center; }
+  .toc summary::after { content: "+"; font-family: var(--mono); color: var(--muted); letter-spacing: 0; }
+  .toc details[open] summary { padding-bottom: .8rem; }
+  .toc details[open] summary::after { content: "\2212"; }
+  .toc a { padding: .4rem 0; }
+  .toc ul ul a { padding: .32rem 0 .32rem .2rem; }
+  h2 { font-size: 2rem; }
+  section { margin-top: 3rem; padding-top: 2rem; }
+  .part { margin-top: 4rem; }
+  .site-footer .bar { padding: 2rem max(1rem, env(safe-area-inset-right, 0px)) calc(2rem + env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px)); }
+  .site-footer .legal { margin-left: 0; }
+}
+@media (max-width: 480px) {
+  .chip.version { display: none; }
+  .site-nav { gap: .8rem; font-size: .85rem; }
+  .site-nav .button { padding: .45rem .7rem; font-size: .84rem; }
+  h2 { font-size: 1.85rem; }
+  h3 { font-size: 1.4rem; }
+  .q2 { gap: .45rem; }
+}
+/* ---------- pictures open larger ---------- */
+img.zoom { cursor: zoom-in; }
+img.zoom:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.lightbox .reader-bar b { font: 500 .75rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #c9c2bc; }
+.lightbox .reader-stage { cursor: zoom-out; padding-bottom: 8px; }
+.lightbox .reader-stage img { background: transparent; cursor: default; border-radius: 4px; }
+.lb-cap { margin: 0 auto 16px; max-width: 900px; text-align: center; font-size: .84rem; line-height: 1.5; color: #c9c2bc; }
+
+
+/* ---------- this page and the handbook ---------- */
+.where { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .6rem; margin: 1.4rem 0 0; }
+@media (max-width: 640px) { .where { grid-template-columns: minmax(0, 1fr); } }
+.where-card { display: flex; flex-direction: column; gap: .35rem; min-width: 0; padding: .95rem 1.05rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--fg); text-decoration: none; }
+.where-card b { font: 400 1.22rem/1.25 var(--serif); color: var(--fg); }
+.where-card .kit-meta { display: flex; align-items: center; gap: .5rem; }
+.where-card .here { font: 500 .58rem/1 var(--mono); letter-spacing: .14em; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: .25rem .35rem; }
+.where-links { display: flex; flex-wrap: wrap; gap: .2rem 1rem; font-size: .86rem; margin-top: auto; padding-top: .2rem; }
+a.where-card { background: #fff; border-color: var(--primary-light); box-shadow: var(--shadow); transition: border-color .15s, transform .15s; }
+a.where-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+.where-go { margin-top: auto; padding-top: .2rem; font-weight: 600; font-size: .9rem; color: var(--primary); }
+
+/* ---------- carousels: pictures and short loops ---------- */
+.car { margin: 1.3rem 0 1.5rem; }
+.car-track { position: relative; display: flex; gap: .75rem; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; scrollbar-width: none; border-radius: 6px; }
+.car-track::-webkit-scrollbar { display: none; }
+.car-track:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .car-track { scroll-behavior: auto; } }
+.car-slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; scroll-snap-stop: always; margin: 0; }
+.car-media { position: relative; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); display: grid; place-items: center;
+  background-color: var(--card); background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 32px 32px; }
+.car-media > img, .car-media > video { width: 100%; height: 100%; object-fit: contain; }
+.car-media.ui { background: var(--my-bg); border-color: #3a3a3a; padding: 4%; }
+.car-media.ui > img { border-radius: 4px; box-shadow: 0 10px 30px -12px rgba(0,0,0,.6); }
+.car-media.film { background: #1a1817; border-color: #1a1817; }
+.car-media.film > video, .car-media.film > img { object-fit: cover; }
+.car-media .lab { z-index: 1; }
+.car-slide figcaption { margin-top: .55rem; }
+.car-nav { display: flex; align-items: center; gap: .5rem; margin-top: .55rem; }
+.car-nav button.car-arrow { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: 500 1.15rem/1 var(--sans); cursor: pointer; display: grid; place-items: center; padding: 0 0 2px; }
+.car-nav button.car-arrow:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.car-nav button.car-arrow:disabled { opacity: .35; cursor: default; }
+.car-dots { display: flex; align-items: center; gap: 2px; }
+.car-dots button { border: 0; background: none; padding: 8px 3px; cursor: pointer; }
+.car-dots button::before { content: ""; display: block; width: 8px; height: 8px; border-radius: 99px; background: var(--line); transition: width .2s, background .2s; }
+.car-dots button[aria-current="true"]::before { width: 22px; background: var(--primary); }
+.car-n { margin-left: auto; font: 500 .72rem var(--mono); letter-spacing: .08em; color: var(--muted); }
+.car-kind { font: 500 .6rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--primary); margin-right: .45rem; }
+
+/* tighter step lists under the pictures */
+ol.steps.short > li { margin-bottom: .55rem; }
+
+/* ---------- the reference: short cards, the detail in the handbook ---------- */
+.refgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: 1.4rem; }
+@media (max-width: 700px) { .refgrid { grid-template-columns: minmax(0, 1fr); } }
+.refgrid > section { margin: 0; padding: 1rem 1.05rem 1.05rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card); display: flex; flex-direction: column; gap: .5rem; min-width: 0; scroll-margin-top: calc(var(--header) + 1rem); }
+.refgrid h3 { margin: 0; font-size: 1.45rem; }
+.refgrid p { margin: 0; font-size: .92rem; }
+.refgrid details { font-size: .9rem; }
+.refgrid summary { cursor: pointer; color: var(--fg); font-weight: 500; font-size: .86rem; list-style: none; display: inline-flex; align-items: center; gap: .4rem; }
+.refgrid summary::-webkit-details-marker { display: none; }
+.refgrid summary::before { content: "+"; font: 500 .8rem var(--mono); color: var(--primary); width: 1rem; height: 1rem; border: 1px solid var(--primary-light); border-radius: 3px; display: grid; place-items: center; }
+.refgrid details[open] summary::before { content: "\2212"; }
+.refgrid details ul, .refgrid details .tbl { margin: .6rem 0 0; }
+.refgrid details li { font-size: .88rem; }
+.refgrid details table { font-size: .82rem; }
+.refgrid details td:first-child { min-width: 0; }
+.refgo { margin-top: auto; padding-top: .25rem; font-size: .86rem; font-weight: 500; }
+.ref-intro { display: flex; gap: .8rem 1.2rem; align-items: center; flex-wrap: wrap; }
+
+/* ---------- footer: what lives where ---------- */
+.site-footer .fine { flex-basis: 100%; margin: .4rem 0 0; font-size: .8rem; line-height: 1.55; color: var(--muted); }
+.site-footer .fine b { color: var(--fg); font-weight: 600; }
+
+/* ---------- a result in 3D ---------- */
+.v3d { position: relative; border-radius: 6px; overflow: hidden; border: 1px solid #1a1c1e; aspect-ratio: 16 / 10; box-shadow: var(--shadow);
+  background: radial-gradient(120% 95% at 50% 30%, #474a4f 0%, #2a2c30 55%, #1a1c1e 100%); }
+.v3d-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
+.v3d-canvas:active { cursor: grabbing; }
+.v3d .lab { z-index: 2; pointer-events: none; left: auto; right: 7px; top: auto; bottom: 7px; }
+.v3d-wait { position: absolute; inset: 0; display: grid; place-items: center; font: 500 .7rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #c9c2bc; pointer-events: none; text-align: center; padding: 1rem; }
+.v3d[data-state="ready"] .v3d-wait { display: none; }
+.v3d-views { position: absolute; left: 7px; top: 7px; z-index: 2; display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(26,28,30,.72); border: 1px solid rgba(255,255,255,.16); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); max-width: calc(100% - 14px); }
+.v3d-views button { cursor: pointer; border: 0; background: transparent; color: #e6e1dc; border-radius: 999px; min-height: 30px; padding: 0 11px; font: 500 .74rem var(--sans); white-space: nowrap; }
+.v3d-views button:hover { background: rgba(255,255,255,.12); }
+.v3d-views button[aria-pressed="true"] { background: var(--primary); color: #fff; }
+.v3d-bar { position: absolute; left: 7px; bottom: 7px; right: 120px; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; }
+.v3d-bar button { cursor: pointer; border: 1px solid rgba(255,255,255,.3); background: rgba(37,35,34,.75); color: #fff; border-radius: 999px; min-height: 32px; padding: 0 12px; font: 500 .75rem var(--sans); }
+.v3d-bar button:hover, .v3d-bar button[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); }
+.v3d-views button:focus-visible, .v3d-bar button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.v3d:not([data-state="ready"]) .v3d-bar, .v3d:not([data-state="ready"]) .v3d-views { display: none; }
+@media (max-width: 640px) {
+  .v3d { aspect-ratio: 4 / 3.4; }
+  .v3d-views button { padding: 0 8px; font-size: .7rem; min-height: 30px; }
+  .v3d[data-state="ready"] .lab { display: none; }
+  .v3d-bar { right: 7px; }
+}
+.car-media.dark { background: #1a1c1e; border-color: #1a1c1e; }
+</style>
+<script>
+// Old links. Until this page, the handbook lived at the root of the site, so /#install meant its
+// Install chapter. An anchor that names a handbook chapter or sub-section, and nothing on this page,
+// now opens /handbook/ at that place.
+(function () {
+  var id = location.hash.slice(1);
+  try { id = decodeURIComponent(id); } catch (e) { return; }
+  var HANDBOOK = "what-it-does install downloads quick-start find-your-way-around the-panel the-scenario-menu sign-in " +
+    "3d-from-a-prompt generate import import-any-glb 3d-from-an-image add-the-image which-model " +
+    "3d-from-views-of-an-object capture-the-views where-the-result-lands 3d-from-views-of-an-object-which-model " +
+    "quad-meshes-and-fbx-results what-the-plug-in-does-around-the-fbx-importer edit-a-mesh-of-the-scene send-a-mesh " +
+    "import-over-the-mesh what-came-back apply-onto-the-mesh what-apply-asks-or-refuses animate-a-character " +
+    "from-a-prompt-alone on-your-own-character frame-rate-and-timeline animate-a-character-which-model generate-an-image " +
+    "land-it-in-the-scene turn-it-into-a-3d-model choose-a-model prices-and-spending the-price-on-the-button " +
+    "what-the-plug-in-guarantees jobs-and-recovery the-job-list when-maya-closes not-confirmed files-and-folders " +
+    "what-leaves-your-machine what-is-sent-to-scenario-and-when what-is-stored-on-your-computer your-controls contact " +
+    "troubleshooting troubleshooting-sign-in prices-and-requests network reporting-a-problem known-limits changelog " +
+    "development licence";
+  // the changelog's release headings, such as 020-2026-11-16, change with each release
+  if (id && (HANDBOOK.split(" ").indexOf(id) >= 0 || /^\d{3,}-\d{4}-\d{2}-\d{2}$/.test(id))) location.replace("handbook/#" + encodeURIComponent(id));
+})();
+</script>
+</head>
+<body id="top">
+
+<a class="skip" href="#main">Skip to the page</a>
+<header class="site-header">
+  <div class="bar">
+    <a class="brand" href="#top" aria-label="Scenario for Maya, top of the page">
+      <svg class="wordmark" viewBox="0 0 1024 252" role="img" aria-label="Scenario"><use href="#logo"></use></svg>
+      <span class="chip product">Maya</span>
+      <span class="chip version" title="Version" id="ver-chip" data-version hidden></span>
+    </a>
+    <div class="search" role="search" id="search">
+      <label class="visually-hidden" for="q">Search this page</label>
+      <input id="q" type="search" placeholder="Search this page" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="q-results" aria-autocomplete="list">
+      <kbd class="search-key" aria-hidden="true">/</kbd>
+      <div class="search-panel" id="q-panel" hidden>
+        <ul id="q-results" role="listbox" aria-label="Matching sections"></ul>
+        <p class="search-status" id="q-status" aria-live="polite"></p>
+      </div>
+    </div>
+    <nav class="site-nav" aria-label="Main">
+      <a class="optional" href="#how">How it works</a>
+      <a href="#install-update">Install</a>
+      <a class="optional" href="#agents">Agents</a>
+      <a href="handbook/">Handbook</a>
+      <a class="optional" href="https://github.com/scenario-labs/maya-plugin">GitHub</a>
+      <a class="button" href="https://app.scenario.com">App Login</a>
+    </nav>
+  </div>
+</header>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 1024 252"><g fill="currentColor"><path fill="currentColor" stroke="none" d="M 354.239441 173.185516 C 344.620941 173.543182 335.161591 170.654007 327.381531 164.982285 C 320.294006 159.668732 315.750183 151.630341 314.850098 142.813232 L 330.463593 142.813232 C 331.475464 147.651154 334.132813 151.987976 337.982452 155.084183 C 342.652588 158.741333 348.487274 160.583542 354.408783 160.270508 C 359.482178 160.697052 364.534637 159.23674 368.599792 156.1689 C 371.477661 153.758911 373.139832 150.195862 373.138184 146.440277 C 373.702637 141.898407 371.339844 137.49498 367.245026 135.457443 C 361.900085 133.209808 356.322906 131.561371 350.615479 130.542282 C 345.671875 129.530457 340.814056 128.136475 336.085785 126.372879 C 331.515472 124.720482 327.36438 122.081894 323.92691 118.644226 C 320.571045 115.133926 318.775452 110.414963 318.948212 105.559723 C 318.747406 98.094635 321.996216 90.95369 327.754089 86.204163 C 334.488037 80.906601 342.90744 78.222122 351.462189 78.644989 C 359.885895 78.29422 368.177216 80.829178 374.967102 85.831299 C 381.193268 90.82782 385.049042 98.201797 385.601898 106.169891 L 370.767395 106.169891 C 370.342102 101.916977 368.216614 98.016922 364.874207 95.356537 C 360.992584 92.588287 356.289978 91.214523 351.529938 91.458313 C 347.06076 91.163986 342.619598 92.355667 338.896912 94.848068 C 336.016571 96.96283 334.358002 100.35881 334.460114 103.932648 C 334.510376 107.662979 336.75473 111.012421 340.183899 112.474854 C 345.093201 114.928177 350.310944 116.706924 355.695801 117.762878 C 361.079468 118.903915 366.38504 120.387115 371.580231 122.203461 C 376.279083 123.761765 380.523956 126.450539 383.942322 130.033829 C 387.414246 134.221405 389.137115 139.588715 388.751678 145.016571 C 389.017792 152.77858 385.617401 160.213104 379.573242 165.083984 C 372.383728 170.758698 363.384613 173.636551 354.239441 173.185516 Z"/>
+    <path fill="currentColor" stroke="none" d="M 449.30899 173.185516 C 441.205994 173.32196 433.215698 171.272919 426.176636 167.253433 C 419.345886 163.356506 413.738739 157.627167 409.987366 150.71138 C 405.925903 143.084351 403.89624 134.538666 404.094208 125.898308 C 403.900574 117.269196 405.930115 108.735535 409.987366 101.119141 C 413.743805 94.215851 419.350494 88.498703 426.176636 84.610992 C 433.215698 80.591507 441.205994 78.54245 449.30899 78.678894 C 459.022003 78.358841 468.561859 81.306793 476.403992 87.051605 C 483.652802 92.520035 488.604034 100.49707 490.290131 109.424057 L 474.744385 109.424057 C 473.671692 104.051529 470.454376 99.350021 465.836914 96.407364 C 460.90686 93.259354 455.15567 91.643402 449.30899 91.763397 C 438.651154 91.6371 428.834259 97.540146 423.941284 107.017334 C 420.963348 112.852371 419.518066 119.349945 419.741577 125.898308 C 419.513763 132.457916 420.959106 138.967514 423.941284 144.813187 C 426.428558 149.597565 430.191711 153.598633 434.813141 156.372284 C 439.162598 158.940582 444.123566 160.287292 449.173492 160.270508 C 454.991486 160.434387 460.728638 158.878021 465.667603 155.796021 C 470.422882 152.807068 473.713684 147.964996 474.744385 142.440369 L 490.35788 142.440369 C 488.680664 151.307602 483.751953 159.226959 476.539429 164.643311 C 468.699524 170.511536 459.092926 173.525146 449.30899 173.185516 Z"/>
+    <path fill="currentColor" stroke="none" d="M 549.492737 173.185516 C 541.463196 173.334961 533.545837 171.283585 526.597412 167.253433 C 519.956665 163.324127 514.529846 157.634644 510.916168 150.81308 C 506.946564 143.122772 504.988953 134.55101 505.226257 125.898308 C 505.02832 117.300766 506.959808 108.787872 510.84848 101.119141 C 514.398071 94.23407 519.838501 88.50676 526.529663 84.610992 C 533.625671 80.549545 541.69281 78.498825 549.865234 78.678894 C 557.805847 78.465637 565.642517 80.523499 572.455688 84.610992 C 578.648743 88.362946 583.706177 93.729324 587.086975 100.136093 C 590.46106 106.514984 592.206238 113.630066 592.167297 120.847565 C 592.167297 122.203461 592.167297 123.525467 592.167297 124.847481 C 592.167297 126.169487 592.167297 127.694885 592.167297 129.389771 L 520.263977 129.389771 C 520.364624 135.436951 522.021057 141.356064 525.073303 146.575867 C 530.265198 155.078079 539.537231 160.22641 549.492737 160.134918 C 555.074707 160.351593 560.58728 158.836121 565.275513 155.796021 C 569.510254 152.915756 572.751648 148.795471 574.555542 143.999649 L 589.627136 143.999649 C 584.723755 161.917969 568.031799 174.01413 549.492737 173.083817 Z M 549.492737 91.559998 C 542.457825 91.51857 535.625183 93.913834 530.153625 98.339523 C 524.330994 103.130508 520.800903 110.159897 520.43335 117.695084 L 577.095703 117.695084 C 577.117188 110.438324 574.079773 103.509018 568.730103 98.610703 C 563.440857 93.907578 556.565796 91.387817 549.492737 91.559998 Z"/>
+    <path fill="currentColor" stroke="none" d="M 611.675659 170.982178 L 611.675659 80.848343 L 625.460266 80.848343 L 626.374756 97.017517 C 629.171631 91.392319 633.520386 86.686966 638.906128 83.458466 C 644.513672 80.149185 650.923279 78.448685 657.432373 78.543304 C 666.925354 78.094986 676.176819 81.619446 682.96936 88.271927 C 689.314087 94.757675 692.48645 104.723582 692.48645 118.169647 L 692.48645 170.982178 L 677.245544 170.982178 L 677.245544 119.932327 C 677.245544 101.107834 669.489604 91.706889 653.977722 91.729492 C 646.599121 91.566635 639.523926 94.667023 634.638733 100.203903 C 629.490621 105.830907 626.916565 113.853348 626.916565 124.271225 L 626.916565 170.982178 Z"/>
+    <path fill="currentColor" stroke="none" d="M 755.4823 173.185516 C 747.278259 173.334457 739.195801 171.185913 732.14679 166.982239 C 725.455322 162.91217 720.044312 157.038376 716.533264 150.033417 C 712.743286 142.477142 710.837463 134.114807 710.978821 125.661026 C 710.810669 117.302979 712.682434 109.030045 716.431702 101.559799 C 720.004639 94.565399 725.444275 88.69873 732.14679 84.610992 C 739.321472 80.392242 747.536865 78.277893 755.854858 78.509415 C 762.666016 78.3797 769.403198 79.940247 775.464844 83.051697 C 781.000366 85.953262 785.594238 90.37468 788.70752 95.797211 L 789.452637 80.712753 L 803.982361 80.712753 L 803.982361 170.982178 L 789.622009 170.982178 L 788.70752 156.101105 C 785.384766 160.853348 781.118835 164.869034 776.176147 167.897491 C 769.94165 171.643677 762.748047 173.481903 755.4823 173.185516 Z M 757.108032 159.897644 C 762.74762 160.057251 768.319641 158.636627 773.195679 155.796021 C 777.876465 152.935333 781.656433 148.811493 784.101379 143.897964 C 786.808594 138.352829 788.144409 132.237701 787.996338 126.067795 C 788.140259 119.90918 786.804504 113.806 784.101379 108.27153 C 781.656433 103.357986 777.876465 99.234146 773.195679 96.373459 C 768.337036 93.473602 762.763916 91.994003 757.108032 92.102356 C 751.518433 92.012177 746.015442 93.491837 741.223572 96.373459 C 736.552917 99.236206 732.784424 103.360367 730.351746 108.27153 C 727.636902 113.80307 726.28949 119.906387 726.422974 126.067795 C 726.2854 132.240479 727.632874 138.355743 730.351746 143.897964 C 732.784424 148.809128 736.552917 152.933273 741.223572 155.796021 C 746.032898 158.618347 751.534729 160.039001 757.108032 159.897644 Z"/>
+    <path fill="currentColor" stroke="none" d="M 827.554993 170.982178 L 827.554993 80.848343 L 841.3396 80.848343 L 842.626587 98.102249 C 845.361389 92.222336 849.782654 87.289932 855.327332 83.933029 C 861.714905 80.227585 869.015015 78.395126 876.393677 78.644989 L 876.393677 94.780273 L 872.227783 94.780273 C 867.190002 94.730957 862.192993 95.687439 857.528809 97.593781 C 853.003174 99.521408 849.232361 102.878723 846.79248 107.152908 C 843.849731 112.87265 842.470886 119.269653 842.795898 125.694923 L 842.795898 171.117767 Z"/>
+    <path fill="currentColor" stroke="none" d="M 902.20166 60.882645 C 899.377075 60.988342 896.636047 59.911636 894.63739 57.911224 C 892.638672 55.910797 891.562866 53.167511 891.668518 50.340469 C 891.608582 47.595734 892.702148 44.951752 894.6828 43.052475 C 896.69873 41.117142 899.40979 40.078217 902.20166 40.171188 C 904.967651 40.111557 907.645386 41.147018 909.652832 43.052475 C 911.680115 44.924744 912.803223 47.580444 912.734863 50.340469 C 912.798035 53.168762 911.681213 55.895584 909.652832 57.865753 C 907.677917 59.836899 904.990479 60.925018 902.20166 60.882645 Z M 894.716675 170.982178 L 894.716675 80.848343 L 909.957642 80.848343 L 909.957642 170.982178 Z"/>
+    <path fill="currentColor" stroke="none" d="M 974.816223 173.185516 C 966.804016 173.299042 958.904602 171.28743 951.921021 167.355118 C 945.132629 163.48233 939.560608 157.788116 935.833374 150.914764 C 931.760803 143.218658 929.731567 134.604645 929.940186 125.898308 C 929.730042 117.190338 931.796509 108.578461 935.934998 100.915741 C 939.773315 94.068985 945.436768 88.424164 952.293518 84.610992 C 966.592346 76.83493 983.852905 76.83493 998.151855 84.610992 C 1004.929932 88.485886 1010.490417 94.180359 1014.205566 101.051331 C 1018.247742 108.695282 1020.254028 117.25264 1020.031006 125.898308 C 1020.245483 134.617538 1018.178894 143.241455 1014.036255 150.914764 C 1010.245605 157.797836 1004.616821 163.490067 997.779236 167.355118 C 990.766113 171.275024 982.848267 173.285385 974.816223 173.185516 Z M 974.816223 160.101028 C 979.910828 160.117966 984.920715 158.797211 989.345947 156.270599 C 993.977234 153.554474 997.746338 149.582367 1000.217773 144.813187 C 1003.18457 138.961975 1004.629028 132.456421 1004.417542 125.898308 C 1004.621887 119.363266 1003.214355 112.878494 1000.319397 107.017334 C 997.903381 102.242126 994.164246 98.264435 989.549133 95.559921 C 985.181702 93.042755 980.228638 91.721603 975.188843 91.729492 C 970.094238 91.71254 965.084351 93.03331 960.659119 95.559921 C 956.027832 98.276047 952.258728 102.248138 949.787292 107.017334 C 946.785828 112.846176 945.3172 119.34407 945.519775 125.898308 C 945.291992 132.457916 946.737366 138.967514 949.719482 144.813187 C 952.175598 149.571167 955.919617 153.541565 960.523621 156.270599 C 964.859314 158.804977 969.795349 160.127838 974.816223 160.101028 Z"/>
+    <path fill="currentColor" stroke="none" opacity="0.85" d="M 122.61116 108.169846 L 241.253326 178.100677 L 122.61116 248.031494 L 3.968992 178.100677 Z"/>
+    <path fill="currentColor" stroke="none" opacity="0.55" d="M 122.61116 73.187469 L 241.253326 143.118301 L 122.61116 213.049133 L 3.968992 143.118301 Z"/>
+    <path fill="currentColor" stroke="none" opacity="0.35" d="M 122.61116 38.239014 L 241.253326 108.169846 L 122.61116 178.100677 L 3.968992 108.169846 Z"/>
+    <path fill="currentColor" stroke="none" opacity="0.15" d="M 122.61116 3.256653 L 241.253326 73.187469 L 122.61116 143.118301 L 3.968992 73.187469 Z"/></g></symbol>
+  <symbol id="mark" viewBox="0 0 245 252"><g fill="currentColor">
+    <path fill="currentColor" stroke="none" opacity="0.85" d="M 122.61116 108.169846 L 241.253326 178.100677 L 122.61116 248.031494 L 3.968992 178.100677 Z"/>
+    <path fill="currentColor" stroke="none" opacity="0.55" d="M 122.61116 73.187469 L 241.253326 143.118301 L 122.61116 213.049133 L 3.968992 143.118301 Z"/>
+    <path fill="currentColor" stroke="none" opacity="0.35" d="M 122.61116 38.239014 L 241.253326 108.169846 L 122.61116 178.100677 L 3.968992 108.169846 Z"/>
+    <path fill="currentColor" stroke="none" opacity="0.15" d="M 122.61116 3.256653 L 241.253326 73.187469 L 122.61116 143.118301 L 3.968992 73.187469 Z"/>
+</g></symbol>
+</svg>
+
+<div class="page">
+  <nav class="toc" aria-label="Contents" id="toc">
+    <details open>
+      <summary class="eyebrow">Contents</summary>
+      <ul>
+        <li><a href="#intro">Overview</a></li>
+        <li><a href="#how">How it works</a><ul>
+          <li><a href="#words">Four words</a></li>
+        </ul></li>
+        <li><a href="#story">The example</a></li>
+        <li><span class="grp">Eleven steps</span></li>
+        <li><a href="#price">1. Pick a model, see the price</a></li>
+        <li><a href="#round-trip">2. From Maya to Scenario and back</a></li>
+        <li><a href="#images">3. Dress the set with images</a></li>
+        <li><a href="#text-to-3d">4. A character from a prompt</a><ul>
+          <li><a href="#what-lands">What lands</a></li>
+        </ul></li>
+        <li><a href="#image-to-3d">5. A character from a picture</a></li>
+        <li><a href="#blockout">6. A prop from your blockout</a></li>
+        <li><a href="#multi-view">7. Views of an object</a></li>
+        <li><a href="#motion">8. Motion from a sentence</a><ul>
+          <li><a href="#own-character">Your own character</a></li>
+        </ul></li>
+        <li><a href="#edit">9. Edit your own mesh</a><ul>
+          <li><a href="#apply-review">The Apply review</a></li>
+        </ul></li>
+        <li><a href="#quads-fbx">10. Quads and FBX</a></li>
+        <li><a href="#agents">11. Work with an agent</a></li>
+        <li><a href="#guide">The guide</a></li>
+        <li><span class="grp">Reference</span></li>
+        <li><a href="#install-update">Install and update</a><ul>
+          <li><a href="#update">Update</a></li>
+          <li><a href="#signing-in">Sign in</a></li>
+        </ul></li>
+        <li><a href="#panel">The panel, top to bottom</a></li>
+        <li><a href="#prices">Prices</a></li>
+        <li><a href="#jobs">Jobs</a></li>
+        <li><a href="#files">Files</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="#trouble">Troubleshooting</a></li>
+        <li><a href="#limits">Known limits</a></li>
+        <li><span class="grp">The full manual</span></li>
+        <li><a href="handbook/">The handbook ›</a></li>
+      </ul>
+    </details>
+  </nav>
+
+  <main id="main">
+    <!-- ================================================================ OVERVIEW -->
+    <div class="hero" id="intro" data-toc="Overview">
+      <p class="eyebrow">Scenario for Maya · Film and example</p>
+      <h1>Scenario for Maya: <span class="it">one scene, eleven steps</span></h1>
+      <p class="lede">Scenario for Maya adds a panel beside the Channel Box that runs Scenario's 3D, motion, mesh edit and image models on your scene. The Generate button shows the price before you click, and the result lands in the open scene as one undo step. You need Maya 2025, 2026 or 2027 and a Scenario account on a plan with API access.</p>
+      <div class="cta">
+        <a class="btn-go" href="#install-update">Install</a>
+        <a class="btn-pill" href="handbook/">Open the handbook</a>
+        <a class="btn-pill" href="https://github.com/scenario-labs/maya-plugin">Source on GitHub</a>
+      </div>
+      <figure>
+        <div class="film" id="film" data-state="poster">
+          <video id="film-v" src="assets/film/film-maya.mp4" poster="assets/film/film-maya-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="Scenario for Maya, the launch film on Opening Night, a toy theatre"></video>
+          <span class="film-tag">Launch film</span>
+          <button class="film-play" type="button" id="film-play"><span class="tri" aria-hidden="true"></span>Watch the film</button>
+          <span class="film-msg" role="status">The film is not on this page yet.</span>
+        </div>
+        <figcaption>The launch film, 3 min 46 s. Opening Night, a toy theatre in Maya: the set, the materials, the cast and their moves made with the panel, the curtains, confetti, cameras and lights made with Maya's own tools.</figcaption>
+      </figure>
+      <div class="note" style="margin-top:1.6rem">
+        <span class="nk" id="ver-note">Latest release</span>
+        <p><a href="/download/latest">Download the latest release</a><span data-version-show hidden>, <code>scenario-maya-<span data-version></span>.zip</code>,</span> and install it as described in <a href="#install-update">Install and update</a>. Checked by hand in Maya 2027.2 on macOS. Open source under the MIT licence.</p>
+      </div>
+      <div class="where" role="group" aria-label="This page and the handbook">
+        <div class="where-card">
+          <span class="kit-meta">This page <span class="here">You are here</span></span>
+          <b>The film, one example scene in eleven steps, the illustrated guide</b>
+          <span class="where-links"><a href="#film">The film</a><a href="#story">The eleven steps</a><a href="#guide">The guide</a></span>
+        </div>
+        <a class="where-card" href="handbook/">
+          <span class="kit-meta">The handbook</span>
+          <b>The full manual: install, every mode, prices, jobs, files, privacy, troubleshooting, agents</b>
+          <span class="where-go">Open the handbook ›</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ================================================================ HOW IT WORKS -->
+    <section id="how" data-toc="How it works">
+      <h2>How it works</h2>
+      <p class="what">You hand the panel something from your scene, or a sentence. It asks Scenario for the price, sends the request once when you click, and lands the result in Maya.</p>
+      <div class="flow" role="group" aria-label="How the panel works: from your scene, through Scenario models priced on the button, back into Maya">
+        <div>
+          <h4>From your scene</h4>
+          <ul>
+            <li>A prompt</li>
+            <li>An image, or the viewport</li>
+            <li>Views of an object</li>
+            <li>A mesh</li>
+            <li>A character</li>
+          </ul>
+        </div>
+        <div class="arr" aria-hidden="true"></div>
+        <div class="mid">
+          <h4>Scenario models</h4>
+          <div class="acts">
+            <span>Text, image or views to 3D</span>
+            <span>Remesh, UV unwrap, retexture</span>
+            <span>Text to motion</span>
+            <span>Text to image</span>
+          </div>
+          <div class="pbtn">Generate . 1,800 CU</div>
+          <span class="pnote">Priced on the button before you click.</span>
+        </div>
+        <div class="arr" aria-hidden="true"></div>
+        <div class="out">
+          <h4>Back in Maya</h4>
+          <ul>
+            <li>A model on the ground, at real size</li>
+            <li>A result over the object or mesh it came from</li>
+            <li>New UVs, material or geometry on your mesh</li>
+            <li>A rigged, animated character</li>
+            <li>A card, a material or an image plane</li>
+          </ul>
+        </div>
+        <div class="foot"><span><b>Undo</b>Each landing is one Ctrl+Z.</span><span><b>Record</b>Each imported group keeps its model, prompt, settings and price as attributes.</span></div>
+      </div>
+
+      <h3 id="words">Four words</h3>
+      <dl class="terms">
+        <dt>The panel</dt>
+        <dd>A Maya workspace control docked beside the Channel Box, opened from <b>Scenario › Scenario Panel</b>. Two tabs, <b>Image</b> and <b>3D</b>; the 3D tab has five modes: Text, Image, Multi-view, Edit selection and Motion.</dd>
+        <dt>A result card</dt>
+        <dd>One per job, under the form: its state, its price and the actions valid now, such as <b>Import</b>, <b>Apply...</b>, <b>Card</b> or <b>Material</b>.</dd>
+        <dt>CU</dt>
+        <dd>Scenario's compute units. The price check is free; the CU on the button are what the request costs, charged to your Scenario team.</dd>
+        <dt>Scenario MCP</dt>
+        <dd>Scenario's server for agents such as Claude Code, Codex or Cursor. It gives an agent the same models; the results come back as files that the panel imports (<a href="#agents">step 11</a>).</dd>
+      </dl>
+    </section>
+
+    <!-- ================================================================ THE EXAMPLE -->
+    <section id="story" data-toc="The example">
+      <h2>The example: a toy theatre in eleven steps</h2>
+      <p class="what">One Maya scene, Opening Night: a painted set, a cast of wind-up characters, a circus cannon and a bowing mannequin. Scenario made the set, the materials, the cast and their moves; the curtains are nCloth, the confetti nParticles, and the cameras, lights and edits are done in Maya.</p>
+      <figure class="fig">
+        <div class="wipe" style="--cut:50%">
+          <img src="assets/img/compare-scene.webp" alt="The toy theatre in Maya's viewport with every edge drawn: the stage, the curtains, the backdrop and the cast" loading="lazy" width="1200" height="675">
+          <img class="over" src="assets/img/compare-lit.webp" alt="The same frame lit and finished: velvet curtains, a painted night sky with a crescent moon, the cast on a wooden stage" loading="lazy" width="1200" height="675">
+          <span class="lab">Maya scene</span><span class="lab r">Final frame</span>
+          <span class="line"></span><span class="knob" aria-hidden="true">↔</span>
+          <input type="range" min="0" max="100" value="50" aria-label="Wipe between the Maya scene and the final frame">
+        </div>
+        <figcaption>The film's first frame. Drag across it: left, the scene with every edge drawn; right, the frame as it appears in the film.</figcaption>
+      </figure>
+      <div class="steps8">
+        <a class="step" href="#price"><span class="ph"><img src="assets/clip/01-models-and-price.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>1</span>Pick a model, see the price</b><small>Change, Generate</small></span></a>
+        <a class="step" href="#round-trip"><span class="ph"><img src="assets/clip/02-round-trip.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>2</span>From Maya to Scenario and back</b><small>Result cards, Jobs</small></span></a>
+        <a class="step" href="#images"><span class="ph"><img src="assets/clip/03-images-on-the-set.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>3</span>Dress the set with images</b><small>Card, Material</small></span></a>
+        <a class="step" href="#text-to-3d"><span class="ph"><img src="assets/clip/04-text-to-3d.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>4</span>A character from a prompt</b><small>3D, Text</small></span></a>
+        <a class="step" href="#image-to-3d"><span class="ph"><img src="assets/clip/05-image-to-3d.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>5</span>A character from a picture</b><small>3D, Image</small></span></a>
+        <a class="step" href="#blockout"><span class="ph"><img src="assets/clip/06-viewport-blockout.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>6</span>A prop from your blockout</b><small>3D, Image, Viewport</small></span></a>
+        <a class="step" href="#multi-view"><span class="ph"><img src="assets/clip/07-multi-view.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>7</span>Views of an object</b><small>3D, Multi-view</small></span></a>
+        <a class="step" href="#motion"><span class="ph"><img src="assets/clip/08-motion.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>8</span>Motion from a sentence</b><small>3D, Motion</small></span></a>
+        <a class="step" href="#edit"><span class="ph"><img src="assets/clip/09-edit-selection.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>9</span>Edit your own mesh</b><small>3D, Edit selection</small></span></a>
+        <a class="step" href="#quads-fbx"><span class="ph"><img src="assets/clip/10-quads-and-fbx.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>10</span>Quads and FBX</b><small>Topology, Output format</small></span></a>
+        <a class="step" href="#agents"><span class="ph"><img src="assets/clip/11-agents-and-skills.webp" alt="" loading="lazy" width="1280" height="720" style="object-position: left center"></span><span class="tx"><b><span>11</span>Work with an agent</b><small>Scenario MCP, skills</small></span></a>
+        <a class="step" href="#tock-3d"><span class="ph"><img src="assets/loop/tock.webp" alt="" loading="lazy" width="1280" height="720"></span><span class="tx"><b><span>3D</span>Four results to turn</b><small>Textured, Solid, Wireframe, Normals, Rig</small></span></a>
+      </div>
+      <p class="small" style="margin-top:1.2rem">Every picture and clip is a real run in Maya 2027.2 with live Scenario models. Waits are cut: a build at maximum effort took about an hour. Prices in the pictures are examples, as the Generate button showed them for those requests; they change with the model and the settings. The cast was scaled to fit the stage with Maya's own tools. Every picture opens larger when you click it.</p>
+    </section>
+
+    <!-- ================================================================ 1 PRICE -->
+    <section id="price" data-toc="1. Pick a model, see the price">
+      <p class="eyebrow">Step 1 of 11</p>
+      <h2>Pick a model, see the price</h2>
+      <p class="what">Each mode has a default model and a <b>Change</b> button that lists every model of Scenario's catalogue that fits the mode. The Generate button shows the exact price before anything is sent.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/01-models-and-price.mp4" poster="assets/clip/01-models-and-price.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="The panel's modes, the model picker and the price on the Generate button"></video>
+        <figcaption>The modes of the 3D tab, the picker, and the price on the button: <span class="go">Generate . 1,800 CU</span>.</figcaption>
+      </figure>
+      <div class="car" aria-roledescription="carousel" aria-label="Step 1, pictures">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media ui"><img src="assets/img/picker.webp" alt="The model picker of the 3D tab with a search box, the Team models and Show legacy filters, and a list of models" loading="lazy" width="900" height="659"></div><figcaption>The picker of 3D, Text mode: search, Team models, Show legacy.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media ui"><img src="assets/img/pc-price.webp" alt="The 3D tab with Scenario Claude Fable 5.2 3D, its settings and the button reading Generate . 1,800 CU" loading="lazy" width="560" height="440"></div><figcaption>The model, its settings, and the price on the button.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>Open a tab and a mode. Each keeps its own model and its last settings.</li>
+        <li>Press <b>Change</b>. Search by name, description or tag; <b>Team models</b> shows your team's own models, <b>Show legacy</b> the older ones.</li>
+        <li>Choose <b>Use this model</b>. The settings below the prompt follow the model, read from Scenario.</li>
+        <li>Edit the prompt or a setting: the button reads <b>Checking price...</b>, then shows the price. The check is free.</li>
+      </ol>
+      <div class="note"><span class="nk">Tip</span><p>A price is valid for the exact request it was checked for, for two minutes. Any edit asks for a new one. <b>Price unavailable (Retry)</b> means the check failed; nothing was spent.</p></div>
+    </section>
+
+    <!-- ================================================================ 2 ROUND TRIP -->
+    <section id="round-trip" data-toc="2. From Maya to Scenario and back">
+      <p class="eyebrow">Step 2 of 11</p>
+      <h2>From Maya to Scenario and back</h2>
+      <p class="what">A request leaves Maya once, runs on Scenario, and comes back as a file saved in your Maya project, then as nodes in the scene when you press <b>Import</b>.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/02-round-trip.mp4" poster="assets/clip/02-round-trip.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="A request going from Maya to Scenario and the result coming back as a card, saved in the Maya project"></video>
+        <figcaption>The request goes to Scenario, the result comes back as a card, saved in your Maya project.</figcaption>
+      </figure>
+      <div class="how">
+        <ol class="steps short">
+          <li><b>Generate</b> saves the job on your computer, then sends the request once.</li>
+          <li>The card follows it: Queued, Generating with a percentage when Scenario gives one, then <b>Ready to apply</b>.</li>
+          <li>The file is downloaded into the current Maya project, with a <code>scenario.json</code> record of how it was made.</li>
+          <li>Press <b>Import</b>. The card's <b>...</b> menu has Show file, Open on Scenario, Re-run settings and Copy details.</li>
+        </ol>
+        <figure class="pc"><img src="assets/img/pc-cards.webp" alt="Result cards of the 3D tab: builds generating with their progress, results ready to import or apply" loading="lazy" width="600" height="785"><figcaption>Cards of the 3D tab. The workspace name is blurred.</figcaption></figure>
+      </div>
+      <div class="note"><span class="nk">Good to know</span><p>Jobs run on Scenario. Close Maya during a long build: at the next start the panel offers the results that finished meanwhile. See <a href="#jobs">Jobs</a>.</p></div>
+    </section>
+
+    <!-- ================================================================ 3 IMAGES -->
+    <section id="images" data-toc="3. Dress the set with images">
+      <p class="eyebrow">Step 3 of 11</p>
+      <h2>Dress the set with images</h2>
+      <p class="what">The <b>Image</b> tab makes a picture from a prompt and lands it three ways: as a <b>Card</b> facing the camera, as a <b>Material</b> on the selected meshes, or as an <b>Image plane</b> on the current camera.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/03-images-on-the-set.mp4" poster="assets/clip/03-images-on-the-set.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="A backdrop landed as a card with GPT Image 2.5 Sunburst, then velvet landed as a material on the nCloth curtains with Ideogram V4 Tiling"></video>
+        <figcaption>The backdrop as a Card with GPT Image 2.5 Sunburst, then the velvet as a Material with Ideogram V4 Tiling.</figcaption>
+      </figure>
+      <div class="car" aria-roledescription="carousel" aria-label="Step 3, pictures and loops">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media"><img src="assets/img/backdrop-card.webp" alt="The painted backdrop, a midnight blue sky with a paper crescent moon, landed as a card on the stage" loading="lazy" width="1400" height="747"><span class="lab">Card</span></div><figcaption>The painted backdrop, landed as a Card.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media"><img src="assets/img/curtain-material.webp" alt="Seamless crimson velvet on both nCloth curtains" loading="lazy" width="1400" height="747"><span class="lab">Material</span></div><figcaption>Seamless velvet on both curtains, as a Material. It follows the nCloth simulation.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media"><img src="assets/img/stage-dressed.webp" alt="The stage dressed: oak planks on the floor and gilded carving on the frame" loading="lazy" width="1400" height="747"><span class="lab">Two more materials</span></div><figcaption>Oak planks on the floor and gilded carving on the frame, each one prompt and one click on Material.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/loop/stage.mp4" poster="assets/loop/stage.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The dressed stage in the launch film: backdrop, velvet curtains and gilded frame"></video></div><figcaption><span class="car-kind">Loop</span>The dressed stage in the launch film.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>Open the <b>Image</b> tab. The default model is GPT Image 2.5 Flare; <b>Change</b> picks another.</li>
+        <li>Write the prompt and press <b>Generate</b>.</li>
+        <li>On the ready card, press <b>Card</b> for a textured plane at the camera's centre of interest, or select meshes or faces and press <b>Material</b>.</li>
+      </ol>
+      <div class="note"><span class="nk">Tip</span><p>For a material that tiles, pick a model made for seamless tiles (here Ideogram V4 Tiling) and write "seamless", "top view" and "flat even lighting, no shadows" in the prompt. Images are saved under <code>sourceimages/scenario/</code>.</p></div>
+    </section>
+
+    <!-- ================================================================ 4 TEXT TO 3D -->
+    <section id="text-to-3d" data-toc="4. A character from a prompt">
+      <p class="eyebrow">Step 4 of 11</p>
+      <h2>A character from a prompt</h2>
+      <p class="what"><b>3D, Text</b> builds a model from a sentence. With Scenario Claude Fable 5.2 3D, one prompt describes the character, its rig and one clip.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/04-text-to-3d.mp4" poster="assets/clip/04-text-to-3d.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="Tock, a wind-up tin robot, built from a prompt with Scenario Claude Fable 5.2 3D and playing its clip in Maya"></video>
+        <figcaption>Tock, a wind-up tin robot, built by Scenario Claude Fable 5.2 3D: 75 named parts, 21 joints.</figcaption>
+      </figure>
+      <div class="car" aria-roledescription="carousel" aria-label="Step 4, pictures and loops">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media dark"><img src="assets/img/tock-imported.webp" alt="Three frames of Tock's clip in Maya's viewport" loading="lazy" width="1400" height="466"></div><figcaption>Three frames of the clip in Maya's viewport: 75 named parts under one group, 21 joints, 13 materials, a performance of 12 seconds keyed on the timeline.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/loop/tock.mp4" poster="assets/loop/tock.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="Tock dancing on the stage in the launch film"></video></div><figcaption><span class="car-kind">Loop</span>Tock on the stage in the launch film.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>Open <b>3D</b>, <b>Text</b>. The default model is Meshy 7.1, preset to a 30,000-face game mesh. For a rigged character, press <b>Change</b>, type "fable" and choose Scenario Claude Fable 5.2 3D.</li>
+        <li>Describe one character: its look, its parts, how it is rigged, and one clip. The importer keys the first clip of a file.</li>
+        <li>Set <b>Build effort</b> to maximum for a rigged, animated character. <b>More settings</b> holds the face budget, the output format and the topology.</li>
+        <li>Press <span class="go">Generate . 1,800 CU</span>. Maya stays free while Scenario builds.</li>
+      </ol>
+      <figure class="fig" id="tock-3d">
+        <div class="v3d" data-src="assets/3d/tock.glb" data-orbit="25 80 1.05" aria-label="Tock, the wind-up tin robot, as a 3D model you can turn, playing its clip"></div>
+        <figcaption>Tock as Scenario Claude Fable 5.2 3D built it, with its clip. Drag to turn, scroll or pinch to zoom; the buttons at the top switch to Solid, Wireframe, Normals, or Rig for its 21 joints. Textures are reduced to 1024 px for this page.</figcaption>
+      </figure>
+      <div class="note look"><span class="nk">Fable 5.2 3D results in this version</span><p>Scenario stores a Scenario Claude Fable 5.2 3D build as a Blender file, and the card's <b>Import</b> in the current release refuses it. The film was made with a development build that imports it. Today, download the result as a GLB through the Scenario MCP or Scenario's API, then use <b>Scenario › Import GLB...</b>: the same builder lands it with its parts, materials, joints, skin and first clip.</p></div>
+
+      <h3 id="what-lands">What lands</h3>
+      <ul class="defs">
+        <li><b>A group</b> in its own namespace, at the size Scenario returns, its bottom centre on the ground below the camera's centre of interest.</li>
+        <li><b>Meshes and materials</b> with UVs and normals; OpenPBR materials with their textures under <code>sourceimages/scenario/</code>.</li>
+        <li><b>Joints and skin</b>: joints with their rest rotation in the joint orient, skin clusters with up to four influences per vertex, named blend shapes.</li>
+        <li><b>The clip</b>: the file's first clip, keyed from the scene's start frame. Every key is a Maya key you can retime or edit in the Graph Editor.</li>
+      </ul>
+      <p class="small">More in the handbook: <a href="handbook/#3d-from-a-prompt">3D from a prompt</a>.</p>
+    </section>
+
+    <!-- ================================================================ 5 IMAGE TO 3D -->
+    <section id="image-to-3d" data-toc="5. A character from a picture">
+      <p class="eyebrow">Step 5 of 11</p>
+      <h2>A character from a picture</h2>
+      <p class="what"><b>Make a 3D model from this image</b>, in an Image result's menu, opens <b>3D, Image</b> with the picture already in place.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/05-image-to-3d.mp4" poster="assets/clip/05-image-to-3d.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="A nutcracker concept picture turned into a 3D model with parts and joints"></video>
+        <figcaption>A nutcracker from its concept picture: <span class="go">Generate . 2,100 CU</span>, 16 parts and 17 joints.</figcaption>
+      </figure>
+      <div class="car" aria-roledescription="carousel" aria-label="Step 5, pictures and loops">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media dark"><img src="assets/img/nut-vs-concept.webp" alt="The nutcracker concept image beside the model built from it in Maya's viewport" loading="lazy" width="1400" height="465"></div><figcaption>The concept from GPT Image 2.5 Sunburst, and the model built from it by Scenario Claude Fable 5.2 3D: 16 named parts, 17 joints, 23,992 faces, 1.90 m.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/loop/cast.mp4" poster="assets/loop/cast.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="Tock and the nutcracker on the stage in the launch film, with the concept picture in the corner"></video></div><figcaption><span class="car-kind">Loop</span>The nutcracker beside Tock in the launch film, its concept in the corner.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>In the <b>Image</b> tab, generate the concept: one subject, full body, on a plain background.</li>
+        <li>Open the result's <b>...</b> menu and choose <b>Make a 3D model from this image</b>. The panel switches to <b>3D</b>, <b>Image</b>.</li>
+        <li>Pick the model (the default is Meshy 7.1 Image to 3D), add a prompt if the model takes one, and press <b>Generate</b>.</li>
+      </ol>
+      <figure class="fig" id="nutcracker-3d">
+        <div class="v3d" data-src="assets/3d/nutcracker.glb" data-orbit="28 80 1.0" data-clip="Bow" aria-label="The nutcracker as a 3D model you can turn, playing one of its clips"></div>
+        <figcaption>The nutcracker in 3D. Its file carries three clips, Bow, Idle and March; the panel keys the first one on import.</figcaption>
+      </figure>
+      <div class="note"><span class="nk">The Image row takes</span><p><b>File...</b> for a PNG, JPEG or WebP from disk, <b>Viewport</b> for a capture of the view you look through (<a href="#blockout">step 6</a>), or one of the latest <b>Image results</b>, used without a new upload.</p></div>
+    </section>
+
+    <!-- ================================================================ 6 BLOCKOUT -->
+    <section id="blockout" data-toc="6. A prop from your blockout">
+      <p class="eyebrow">Step 6 of 11</p>
+      <h2>A prop from your blockout</h2>
+      <p class="what">The <b>Viewport</b> button in <b>3D, Image</b> sends the view you look through as the input, so a blockout of Maya primitives sets the proportions of the model.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/06-viewport-blockout.mp4" poster="assets/clip/06-viewport-blockout.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="A cannon blockout captured from the viewport and turned into a finished circus cannon, then firing confetti made with Maya nParticles"></video>
+        <figcaption>Same camera, same proportions. The confetti is Maya nParticles.</figcaption>
+      </figure>
+      <div class="car" aria-roledescription="carousel" aria-label="Step 6, pictures and loops">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media"><img src="assets/img/cannon-before-after.webp" alt="Left, the blockout of Maya primitives. Right, the finished circus cannon from the same camera" loading="lazy" width="1400" height="525"><span class="lab">Blockout</span><span class="lab r">Built</span></div><figcaption>The build by Scenario Claude Fable 5.2 3D after one uniform scale: barrel, carriage, two wheels and a fuse as named parts, five joints and a "Fire" clip of four seconds.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media"><img src="assets/img/blockout-input.webp" alt="The capture sent to the model: the cannon blockout in flat colours, without grid or HUD" loading="lazy" width="800" height="597"></div><figcaption>What was sent: one frame of the view, 1024 px on the long side.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media"><img src="assets/img/blockout-viewport.webp" alt="The cannon blockout in the viewport and the Image row after a click on Viewport" loading="lazy" width="1400" height="747"></div><figcaption>The blockout in the viewport, and the Image row after a click on Viewport.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/loop/confetti.mp4" poster="assets/loop/confetti.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The cannon fires confetti over the stage in the launch film"></video></div><figcaption><span class="car-kind">Loop</span>The Fire clip in the film, with Maya nParticles confetti.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>Block the object out with primitives, one flat colour per part.</li>
+        <li>Frame it the way you want it understood: a three-quarter view shows more of the shape than a side view.</li>
+        <li>In <b>3D</b>, <b>Image</b>, press <b>Viewport</b>. One frame of the active view is captured, without grid, HUD or selection highlight.</li>
+        <li>Say what the blockout stands for and what to keep: "same proportions and colours as the image". Then <b>Generate</b>.</li>
+      </ol>
+      <figure class="fig" id="cannon-3d">
+        <div class="v3d" data-src="assets/3d/cannon.glb" data-orbit="-35 75 1.0" aria-label="The circus cannon as a 3D model you can turn, playing its Fire clip"></div>
+        <figcaption>The cannon in 3D with its Fire clip: barrel, carriage, two wheels and a fuse on five joints.</figcaption>
+      </figure>
+      <p class="small">The capture is saved under <code>images/scenario/captures/</code> and sent to your project once. It adds nothing to the scene or the undo queue.</p>
+    </section>
+
+    <!-- ================================================================ 7 MULTI-VIEW -->
+    <section id="multi-view" data-toc="7. Views of an object">
+      <p class="eyebrow">Step 7 of 11</p>
+      <h2>Views of an object</h2>
+      <p class="what"><b>3D, Multi-view</b> captures one selected object from its named sides and builds a textured model of the same object, landed over it at its size.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/07-multi-view.mp4" poster="assets/clip/07-multi-view.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="Capture views filling the Front, Left, Back and Right slots for Tripo P2 Multi View, with the price on the button"></video>
+        <figcaption>Capture views fills Front, Left, Back and Right for Tripo P2 Multi View: <span class="go">Generate . 240 CU</span>.</figcaption>
+      </figure>
+      <figure class="fig">
+        <div class="tile"><img src="assets/img/multiview.webp" alt="The cannon selected in the viewport and the panel with four captured views in their slots" loading="lazy" width="1400" height="615"></div>
+        <figcaption>The cannon of step 6 after one click on Capture views. The workspace name is blurred. The build from these views was not run for this page.</figcaption>
+      </figure>
+      <ol class="steps short">
+        <li>Open <b>3D</b>, <b>Multi-view</b>. The default model is Tripo P2 Multi View; <b>Change</b> also lists Tripo 3.1 Multi View and Hunyuan 3D Pro 3.1 Multiview.</li>
+        <li>Select one object and press <b>Capture views</b>. Temporary orthographic cameras render each side at one scale; nothing is added to the scene.</li>
+        <li>The Tripo models need the front and at least one more view; the button says what is missing, then shows the price.</li>
+        <li><b>Import</b> places the result over the object, at its size and facing the same way. Your object is not changed.</li>
+      </ol>
+      <div class="note"><span class="nk">Tip</span><p>Model the blockout facing +Z. Left is the object's own left: with the object facing front, it is the side Maya's Right view shows.</p></div>
+    </section>
+
+    <!-- ================================================================ 8 MOTION -->
+    <section id="motion" data-toc="8. Motion from a sentence">
+      <p class="eyebrow">Step 8 of 11</p>
+      <h2>Motion from a sentence</h2>
+      <p class="what"><b>3D, Motion</b> turns one simple action into a rigged, skinned figure with its keys on your timeline.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/08-motion.mp4" poster="assets/clip/08-motion.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="A wooden mannequin with 52 joints bowing on the stage, its arms re-keyed in Maya"></video>
+        <figcaption>A bow from Meshy Text to Motion: 52 joints, arms re-keyed in Maya.</figcaption>
+      </figure>
+      <div class="car" aria-roledescription="carousel" aria-label="Step 8, pictures and loops">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media dark"><img src="assets/img/motion-bow-grid.webp" alt="Four frames of the mannequin's bow in Maya's viewport" loading="lazy" width="700" height="592"></div><figcaption>Four frames of the clip in Maya's viewport.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media dark"><img src="assets/img/motion-landed.webp" alt="The mannequin landed on the stage, selected, in front of Tock and the nutcracker" loading="lazy" width="1300" height="925"></div><figcaption>The figure lands on the ground at the camera's centre of interest.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media ui"><img src="assets/img/pc-motion.webp" alt="The Motion mode after Import: the prompt, the price, and a message with the faces, joints and size of the figure and a note on the frame rate" loading="lazy" width="900" height="703"></div><figcaption>The message after Import: faces, joints, size, and the frame rate note. The workspace name is blurred.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/loop/bow.mp4" poster="assets/loop/bow.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The mannequin bowing in front of the curtain in the launch film"></video></div><figcaption><span class="car-kind">Loop</span>The bow in the launch film.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>Open <b>3D</b>, <b>Motion</b>. The default model, Meshy Text to Motion, needs only the prompt.</li>
+        <li>Describe one action: "takes a deep theatrical bow, then stands up straight". Set the length under <b>More settings</b>, 2 to 10 seconds.</li>
+        <li><b>Generate</b>, then <b>Import</b>: the figure lands on the ground at the camera's centre of interest, its clip from the scene's start frame.</li>
+      </ol>
+
+      <h3 id="own-character">Your own character</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Model</th><th>Character</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Meshy Text to Motion</td><td>Its own mannequin</td><td>The default. Needs only the prompt.</td></tr>
+          <tr><td>Uthana Text to Motion 3.0</td><td>Yours, or its own</td><td>Select the character and press <b>Use selection</b>; it rigs and animates it.</td></tr>
+          <tr><td>Cartwheel Text to Motion</td><td>Yours, required</td><td>Returns a Maya FBX. Check which way the rig faces.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="small">Send one mesh with one material, standing, facing +Z, arms away from the body. A clip made at another frame rate than the scene's has keys between frames; the message under the form says so.</p>
+    </section>
+
+    <!-- ================================================================ 9 EDIT -->
+    <section id="edit" data-toc="9. Edit your own mesh">
+      <p class="eyebrow">Step 9 of 11</p>
+      <h2>Edit your own mesh</h2>
+      <p class="what"><b>3D, Edit selection</b> sends one of your meshes to an edit model and brings the result back over it with <b>Import</b>, or onto the mesh itself with <b>Apply...</b>, after a review.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/09-edit-selection.mp4" poster="assets/clip/09-edit-selection.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="A mesh sent for a remesh with Meshy Remesh and the Apply review before the result is written onto it"></video>
+        <figcaption>Remesh with Meshy Remesh, then the Apply review.</figcaption>
+      </figure>
+      <div class="car" aria-roledescription="carousel" aria-label="Step 9, pictures">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media ui"><img src="assets/img/pc-uv.webp" alt="The Edit selection mode on UV unwrap: the Mesh row after Use selection, with the triangle count and a note that the mesh had no UVs" loading="lazy" width="600" height="516"></div><figcaption>UV unwrap on a drum modelled in Maya, after <b>Use selection</b>.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media ui"><img src="assets/img/apply-review.webp" alt="The Apply review of a remesh: what changes, what is kept, and the surface-distance check" loading="lazy" width="900" height="493"></div><figcaption>The Apply review of a remesh: what changes, what is kept.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media ui"><img src="assets/img/pc-remesh.webp" alt="The Edit selection mode after Apply: the message gives the new triangle count and says that one Ctrl+Z undoes it" loading="lazy" width="600" height="702"></div><figcaption>After Apply: the new triangle count, and one Ctrl+Z to undo it.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>Select one mesh, open <b>3D</b>, <b>Edit selection</b> and choose the task. Each task keeps its own model.</li>
+        <li>Press <b>Use selection</b>. The mesh is checked against the model's limits before anything is sent; object, scene and path names stay on your machine.</li>
+        <li>Retexture needs a prompt that describes the surface. Then <b>Generate</b>.</li>
+        <li><b>Import</b> places the result over the mesh as a new group; <b>Apply...</b> opens the review.</li>
+      </ol>
+      <div class="tbl"><table>
+        <thead><tr><th>Task</th><th>Default model</th><th>What Apply changes</th></tr></thead>
+        <tbody>
+          <tr><td>Remesh</td><td>Tripo Retopology v3</td><td>The shape is replaced, under your transform; the old shape is kept hidden.</td></tr>
+          <tr><td>UV unwrap</td><td>Tripo Smart UV</td><td>The current UV set gets the result's UVs; the old layout is kept.</td></tr>
+          <tr><td>Retexture</td><td>Meshy 7 Retexture</td><td>A new material from the result's maps is assigned; the old one is kept.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="apply-review">The Apply review</h3>
+      <p>Before anything changes, the plugin checks that the result is the same surface as your mesh. The review lists <b>What changes</b>, <b>What is kept</b> and what needs a tick under <b>Please confirm</b>. One Ctrl+Z undoes the whole apply.</p>
+      <div class="note"><span class="nk">Good to know</span><p>Apply refuses a result it cannot write exactly, and says why; Import stays available. It also refuses skinned, referenced and locked meshes in this version. Edit selection takes GLB results only.</p></div>
+    </section>
+
+    <!-- ================================================================ 10 QUADS AND FBX -->
+    <section id="quads-fbx" data-toc="10. Quads and FBX">
+      <p class="eyebrow">Step 10 of 11</p>
+      <h2>Quads and FBX</h2>
+      <p class="what">Models that offer a quad setting return the mesh in quads as an FBX file. The plugin brings it in through Maya's own FBX importer, as one Ctrl+Z.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/10-quads-and-fbx.mp4" poster="assets/clip/10-quads-and-fbx.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="A four-legged scout mech built with Topology set to quads and Output format to FBX, shown with every edge drawn"></video>
+        <figcaption>Output format fbx, Topology quads: <span class="go">Generate . 1,800 CU</span>, 14,932 quads, 0 triangles.</figcaption>
+      </figure>
+      <div class="car" aria-roledescription="carousel" aria-label="Step 10, pictures and loops">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media dark"><img src="assets/img/mech-edges.webp" alt="The scout mech in Maya with every edge drawn: a quad mesh" loading="lazy" width="470" height="340"></div><figcaption>Every edge drawn in Maya: the mesh arrives in quads.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media dark"><img src="assets/img/mech-textured.webp" alt="The scout mech textured in Maya's viewport" loading="lazy" width="470" height="340"></div><figcaption>Built by Scenario Claude Fable 5.2 3D: 60 named parts skinned to 15 joints, a walk cycle of two seconds. Through the FBX importer the materials arrive as Phong.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/loop/mech.mp4" poster="assets/loop/mech.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech walking, a wipe between its edges and its textured surface, in the launch film"></video></div><figcaption><span class="car-kind">Loop</span>The walk cycle in the film, edges and textures side by side.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>In the model's settings, open <b>More settings</b>. Set <b>Topology</b> to quads and <b>Output format</b> to fbx.</li>
+        <li><b>Generate</b>, then <b>Import</b>. The plugin keeps the scene's unit, up axis, playback range, current frame and frame rate, which the importer would change.</li>
+      </ol>
+      <figure class="fig" id="mech-3d">
+        <div class="v3d" data-src="assets/3d/mech.glb" data-orbit="35 75 1.0" aria-label="The scout mech as a 3D model you can turn, playing its walk cycle"></div>
+        <figcaption>The same build as a GLB, with its walk cycle. glTF stores triangles, so the Wireframe view draws each quad as two triangles; in Maya, through FBX, the mesh is in quads.</figcaption>
+      </figure>
+      <div class="note"><span class="nk">Tip</span><p>The panel imports GLB and FBX. A model asked for another output format gives a result the panel cannot import. Cameras and lights in the file are left out.</p></div>
+    </section>
+
+    <!-- ================================================================ 11 AGENTS -->
+    <section id="agents" data-toc="11. Work with an agent">
+      <p class="eyebrow">Step 11 of 11</p>
+      <h2>Work with an agent</h2>
+      <p class="what">An agent such as Claude Code, Codex or Cursor reaches the same models through the Scenario MCP, and the results come back as files that <b>Scenario › Import GLB...</b> brings into Maya.</p>
+      <figure class="fig shot clip">
+        <video src="assets/clip/11-agents-and-skills.mp4" poster="assets/clip/11-agents-and-skills.webp" width="1280" height="720" muted loop playsinline controls preload="none" aria-label="The eleven public Maya skills and the line that installs them"></video>
+        <figcaption>The eleven public Maya skills and the line that installs them.</figcaption>
+      </figure>
+      <ol class="steps short">
+        <li>Connect your agent to the Scenario MCP, as the <a href="https://docs.scenario.com">Scenario docs</a> describe.</li>
+        <li>Install the Maya skills in the agent, a separate step from the Scenario MCP connection: <code>npx skills add scenario-labs/skills</code>.</li>
+        <li>Ask the agent for the asset. It saves the result as a file; bring it in with <b>Scenario › Import GLB...</b>, which needs no sign-in.</li>
+      </ol>
+      <div class="anat" role="group" aria-label="The eleven Maya skills">
+        <div style="flex-direction:row;flex-wrap:wrap;gap:7px"><small style="flex-basis:100%">The eleven Maya skills in scenario-labs/skills, at <a href="https://skills.sh/scenario-labs/skills" style="color:var(--my-text)">skills.sh/scenario-labs/skills</a></small><span class="pbtn">scenario-maya-expert</span><span class="pbtn">scenario-maya-modeling</span><span class="pbtn">scenario-maya-retopology-uv</span><span class="pbtn">scenario-maya-rigging</span><span class="pbtn">scenario-maya-deformation</span><span class="pbtn">scenario-maya-animation</span><span class="pbtn">scenario-maya-fx</span><span class="pbtn">scenario-maya-groom</span><span class="pbtn">scenario-maya-lookdev</span><span class="pbtn">scenario-maya-lighting-rendering</span><span class="pbtn">scenario-maya-pipeline-scripting</span></div>
+      </div>
+      <div class="note"><span class="nk">In this version</span><p>Skills are instructions an agent reads before it works. The plugin has no agent connection of its own: a local Scenario MCP server inside Maya, so an agent could drive the panel's actions, is listed in <a href="#limits">Known limits</a>.</p></div>
+    </section>
+
+    <!-- ================================================================ THE GUIDE -->
+    <section id="guide" data-toc="The guide">
+      <h2>The illustrated guide</h2>
+      <p class="what">The same steps as an 18-page PDF, one chapter per mode, then install, models, prices, files, agents and troubleshooting. Read it here page by page, or open the PDF.</p>
+      <div class="kit">
+        <div class="kit-card kit-guide wide">
+          <button class="kit-media" type="button" id="kit-guide" aria-label="Read the guide"><img class="pg-l" src="assets/guide/pages/p06.webp" alt="" loading="lazy" width="909" height="1286"><img class="pg-r" src="assets/guide/pages/p10.webp" alt="" loading="lazy" width="909" height="1286"><img class="pg-c" src="assets/guide/pages/p01.webp" alt="The guide's cover page" loading="lazy" width="909" height="1286"></button>
+          <div class="kit-body">
+            <span class="kit-meta">Guide · PDF · 18 pages A4 · 3.6 MB</span>
+            <h3>Scenario's models work inside Maya and land in your scene</h3>
+            <p>Seventeen chapters. Opening Night, the toy theatre of the film, illustrates every mode.</p>
+            <div class="kit-act"><button class="btn-go" type="button" id="kit-guide-go">Read the guide</button><a class="btn-pill" href="assets/guide/scenario-for-maya-guide.pdf" target="_blank" rel="noopener">Open the PDF</a></div>
+            <span class="kit-note">If the PDF does not open here, read it page by page. The full manual is the <a href="handbook/">handbook</a>.</span>
+          </div>
+        </div>
+      </div>
+      <div class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-label="The guide, page by page">
+        <div class="reader-bar"><b>Scenario for Maya, the guide</b><span id="reader-n">1 / 18</span><button type="button" id="reader-x" aria-label="Close the guide">Close</button></div>
+        <div class="reader-stage"><button type="button" id="reader-prev" aria-label="Previous page">‹</button><img id="reader-img" src="assets/guide/pages/p01.webp" loading="lazy" alt="Guide page 1 of 18" width="909" height="1286"><button type="button" id="reader-next" aria-label="Next page">›</button></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ REFERENCE -->
+    <div class="part"><span>Reference</span><em>The short version; the handbook has the rest</em></div>
+
+    <section id="install-update" data-toc="Install and update">
+      <h2>Install and update</h2>
+      <p class="what">Every release is one ZIP. <a href="/download/latest">The download link</a> always gives the latest release<span data-version-show hidden>, today <b><span data-version></span></b></span>. The same steps install it the first time and update an older one.</p>
+      <h4>You need</h4>
+      <ul class="list">
+        <li>Maya 2025, 2026 or 2027. Checked by hand on Maya 2027.2 on macOS; Windows and Linux are supported, not yet checked by hand.</li>
+        <li>A Scenario account on a plan with API access.</li>
+      </ul>
+      <h4>Install</h4>
+      <ol class="steps short">
+        <li><b>Download</b> <a href="/download/latest">the latest release</a><span data-version-show hidden>, <code>scenario-maya-<span data-version></span>.zip</code>,</span> and unzip it. Each release on the <a href="https://github.com/scenario-labs/maya-plugin/releases">releases page</a> lists its SHA-256 in <code>SHA256SUMS</code>.</li>
+        <li><b>Drag</b> <code>install_scenario.py</code> from the unzipped folder onto a Maya viewport. It copies the module into your Maya modules folder, loads the plug-in, turns on autoload and opens the Scenario panel.</li>
+        <li><b>Allow</b>: Maya 2027 asks whether to load a plug-in from a location it does not trust yet.</li>
+      </ol>
+      <p class="small"><b>Scenario › Scenario Panel</b> opens the panel later. To uninstall, run <code>import install_scenario; install_scenario.uninstall()</code> in the Script Editor (Python); your settings, job list and results stay. To run it from a checkout, see <a href="handbook/#install">Install</a> in the handbook.</p>
+
+      <h3 id="update">Update to a newer release</h3>
+      <ol class="steps short">
+        <li><b>Download</b> <a href="/download/latest">the latest release</a> and unzip it.</li>
+        <li><b>Drag</b> its <code>install_scenario.py</code> onto a Maya viewport, as for the first install. It replaces the installed module and keeps the previous version as <code>ScenarioForMaya.previous</code> until the next update. Your settings, job list, sign-in and results are kept.</li>
+        <li>If Maya asks for a restart, restart it: while the undo history holds a Scenario import, Maya keeps the previous version in use until the next start.</li>
+      </ol>
+      <div class="cols2">
+        <div>
+          <h4>What changed</h4>
+          <p class="small">Each release's notes are in the <a href="handbook/#changelog">changelog</a>, on the <a href="https://github.com/scenario-labs/maya-plugin/releases">releases page</a>, and under Plugins on <a href="https://www.scenario.com/changelog">scenario.com/changelog</a>.</p>
+        </div>
+        <div>
+          <h4>Hearing of a new release</h4>
+          <p class="small">The plugin makes no update check. To be told, watch the <a href="https://github.com/scenario-labs/maya-plugin">repository on GitHub</a> with <b>Watch › Custom › Releases</b>.</p>
+        </div>
+      </div>
+
+      <h3 id="signing-in">Sign in</h3>
+      <ul class="defs">
+        <li><b>Sign in with Scenario</b>: your browser opens on Scenario's sign-in page, you approve, and Maya picks up the session.</li>
+        <li><b>Sign in on another device</b>: the panel shows a code to enter on any device, for a machine without a browser.</li>
+        <li><b>Use an API key</b>: a key and its secret from your project's API keys on <a href="https://app.scenario.com">app.scenario.com</a>.</li>
+      </ul>
+      <p class="small">If your account has several teams or projects, pick one. Secrets go to the system's credential store (macOS Keychain, Windows Credential Manager or Secret Service), never to the scene or Maya's preferences. Nothing is sent to Scenario until you sign in.</p>
+    </section>
+
+    <section id="panel" data-toc="The panel, top to bottom">
+      <h2>The panel, top to bottom</h2>
+      <p class="what">Every mode keeps the same order: the model, its inputs, the prompt, the settings, the Generate button with its price, then the results.</p>
+      <div class="anno">
+        <div class="anno-pic pc">
+          <img src="assets/img/pc-fable-settings.webp" alt="The Scenario panel on the 3D tab in Text mode with Scenario Claude Fable 5.2 3D and More settings open" loading="lazy" width="600" height="785">
+          <span class="pin" style="top:2.7%">1</span>
+          <span class="pin alt" style="top:6.8%">2</span>
+          <span class="pin" style="top:11.1%">3</span>
+          <span class="pin alt" style="top:15.3%">4</span>
+          <span class="pin" style="top:32.5%">5</span>
+          <span class="pin alt" style="top:40.9%">6</span>
+          <span class="pin" style="top:44.8%">7</span>
+          <span class="pin" style="top:66.7%">8</span>
+          <span class="pin" style="top:73.1%">9</span>
+        </div>
+        <ol>
+          <li><span><b>Workspace</b>: the team and project every request goes to. Click it to switch; prices, uploads, results and jobs belong to it.</span></li>
+          <li><span><b>Tabs</b>: Image and 3D. A tab opens on the mode you used last in it.</span></li>
+          <li><span><b>Modes</b> of the 3D tab: Text, Image, Multi-view, Edit selection, Motion.</span></li>
+          <li><span><b>The model</b>, with <b>Change</b> to pick another.</span></li>
+          <li><span><b>Prompt</b>. It hides when the model takes none. Inputs (an image, views, a mesh, a character) sit above it in the modes that need them.</span></li>
+          <li><span><b>Settings</b> that change the price, read from the model.</span></li>
+          <li><span><b>More settings</b>: the model's other settings. A setting left on Default is not sent.</span></li>
+          <li><span><b>Generate</b> with its price. Ctrl+Enter presses it.</span></li>
+          <li><span><b>Results</b>: one card per job of this mode, then <b>Jobs</b>, every job of the project.</span></li>
+        </ol>
+      </div>
+      <p class="small" style="margin-top:1.2rem">The <b>☰</b> button at the top right has Workspace..., Refresh jobs, Copy diagnostics, the handbook, Privacy, Report a problem and Sign out. Maya's menu bar gets a <b>Scenario</b> menu with Import GLB... for any local GLB, no sign-in needed. The workspace name in the picture is blurred. More in the handbook: <a href="handbook/#find-your-way-around">Find your way around</a>.</p>
+    </section>
+
+    <div class="refgrid">
+      <section id="prices" data-toc="Prices">
+        <h3>Prices</h3>
+        <p>Every request is priced before it is sent, by a free check, and the button shows the price.</p>
+        <details><summary>Three rules</summary>
+          <ul class="list">
+            <li>A price is valid for the exact request it was checked for, for two minutes. Any edit asks for a new one.</li>
+            <li>The job is saved on your computer before the request is sent, and it is sent once.</li>
+            <li>The plugin sets no spending cap of its own. Your team's limits on Scenario apply.</li>
+          </ul>
+        </details>
+        <a class="refgo" href="handbook/#prices-and-spending">Handbook: Prices and spending ›</a>
+      </section>
+
+      <section id="jobs" data-toc="Jobs">
+        <h3>Jobs</h3>
+        <p><b>Jobs</b>, at the bottom of the panel or in the Scenario menu, lists every job of the project from every Maya session, newest first.</p>
+        <details><summary>When Maya closes, Not confirmed, Copy details</summary>
+          <ul class="list">
+            <li><b>When Maya closes</b>: jobs live on Scenario. At the next start, the panel offers the results that finished meanwhile; press <b>Download</b>. A stopped download resumes.</li>
+            <li><b>Not confirmed</b>: Maya stopped while a paid request was being sent. The identical request is blocked until you check your project's jobs on <a href="https://app.scenario.com">app.scenario.com</a>, so you do not pay twice.</li>
+            <li><b>Copy details</b>, on a right-click, copies the job's ids, prices, times and error for a support request.</li>
+          </ul>
+        </details>
+        <a class="refgo" href="handbook/#jobs-and-recovery">Handbook: Jobs and recovery ›</a>
+      </section>
+
+      <section id="files" data-toc="Files">
+        <h3>Files</h3>
+        <p>Results go into the current Maya project (<b>File › Set Project</b>), so they travel with your scene.</p>
+        <details><summary>Where, and what the scene records</summary>
+          <div class="tbl"><table>
+            <thead><tr><th>What</th><th>Where, in the Maya project</th></tr></thead>
+            <tbody>
+              <tr><td>3D results</td><td><code>scenario/&lt;date&gt;/&lt;name&gt;/</code>, with a <code>scenario.json</code> record</td></tr>
+              <tr><td>Images and textures</td><td><code>sourceimages/scenario/&lt;name&gt;/</code></td></tr>
+              <tr><td>Captures, views, sent meshes</td><td><code>images/scenario/captures/</code></td></tr>
+            </tbody>
+          </table></div>
+          <p class="small" style="margin-top:.6rem">Every group the plugin imports carries how it was made as attributes: model, prompt, settings, price, date. The scene opens on machines without the plugin. Anyone you send the scene to can read those prompts.</p>
+        </details>
+        <a class="refgo" href="handbook/#files-and-folders">Handbook: Files and folders ›</a>
+      </section>
+
+      <section id="privacy" data-toc="Privacy">
+        <h3>Privacy</h3>
+        <p>The plugin sends Scenario what a request needs, and nothing else. It sends no usage data and makes no update check.</p>
+        <details><summary>What is sent, what is not</summary>
+          <ul class="list">
+            <li><b>Price checks and requests</b>: the model, the prompt, the settings and the ids of files already sent.</li>
+            <li><b>An image or a capture</b>: the picture, uploaded to your Scenario project when you add it.</li>
+            <li><b>Use selection</b>: the selected meshes as one GLB, with object, material, scene and path names replaced by neutral names.</li>
+            <li><b>Not sent</b>: the rest of your scene, file paths, node names or your Maya project's contents.</li>
+          </ul>
+        </details>
+        <a class="refgo" href="handbook/#what-leaves-your-machine">Handbook: What leaves your machine ›</a>
+      </section>
+
+      <section id="trouble" data-toc="Troubleshooting">
+        <h3>Troubleshooting</h3>
+        <p><b>Scenario › Help › Copy Diagnostics</b> copies versions, paths and state, never a secret, to paste into a <a href="https://github.com/scenario-labs/maya-plugin/issues">GitHub issue</a> with the job's Copy details. Or write to <span class="addr">support@scenario.com</span>.</p>
+        <details><summary>Eight messages and what to do</summary>
+          <div class="tbl"><table>
+            <thead><tr><th>You see</th><th>What to do</th></tr></thead>
+            <tbody>
+              <tr><td>The browser does not come back to Maya</td><td>Use <b>Sign in on another device</b> and type the code, or an API key.</td></tr>
+              <tr><td>"Unlock the login keychain"</td><td>The macOS Keychain is locked; unlock it and sign in again.</td></tr>
+              <tr><td>Price unavailable (Retry)</td><td>Press it to retry. A request the model refuses shows Scenario's reason.</td></tr>
+              <tr><td>"Upgrade the plan or wait for the limit to reset"</td><td>Your team's plan or limit refused the request; nothing was spent.</td></tr>
+              <tr><td>"Mesh not accepted by this model"</td><td>Too many triangles for the edit model; reduce the mesh or pick another model.</td></tr>
+              <tr><td>"Nothing was imported: this result is a ... file"</td><td>The panel imports GLB and FBX. Set the model's output format to one of them. For Scenario Claude Fable 5.2 3D, see <a href="#text-to-3d">step 4</a>.</td></tr>
+              <tr><td>Download failed</td><td>Press <b>Retry download</b>; it resumes.</td></tr>
+              <tr><td>A certificate error behind a company proxy</td><td>The proxy's root certificate must be in the system's trust store, which the plugin uses.</td></tr>
+            </tbody>
+          </table></div>
+        </details>
+        <a class="refgo" href="handbook/#troubleshooting">Handbook: Troubleshooting ›</a>
+      </section>
+
+      <section id="limits" data-toc="Known limits">
+        <h3>Known limits</h3>
+        <p>What this version does not do yet, and what was checked by hand.</p>
+        <details><summary>Seven limits</summary>
+          <ul class="list">
+            <li><b>Agents</b>: a local Scenario MCP server inside Maya, so an agent can drive the panel's actions, is not built yet.</li>
+            <li><b>Scenario Claude Fable 5.2 3D</b>: the card's Import refuses its results, stored as Blender files (<a href="#text-to-3d">step 4</a>).</li>
+            <li><b>3D</b>: rigging without a motion, splitting into parts, putting a motion onto a rig already in the scene (retargeting, HumanIK), video to motion.</li>
+            <li><b>Clips</b>: only the first animation clip of a file is imported.</li>
+            <li><b>Images</b>: editing, upscale, LoRAs.</li>
+            <li><b>Other kinds of result</b>: materials, sky domes, video, audio.</li>
+            <li><b>Platforms</b>: checked by hand on Maya 2027.2 on macOS. Maya 2025 and 2026, Windows and Linux are supported but not yet checked by hand; Multi-view, Edit selection and Motion were checked in automated runs of Maya.</li>
+          </ul>
+        </details>
+        <a class="refgo" href="handbook/#known-limits">Handbook: Known limits ›</a>
+      </section>
+    </div>
+  </main>
+
+<div class="reader lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="The picture, larger">
+  <div class="reader-bar"><b>Picture</b><span id="lb-n"></span><button type="button" id="lb-x" aria-label="Close the picture">Close</button></div>
+  <div class="reader-stage" id="lb-stage"><button type="button" id="lb-prev" aria-label="Previous picture">‹</button><img id="lb-img" alt=""><button type="button" id="lb-next" aria-label="Next picture">›</button></div>
+  <p class="lb-cap" id="lb-cap"></p>
+</div>
+</div>
+
+<footer class="site-footer">
+  <div class="bar">
+    <svg class="wordmark" viewBox="0 0 1024 252" role="img" aria-label="Scenario"><use href="#logo"></use></svg>
+    <a href="handbook/">Handbook</a>
+    <a href="handbook/#changelog">Changelog</a>
+    <a href="handbook/#what-leaves-your-machine">Privacy</a>
+    <a href="https://github.com/scenario-labs/maya-plugin">Source on GitHub</a>
+    <a href="https://github.com/scenario-labs/maya-plugin/blob/main/SECURITY.md">Security</a>
+    <a href="https://docs.scenario.com">Scenario docs</a>
+    <a href="https://www.scenario.com">scenario.com</a>
+    <span class="addr legal">support@scenario.com</span>
+    <p class="fine"><b>This page</b> shows the launch film, one example scene in eleven steps and the illustrated guide. <b>The <a href="handbook/">handbook</a></b> is the full manual: install, every mode, prices, jobs, files, privacy, troubleshooting and agents. Scenario for Maya is open source under the <a href="https://github.com/scenario-labs/maya-plugin/blob/main/LICENSE">MIT licence</a>; the Scenario logo is a trademark of Scenario, not covered by the licence. Autodesk and Maya are trademarks of Autodesk. This project is not affiliated with or endorsed by Autodesk.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Contents rail: open beside the page on wide screens, a closed card on narrow ones;
+  // the section in view, and its sub-section, are marked.
+  var toc = document.getElementById("toc"), det = toc.querySelector("details");
+  var mq = window.matchMedia("(max-width: 960px)");
+  function fit() { det.open = !mq.matches; }
+  fit();
+  if (mq.addEventListener) mq.addEventListener("change", fit); else if (mq.addListener) mq.addListener(fit);
+  det.querySelector("summary").addEventListener("click", function (e) { if (!mq.matches) e.preventDefault(); });
+  toc.addEventListener("click", function (e) { if (mq.matches && e.target.closest("a")) det.open = false; });
+  var marks = [].slice.call(toc.querySelectorAll("a[href^='#']")).map(function (a) {
+    var up = a.parentNode.parentNode.closest("li");
+    return { a: a, el: document.getElementById(a.getAttribute("href").slice(1)), up: up ? up.firstElementChild : null };
+  }).filter(function (m) { return m.el; });
+  var ticking = false;
+  function spy() {
+    ticking = false;
+    var cur = marks[0];
+    marks.forEach(function (m) { if (m.el.getBoundingClientRect().top <= 140) cur = m; });
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) cur = marks[marks.length - 1];
+    marks.forEach(function (m) { m.a.removeAttribute("aria-current"); m.a.classList.remove("in"); });
+    cur.a.setAttribute("aria-current", "location");
+    if (cur.up) cur.up.classList.add("in");
+    if (!mq.matches) {
+      var t = cur.a.offsetTop, h = toc.clientHeight;
+      if (t < toc.scrollTop + 40 || t > toc.scrollTop + h - 60) toc.scrollTop = t - h / 3;
+    }
+  }
+  window.addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(spy); } }, { passive: true });
+  spy();
+
+  // Search: sections and sub-sections of this page, "/" to focus. The handbook has its own.
+  var q = document.getElementById("q"), box = document.getElementById("search"), panel = document.getElementById("q-panel");
+  var list = document.getElementById("q-results"), status = document.getElementById("q-status");
+  var idx = [], INLINE = /^(A|B|STRONG|EM|I|CODE|KBD|MARK|SMALL|SPAN|BR)$/;
+  function words(n) {
+    if (n.nodeType === 3) return n.nodeValue;
+    if (n.nodeType !== 1 || n.hidden || n.tagName === "SCRIPT" || n.tagName === "svg" || n.tagName === "VIDEO") return " ";
+    var t = "";
+    for (var c = n.firstChild; c; c = c.nextSibling) t += words(c);
+    return INLINE.test(n.tagName) && !/\b(k|lab)\b/.test(n.className) ? t : " " + t + " ";
+  }
+  [].forEach.call(document.querySelectorAll("[data-toc]"), function (s) {
+    var top = s.getAttribute("data-toc"), cur = { id: s.id, title: top, trail: "", text: "" };
+    idx.push(cur);
+    [].forEach.call(s.children, function (ch) {
+      if (ch.tagName === "H3" && ch.id) { cur = { id: ch.id, title: ch.textContent, trail: top, text: "" }; idx.push(cur); }
+      else cur.text += words(ch);
+    });
+  });
+  idx.forEach(function (e) { e.title = e.title.replace(/\s+/g, " ").trim(); e.text = e.text.replace(/\s+/g, " ").trim(); e.lt = e.title.toLowerCase(); e.lx = e.text.toLowerCase(); });
+  function esc(t) { return t.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function hl(t, w) {
+    var lt = t.toLowerCase(), out = "", i = 0, j;
+    if (!w) return esc(t);
+    while ((j = lt.indexOf(w, i)) >= 0) { out += esc(t.slice(i, j)) + "<mark>" + esc(t.slice(j, j + w.length)) + "</mark>"; i = j + w.length; }
+    return out + esc(t.slice(i));
+  }
+  function snip(e, w) {
+    var j = e.lx.indexOf(w);
+    if (j < 0) return esc(e.text.slice(0, 120)) + (e.text.length > 120 ? "…" : "");
+    var a = Math.max(0, j - 50), b = Math.min(e.text.length, j + w.length + 80);
+    if (a > 0) { var s1 = e.text.indexOf(" ", a); if (s1 > -1 && s1 < j) a = s1 + 1; }
+    if (b < e.text.length) { var s2 = e.text.lastIndexOf(" ", b); if (s2 > j + w.length) b = s2; }
+    return (a > 0 ? "…" : "") + hl(e.text.slice(a, b), w) + (b < e.text.length ? "…" : "");
+  }
+  var hits = [], sel = -1;
+  function close() { panel.hidden = true; q.setAttribute("aria-expanded", "false"); q.removeAttribute("aria-activedescendant"); }
+  function pick(n) {
+    sel = n;
+    [].forEach.call(list.children, function (li, i) { li.setAttribute("aria-selected", i === n ? "true" : "false"); });
+    if (n >= 0 && list.children[n]) { q.setAttribute("aria-activedescendant", list.children[n].id); list.children[n].scrollIntoView({ block: "nearest" }); }
+  }
+  function run() {
+    var v = q.value.trim().toLowerCase().replace(/\s+/g, " ");
+    if (!v) { list.innerHTML = ""; status.textContent = ""; close(); return; }
+    var words = v.split(" ");
+    hits = [];
+    idx.forEach(function (e, i) {
+      var sc = 0;
+      if (e.lt.indexOf(v) >= 0) sc = 3;
+      else if (e.lx.indexOf(v) >= 0) sc = 2;
+      else if (words.every(function (w) { return e.lt.indexOf(w) >= 0 || e.lx.indexOf(w) >= 0; })) sc = 1;
+      if (sc) hits.push({ e: e, sc: sc, i: i });
+    });
+    hits.sort(function (x, y) { return y.sc - x.sc || x.i - y.i; });
+    var n = hits.length; hits = hits.slice(0, 8);
+    var key = hits.length && hits[0].sc === 1 ? words[0] : v;
+    list.innerHTML = hits.map(function (h, i) {
+      return '<li role="option" id="q-o' + i + '" aria-selected="false"><a href="#' + h.e.id + '">' +
+        (h.e.trail ? '<span class="s-trail">' + esc(h.e.trail) + "</span>" : "") +
+        '<span class="s-title">' + hl(h.e.title, key) + '</span><span class="s-snip">' + snip(h.e, key) + "</span></a></li>";
+    }).join("");
+    if (n) status.textContent = n > 8 ? "8 of " + n + " matching sections" : n === 1 ? "1 matching section" : n + " matching sections";
+    else status.innerHTML = 'Nothing on this page. The <a href="handbook/">handbook</a> has the full manual and its own search.';
+    panel.hidden = false; q.setAttribute("aria-expanded", "true");
+    pick(hits.length ? 0 : -1);
+  }
+  function go(n) {
+    var h = hits[n]; if (!h) return;
+    close(); q.blur();
+    if (location.hash === "#" + h.e.id) document.getElementById(h.e.id).scrollIntoView(); else location.hash = h.e.id;
+  }
+  q.addEventListener("input", run);
+  q.addEventListener("focus", function () { if (q.value.trim()) run(); });
+  q.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowDown") { e.preventDefault(); if (hits.length) pick((sel + 1) % hits.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); if (hits.length) pick((sel - 1 + hits.length) % hits.length); }
+    else if (e.key === "Enter") { e.preventDefault(); go(sel < 0 ? 0 : sel); }
+    else if (e.key === "Escape") { if (q.value) { q.value = ""; run(); } else { q.blur(); } }
+  });
+  list.addEventListener("click", function (e) { if (e.target.closest("a")) { close(); q.blur(); } });
+  document.addEventListener("click", function (e) { if (!box.contains(e.target)) close(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = document.activeElement;
+    if (t && (/^(input|textarea|select)$/i.test(t.tagName) || t.isContentEditable)) return;
+    if (!document.getElementById("reader").hidden || !document.getElementById("lightbox").hidden) return;
+    e.preventDefault(); q.focus();
+  });
+
+  // Wipes.
+  [].forEach.call(document.querySelectorAll(".wipe"), function (w) {
+    var r = w.querySelector("input");
+    r.addEventListener("input", function () { w.style.setProperty("--cut", r.value + "%"); });
+  });
+
+  // The version of the latest release, from /download/latest.json, which the site build writes.
+  // Without it the page keeps its version-free wording.
+  if (window.fetch) fetch("/download/latest.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    var v = j && typeof j.version === "string" && /^[0-9][0-9A-Za-z.+-]{0,40}$/.test(j.version) ? j.version : null;
+    if (!v) return;
+    [].forEach.call(document.querySelectorAll("[data-version]"), function (e) { e.textContent = v; e.hidden = false; });
+    [].forEach.call(document.querySelectorAll("[data-version-show]"), function (e) { e.hidden = false; });
+    document.getElementById("ver-note").textContent = "Latest release: " + v;
+  }).catch(function () {});
+})();
+</script>
+
+<script>
+(function () {
+  var still = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  // The launch film: a poster until the file is there; no broken player.
+  var film = document.getElementById("film"), fv = document.getElementById("film-v"), fp = document.getElementById("film-play");
+  fv.addEventListener("error", function () { film.setAttribute("data-state", "missing"); fv.controls = false; });
+  fp.addEventListener("click", function () {
+    if (film.getAttribute("data-state") === "missing") return;
+    fv.controls = true;
+    var p = fv.play();
+    film.setAttribute("data-state", "playing");
+    if (p && p.catch) p.catch(function (err) {
+      if (err && err.name === "NotAllowedError") return; // the browser wants its own play button: keep the controls
+      film.setAttribute("data-state", "missing"); fv.controls = false;
+    });
+  });
+
+  // Step clips and the loops in carousels: muted loops that play while in view (a slide
+  // scrolled aside is out of view) and pause out of it. With reduced motion they wait for
+  // the viewer's own play, so the loops get controls. A clip the viewer paused stays paused.
+  var clips = [].slice.call(document.querySelectorAll("figure.clip video, video[data-loop]"));
+  clips.forEach(function (v) {
+    v.muted = true;
+    if (still.matches && v.hasAttribute("data-loop")) v.controls = true;
+    v.addEventListener("pause", function () { if (!v._auto) v._held = true; v._auto = false; });
+    v.addEventListener("play", function () { v._held = false; if (!fv.paused) fv.pause(); });
+  });
+  fv.addEventListener("play", function () { clips.forEach(function (v) { if (!v.paused) { v._auto = true; v.pause(); } }); });
+  function auto(v, on) {
+    if (on) {
+      if (still.matches || v._held || !fv.paused) return;
+      var p = v.play(); if (p && p.catch) p.catch(function () {});
+    } else if (!v.paused) { v._auto = true; v.pause(); }
+  }
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { auto(e.target, e.isIntersecting); }); }, { threshold: 0.6 });
+    clips.forEach(function (v) { io.observe(v); });
+  }
+  function stillChanged() { if (still.matches) clips.forEach(function (v) { auto(v, false); }); }
+  if (still.addEventListener) still.addEventListener("change", stillChanged); else if (still.addListener) still.addListener(stillChanged);
+
+  // Carousels: a track that scrolls and snaps (swipe on touch screens), arrows, dots and a
+  // count under it, Left and Right keys on the track.
+  [].forEach.call(document.querySelectorAll(".car"), function (car) {
+    var track = car.querySelector(".car-track"), slides = [].slice.call(track.children), n = slides.length, at = 0;
+    if (n < 2) return;
+    var nav = document.createElement("div"); nav.className = "car-nav";
+    var prev = document.createElement("button"), next = document.createElement("button");
+    prev.type = next.type = "button"; prev.className = next.className = "car-arrow";
+    prev.textContent = "‹"; next.textContent = "›";
+    prev.setAttribute("aria-label", "Previous"); next.setAttribute("aria-label", "Next");
+    var dots = document.createElement("span"); dots.className = "car-dots";
+    var count = document.createElement("span"); count.className = "car-n"; count.setAttribute("aria-live", "polite");
+    var dotButtons = slides.map(function (s, i) {
+      var d = document.createElement("button"); d.type = "button"; d.tabIndex = -1;
+      d.setAttribute("aria-label", (i + 1) + " of " + n);
+      d.addEventListener("click", function () { go(i); });
+      dots.appendChild(d); return d;
+    });
+    nav.appendChild(prev); nav.appendChild(dots); nav.appendChild(next); nav.appendChild(count);
+    car.appendChild(nav);
+    function go(i) {
+      i = Math.max(0, Math.min(n - 1, i));
+      track.scrollTo({ left: slides[i].offsetLeft, behavior: still.matches ? "auto" : "smooth" });
+    }
+    function mark() {
+      var x = track.scrollLeft, best = 0;
+      slides.forEach(function (s, i) { if (Math.abs(s.offsetLeft - x) < Math.abs(slides[best].offsetLeft - x)) best = i; });
+      at = best;
+      count.textContent = (at + 1) + " / " + n;
+      dotButtons.forEach(function (d, i) { d.setAttribute("aria-current", i === at ? "true" : "false"); });
+      prev.disabled = at === 0; next.disabled = at === n - 1;
+    }
+    var pending = false;
+    track.addEventListener("scroll", function () { if (!pending) { pending = true; requestAnimationFrame(function () { pending = false; mark(); }); } }, { passive: true });
+    prev.addEventListener("click", function () { go(at - 1); });
+    next.addEventListener("click", function () { go(at + 1); });
+    car.addEventListener("keydown", function (e) {
+      if (e.target.closest(".car-nav") && e.target !== prev && e.target !== next) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); go(at + 1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); go(at - 1); }
+    });
+    mark();
+  });
+
+  // The guide, page by page, for viewers whose browser does not open the PDF.
+  var N = 18, page = 1, rd = document.getElementById("reader"), img = document.getElementById("reader-img"), num = document.getElementById("reader-n"), back = null;
+  function src(n) { return "assets/guide/pages/p" + (n < 10 ? "0" : "") + n + ".webp"; }
+  function show(n) {
+    page = Math.max(1, Math.min(N, n));
+    img.src = src(page); img.alt = "Guide page " + page + " of " + N; num.textContent = page + " / " + N;
+    if (page < N) { var pre = new Image(); pre.src = src(page + 1); }
+  }
+  function open() { back = document.activeElement; rd.hidden = false; document.body.style.overflow = "hidden"; show(page); document.getElementById("reader-next").focus(); }
+  function close() { rd.hidden = true; document.body.style.overflow = ""; if (back && back.focus) back.focus(); }
+  document.getElementById("kit-guide").addEventListener("click", open);
+  document.getElementById("kit-guide-go").addEventListener("click", open);
+  document.getElementById("reader-x").addEventListener("click", close);
+  document.getElementById("reader-prev").addEventListener("click", function () { show(page - 1); });
+  document.getElementById("reader-next").addEventListener("click", function () { show(page + 1); });
+  img.addEventListener("click", function (e) { var r = img.getBoundingClientRect(); show(page + (e.clientX - r.left < r.width / 2 ? -1 : 1)); });
+  document.addEventListener("keydown", function (e) {
+    if (rd.hidden) return;
+    if (e.key === "Escape") close(); else if (e.key === "ArrowRight" || e.key === "PageDown") show(page + 1); else if (e.key === "ArrowLeft" || e.key === "PageUp") show(page - 1);
+  });
+})();
+</script>
+<script>
+(function () {
+  // Pictures open larger: a click, or Enter on a focused picture. Arrows turn, Escape closes.
+  var lb = document.getElementById("lightbox"), big = document.getElementById("lb-img"), cap = document.getElementById("lb-cap");
+  var num = document.getElementById("lb-n"), stage = document.getElementById("lb-stage"), at = 0, back = null;
+  var pics = [].slice.call(document.querySelectorAll("#main img")).filter(function (i) { return !i.closest("a, button, .wipe, .reader"); });
+  function text(i) {
+    var f = i.closest("figure"), c = f ? f.querySelector("figcaption") : null;
+    return (c ? c.textContent : i.alt || "").replace(/\s+/g, " ").trim();
+  }
+  function show(n) {
+    at = (n + pics.length) % pics.length;
+    var i = pics[at];
+    big.src = i.currentSrc || i.src; big.alt = i.alt; cap.textContent = text(i); num.textContent = (at + 1) + " / " + pics.length;
+  }
+  function open(n) { back = document.activeElement; lb.hidden = false; document.body.style.overflow = "hidden"; show(n); document.getElementById("lb-x").focus(); }
+  function close() { lb.hidden = true; document.body.style.overflow = ""; big.removeAttribute("src"); if (back && back.focus) back.focus(); }
+  pics.forEach(function (i, n) {
+    i.classList.add("zoom"); i.tabIndex = 0; i.setAttribute("role", "button");
+    i.setAttribute("aria-label", "Open larger: " + (i.alt || "picture"));
+    i.addEventListener("click", function () { open(n); });
+    i.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(n); } });
+  });
+  document.getElementById("lb-x").addEventListener("click", close);
+  document.getElementById("lb-prev").addEventListener("click", function () { show(at - 1); });
+  document.getElementById("lb-next").addEventListener("click", function () { show(at + 1); });
+  stage.addEventListener("click", function (e) { if (e.target === stage) close(); });
+  document.addEventListener("keydown", function (e) {
+    if (lb.hidden) return;
+    if (e.key === "Escape") close(); else if (e.key === "ArrowRight") show(at + 1); else if (e.key === "ArrowLeft") show(at - 1);
+  });
+
+  // Results in 3D: the viewer's code (three.js and ours, one file) is fetched when the first
+  // viewer comes near the view, each model when its own viewer does. A viewer is one
+  // <div class="v3d" data-src="model.glb" aria-label="...">; tools/site_viewer/viewer3d.js
+  // documents its attributes.
+  var boxes = [].slice.call(document.querySelectorAll(".v3d")), state = "idle", queue = [];
+  boxes.forEach(function (b) {
+    b.setAttribute("data-state", "waiting");
+    b.setAttribute("role", "group");
+    var w = document.createElement("span"); w.className = "v3d-wait"; w.setAttribute("role", "status"); w.textContent = "Loading the 3D view";
+    var l = document.createElement("span"); l.className = "lab"; l.textContent = "3D, drag to turn";
+    b.appendChild(w); b.appendChild(l);
+  });
+  function failAll() { boxes.forEach(function (b) { if (b.getAttribute("data-state") !== "ready") b.querySelector(".v3d-wait").textContent = "The 3D view could not load."; }); }
+  function mount(b) {
+    if (state === "ready") { window.ScenarioViewer3D.mount(b); return; }
+    if (state === "failed") return;
+    queue.push(b);
+    if (state === "loading") return;
+    state = "loading";
+    var s = document.createElement("script"); s.src = "assets/vendor/viewer3d.min.js"; s.async = true;
+    s.onload = function () {
+      if (!window.ScenarioViewer3D) { state = "failed"; failAll(); return; }
+      state = "ready"; queue.splice(0).forEach(function (x) { window.ScenarioViewer3D.mount(x); });
+    };
+    s.onerror = function () { state = "failed"; failAll(); };
+    document.head.appendChild(s);
+  }
+  if ("IntersectionObserver" in window) {
+    var near = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { near.unobserve(e.target); mount(e.target); } });
+    }, { rootMargin: "800px 0px" });
+    boxes.forEach(function (b) { near.observe(b); });
+  } else boxes.forEach(mount);
+})();
+</script>
+
+</body>
+</html>

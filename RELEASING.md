@@ -47,7 +47,13 @@ It checks the answer for this release's version, since an HTTP 200 alone can car
 
 ## Site
 
-`.github/workflows/pages.yml` publishes https://maya.scenario.com after each release, on changes to the docs, and by hand, through [scenario-labs/components](https://github.com/scenario-labs/components), the site tooling the plug-ins share: the handbook built from the newest published release's docs (chapters in `handbook.config.json`), its pictures under `/media/`, the link-preview card `og.png` (components' `og`, set by `og` in `handbook.config.json`), and the release's ZIP under `/download/` with `download/latest.json`. Preview it from a checkout with `npx github:scenario-labs/components handbook --no-pdf --out build/handbook`. The Vercel project on `tools/site_proxy` holds the domain, forwards every path to GitHub Pages, counts downloads in PostHog and answers `/download/latest`.
+`.github/workflows/pages.yml` publishes https://maya.scenario.com after each release, on changes to the page or the docs, and by hand, through [scenario-labs/components](https://github.com/scenario-labs/components), the site tooling the plug-ins share (inputs `static: site` and `handbook-path: handbook`):
+
+- At the root, the hand-made page in `site/` (`index.html` and `site/assets/`: the launch film, the step clips, pictures, the illustrated guide as a PDF and as page images), in the look of photoshop.scenario.com. It comes from the newest published release once a release carries `site/`, from `main` before that. It names no version in its source: it reads the version from `download/latest.json`. `tests/site/site-page.test.js` checks its links, anchors, media and wording.
+- Under `/handbook/`, the handbook built from the newest published release's docs (chapters in `handbook.config.json`), its pictures under `/handbook/media/` and the link-preview card `/handbook/og.png` (components' `og`, set by `og` in `handbook.config.json`). The proxy redirects `/handbook` to `/handbook/`.
+- The release's ZIP under `/download/` with `download/latest.json`.
+
+Preview it from a checkout: copy `site/` to a folder, build the handbook into its `handbook/` with `HANDBOOK_PATH=handbook npx github:scenario-labs/components handbook --no-pdf --out <folder>/handbook`, and serve the folder with a server that answers range requests, so the videos seek. Keep each media file under 50 MB; replacing the film adds its full size to the history again. The Vercel project on `tools/site_proxy` holds the domain, forwards every path to GitHub Pages, counts downloads in PostHog and answers `/download/latest`.
 
 Set once by an administrator:
 
