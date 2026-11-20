@@ -105,6 +105,8 @@ MULTIVIEW_MODELS = {
     "model_hunyuan-3d-pro-3-1-multiview": "Hunyuan 3D 3.1 Pro (Multiview)",
 }
 THREE_D_MODELS = THREE_D_MODELS + tuple(MULTIVIEW_MODELS)
+# A model that stores its result as a Blender file (``model/x-blender``), which Scenario converts to GLB or FBX on download.
+BLENDER_MODELS = ("model_fake-blender-3d",)
 MULTIVIEW_ROWS = [
     {
         "id": model_id,
@@ -681,6 +683,8 @@ class Handler(BaseHTTPRequestHandler):
         job_id = "job_fake" + secrets.token_hex(8)
         if model_id in THREE_D_MODELS:
             self._run_3d(model_id, job_id, cost)
+        elif model_id in BLENDER_MODELS:
+            self._run_blender(job_id, model_id, cost)
         elif model_id in MOTION_MODELS:
             self._run_3d(model_id, job_id, cost, glb=_motion_glb(), meta={"kind": "3d", "faceCount": 4, "boneCount": 2})
         elif model_id in EDIT_MODELS:
@@ -713,6 +717,25 @@ class Handler(BaseHTTPRequestHandler):
             self.state.assets[obj] = {"id": obj, "mimeType": "model/obj", "kind": "3d", "file": obj + ".obj", "metadata": dict(meta, format="obj", parentId=glb)}
             self.state.assets[mtl] = {"id": mtl, "mimeType": "model/mtl", "kind": "3d", "file": mtl + ".mtl", "metadata": {"type": "3d-texture-mtl", "parentId": glb}}
             self.state.assets[png] = {"id": png, "mimeType": "image/png", "kind": "image", "file": png + ".png", "metadata": {"type": "3d-texture-albedo", "parentId": glb}}
+
+    def _run_blender(self, job_id: str, model_id: str, cost) -> None:
+        """One Blender file; its GLB and FBX exist only as conversions (``targetFormat``)."""
+        blend = "asset_fake" + secrets.token_hex(8)
+        with self.state.lock:
+            self.state.jobs[job_id] = _new_job(job_id, model_id, cost, [blend])
+            self.state.files[blend + ".blend"] = b"BLENDER-v405" + bytes(64)
+            self.state.files[blend + ".glb"] = _glb()
+            self.state.files[blend + ".fbx"] = b"Kaydara FBX Binary  \x00" + bytes(64)
+            self.state.files[blend + "_thumb.png"] = _png(16, 16, (90, 160, 90))
+            self.state.assets[blend] = {
+                "id": blend,
+                "mimeType": "model/x-blender",
+                "kind": "3d",
+                "file": blend + ".blend",
+                "metadata": {"kind": "3d", "faceCount": 2},
+                "thumbnail": blend + "_thumb.png",
+                "conversions": {"glb": (blend + ".glb", "model/gltf-binary"), "fbx": (blend + ".fbx", "application/octet-stream")},
+            }
 
     def _job_row(self, job_id: str, advance: bool = True) -> dict:
         """The job as ``GET /jobs/{id}`` answers it; each read moves it on until it succeeds."""
@@ -761,6 +784,9 @@ class Handler(BaseHTTPRequestHandler):
         asset = self.state.assets.get(asset_id)
         if not asset:
             raise ToolFailure(404, {"reason": f"Asset {asset_id} not found"})
+        converted = (asset.get("conversions") or {}).get(str((data or {}).get("targetFormat") or ""))
+        if converted:
+            return 200, {"url": f"{self.base}/files/{converted[0]}", "mimeType": converted[1]}
         return 200, {"url": f"{self.base}/files/{asset['file']}", "mimeType": asset["mimeType"]}
 
     def _op_upload_create(self, _id, query, data, who):

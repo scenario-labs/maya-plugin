@@ -240,6 +240,35 @@ def test_with_no_preferred_format_every_file_is_kept(signed_in, fake, tmp_path):
     assert len(ready["result"]["files"]) == 4
 
 
+def sent_blender_job(session, **settings):
+    params = dict({"prompt": "a carved wooden treasure chest"}, **settings)
+    quote = session.price("model_fake-blender-3d", params, origin={"lane": "3d"})
+    return session.submit(quote.quote_id, approved_cost=quote.cu_cost_exact, params=params, model_name="Blender result", origin={"lane": "3d"})
+
+
+def test_a_blender_file_result_is_fetched_as_glb(signed_in, fake, tmp_path):
+    """A model that stores a Blender file: Maya cannot open it, so Scenario's GLB conversion is fetched."""
+    row = delivery.follow(signed_in, sent_blender_job(signed_in)["local_id"], sleep=lambda s: None)
+    ready = delivery.download_results(signed_in, row["local_id"], str(tmp_path), formats=lanes.THREE_D.formats)
+    files = ready["result"]["files"]
+    assert len(files) == 1 and files[0]["path"].endswith(".glb") and files[0]["format"] == "glb"
+    with open(files[0]["path"], "rb") as handle:
+        assert handle.read(4) == b"glTF"
+    assert [c["body"].get("targetFormat") for c in fake.state.calls_to("download")] == [None, "glb"]
+
+
+def test_a_blender_file_result_asked_as_fbx_is_fetched_as_fbx(signed_in, fake, tmp_path):
+    """``outputFormat: fbx`` (with quads): the FBX conversion keeps them, the GLB would triangulate."""
+    row = delivery.follow(signed_in, sent_blender_job(signed_in, outputFormat="fbx", topology="quads")["local_id"], sleep=lambda s: None)
+    ready = delivery.download_results(signed_in, row["local_id"], str(tmp_path), formats=lanes.THREE_D_IMAGE.formats)
+    files = ready["result"]["files"]
+    assert len(files) == 1 and files[0]["path"].endswith(".fbx") and files[0]["format"] == "fbx"
+    with open(files[0]["path"], "rb") as handle:
+        assert handle.read(18) == b"Kaydara FBX Binary"
+    assert delivery.blender_target({"outputFormat": "fbx"}, ("glb",)) == "glb", "a lane that takes GLB only"
+    assert delivery.blender_target({"outputFormat": "glb"}, ("glb", "fbx")) == "glb"
+
+
 class _FlakySession:
     """``refresh_job`` fails the way a lost connection does, then answers."""
 
