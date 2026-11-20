@@ -178,7 +178,9 @@ export function mount(box) {
     canvas.style.touchAction = "pan-y"; // a vertical swipe scrolls the page; a sideways drag turns
     holders.push(state);
     if (state.ready) box.setAttribute("data-state", "ready");
-    resize();
+    // Only the drawing size: the camera keeps the zoom and the angle the viewer left it with.
+    const w = box.clientWidth, h = box.clientHeight;
+    if (w && h) renderer.setSize(w, h, false);
     return true;
   }
   function release() {
@@ -250,11 +252,13 @@ export function mount(box) {
   if (window.ResizeObserver) new ResizeObserver(resize).observe(box);
   else window.addEventListener("resize", resize);
   if (!gl()) return state;
+  resize();
 
   if (window.IntersectionObserver) {
     new IntersectionObserver((es) => {
       visible = es.some((e) => e.isIntersecting);
       if (visible) {
+        if (!renderer) gl(); // lost while near the view, where the observer below does not fire again
         const i = holders.indexOf(state);
         if (i >= 0) holders.push(holders.splice(i, 1)[0]); // the most recently in view
         last = 0;
