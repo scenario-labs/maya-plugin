@@ -185,6 +185,7 @@ section { margin-top: 4.5rem; padding-top: 2.5rem; border-top: 1px solid var(--b
 .v3grid .fig { margin: .6rem 0 .8rem; }
 .v3grid .car-media { aspect-ratio: 16 / 10; }
 @media (max-width: 760px) { .films2, .v3grid { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 761px) { .v3grid .fig.col2 { grid-column: 2; } }
 figcaption { font-size: .84rem; color: var(--muted); margin-top: .6rem; line-height: 1.5; }
 .fig { margin: 1.4rem 0 1.6rem; }
 .fig.narrow { max-width: 560px; }
@@ -1046,7 +1047,7 @@ ol.steps.short > li { margin-bottom: .55rem; }
 
     <section id="bay12" data-toc="Bay 12, a second example">
       <h2>Bay 12: the scout mech leaves the hangar</h2>
-      <p class="what">The scout mech of <a href="#quads-fbx">step 10</a> in a scene of its own: a hangar at dusk, a recon drone, a service arm, an equipment case and a technician who waves it out. Seventeen Scenario results in one Maya scene. The tarp is nCloth, the sparks are nParticles, and the nine cameras, the lights and the door are Maya.</p>
+      <p class="what">The scout mech of <a href="#quads-fbx">step 10</a> in a scene of its own: a hangar at dusk, a recon drone, a loader crane that sets a weapon pod on the mech, an equipment case and a technician who waves it out. Eighteen Scenario results in one Maya scene. The tarp is nCloth, and the crane's keys, the nine cameras, the lights and the door are Maya.</p>
       <div class="films2">
         <figure>
           <div class="film" id="film-bay12" data-state="poster">
@@ -1055,7 +1056,7 @@ ol.steps.short > li { margin-bottom: .55rem; }
             <button class="film-play" type="button"><span class="tri" aria-hidden="true"></span>Watch the film</button>
             <span class="film-msg" role="status">The film is not on this page yet.</span>
           </div>
-          <figcaption>The Bay 12 film, 3 min 34 s: the panel at work on one scene, from the first picture to the walk out.</figcaption>
+          <figcaption>The Bay 12 film, 3 min 46 s: the panel at work on one scene, from the first picture to the walk out.</figcaption>
         </figure>
         <figure>
           <div class="film" id="tutorial-bay12" data-state="poster">
@@ -1071,7 +1072,7 @@ ol.steps.short > li { margin-bottom: .55rem; }
         <div class="car-track" tabindex="0">
           <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/exit.mp4" poster="assets/bay/exit.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech walks out of the hangar at dusk while the technician turns to watch it leave"></video></div><figcaption><span class="car-kind">Loop</span>The last shot: the mech walks out, and the technician turns to watch it leave.</figcaption></figure>
           <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/tarp.mp4" poster="assets/bay/tarp.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A tarp slides off the crouched scout mech"></video></div><figcaption><span class="car-kind">Loop</span>The tarp slides off the crouched mech. The fabric is a tiling picture from the Image tab; the cloth is nCloth.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/weld.mp4" poster="assets/bay/weld.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A service arm welds a seam on the mech's shell, with sparks"></video></div><figcaption><span class="car-kind">Loop</span>Service arm 03 welds a seam. The arm and its Weld clip are one build, from a viewport capture of a blockout; the sparks are nParticles, timed on the clip.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/loading.mp4" poster="assets/bay/loading.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A loader crane lowers a small weapon pod onto the crouched scout mech, lets go and lifts away"></video></div><figcaption><span class="car-kind">Loop</span>Loader crane 12 sets the weapon pod on the mech. Both started as blockouts of Maya primitives; each was built from a picture of its blockout together with the mech's own 3D file, through the Scenario MCP, so they came back in its paint. The loading is keyed in Maya on the bones Scenario built.</figcaption></figure>
           <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/powerup.mp4" poster="assets/bay/powerup.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech powers up and stands"></video></div><figcaption><span class="car-kind">Loop</span>The mech stands. Power-up is one of two clips added to the same build by prompt, through the Scenario MCP: the same 60 parts and 15 joints came back.</figcaption></figure>
           <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/drone.mp4" poster="assets/bay/drone.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A recon drone lifts off beside the mech"></video></div><figcaption><span class="car-kind">Loop</span>Recon drone 12 lifts off: built from its concept picture, 13 parts, 10 joints, a Hover clip.</figcaption></figure>
           <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/wave.mp4" poster="assets/bay/wave.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The technician, seen from behind, waves the mech forward"></video></div><figcaption><span class="car-kind">Loop</span>The technician waves the mech forward.</figcaption></figure>
@@ -1105,21 +1106,25 @@ ol.steps.short > li { margin-bottom: .55rem; }
       </figure>
       <div class="note"><span class="nk">Video to motion in this version</span><p>The panel's <b>Motion</b> mode runs text to motion models (<a href="#motion">step 8</a>). A move captured from a video runs through the Scenario MCP today, and the result lands in Maya with <b>Scenario › Import GLB...</b>.</p></div>
 
-      <h3 id="bay12-3d">Three more results to turn</h3>
+      <h3 id="bay12-3d">Four more results to turn</h3>
       <div class="v3grid">
+        <figure class="fig" id="crane-3d">
+          <div class="v3d" data-src="assets/3d/crane.glb" data-orbit="-30 75 1.0" aria-label="Loader crane 12 as a 3D model you can turn"></div>
+          <figcaption>Loader crane 12, from a blockout and the mech's own 3D file: 48 parts, 7 bones, 52,090 triangles.</figcaption>
+        </figure>
+        <figure class="fig" id="pod-3d">
+          <div class="v3d" data-src="assets/3d/pod.glb" data-orbit="30 70 1.05" aria-label="The scout mech carrying its weapon pod as a 3D model you can turn, the turret tracking"></div>
+          <figcaption>The weapon pod on the mech, from a blockout modelled on its shell: 16 parts on one leg, 3 bones, a tracking clip.</figcaption>
+        </figure>
         <figure class="fig" id="drone-3d">
           <div class="v3d" data-src="assets/3d/drone.glb" data-orbit="30 70 1.05" aria-label="Recon drone 12 as a 3D model you can turn, playing its Hover clip"></div>
           <figcaption>Recon drone 12, from its concept picture: 13 parts, 10 joints, its Hover clip.</figcaption>
-        </figure>
-        <figure class="fig" id="arm-3d">
-          <div class="v3d" data-src="assets/3d/arm.glb" data-orbit="-30 75 1.0" aria-label="Service arm 03 as a 3D model you can turn, playing its Weld clip"></div>
-          <figcaption>Service arm 03, from a viewport capture of a blockout: 9 parts, 6 joints, its Weld clip.</figcaption>
         </figure>
         <figure class="fig" id="case-3d">
           <div class="v3d" data-src="assets/3d/case.glb" data-orbit="35 65 1.1" aria-label="Equipment case 12 as a 3D model you can turn"></div>
           <figcaption>Equipment case 12: modelled in Maya, painted by <b>Edit selection</b>, Retexture. Solid and Wireframe show the 2,336 triangles as they were modelled.</figcaption>
         </figure>
-        <figure class="fig">
+        <figure class="fig col2">
           <div class="car-media"><img src="assets/bay/case-grey.webp" alt="The equipment case in Maya before Retexture: a plain grey model" loading="lazy" width="1200" height="675"></div>
           <figcaption>The case before Retexture. The scout mech itself turns in <a href="#mech-3d">step 10</a>, with its walk cycle.</figcaption>
         </figure>
