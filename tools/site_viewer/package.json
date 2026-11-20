@@ -1,0 +1,13 @@
+{
+  "name": "maya-site-viewer",
+  "private": true,
+  "description": "The 3D viewer of the maya.scenario.com page, bundled into site/assets/vendor/viewer3d.min.js.",
+  "license": "MIT",
+  "scripts": {
+    "build": "esbuild viewer3d.js --bundle --minify --format=iife --target=es2019 --legal-comments=none --outfile=../../site/assets/vendor/viewer3d.min.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "three": "0.187.0"
+  }
+}
