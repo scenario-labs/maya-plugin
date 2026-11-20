@@ -15,18 +15,20 @@ Maya 2027.2 with live Scenario models.
    ([Install](../README.md#install)).
 2. In the Scenario panel, choose **Sign in with Scenario** and approve in your
    browser. If your account has several teams or projects, pick one.
-3. Open the **3D** tab, keep the **Text** mode and its default model, Meshy
-   7.1, and describe one object: `portable diesel generator for an aircraft
-   hangar, yellow steel housing, two wheels and a tow handle, game prop`.
+3. Open the **3D** tab, **Text** mode. Press **Change** and pick Scenario
+   Claude Fable 5.2 3D for a full build with named parts, or keep the default,
+   Meshy 7.1, for one textured mesh in about two minutes. Describe one object:
+   `portable diesel generator for an aircraft hangar, yellow steel housing,
+   two wheels and a tow bar, game prop`.
 4. The button shows the price once Scenario has checked it, for example
-   `Generate . 120 CU`; the check is free. Press it.
+   `Generate . 1,800 CU`; the check is free. Press it.
 5. When the card says Ready to apply, press **Import**. The generator lands on
    the ground in front of the camera at its real size. Ctrl+Z removes it in
    one step.
 
 ## Find your way around
 
-<p align="center"><img src="media/panel-3d-priced.png" width="320" alt="The Scenario panel on the 3D tab: workspace at the top, the Text mode with Meshy 7.1, a prompt, the price on Generate and the job list"></p>
+<p align="center"><img src="media/panel-3d-priced.png" width="320" alt="The Scenario panel on the 3D tab: workspace at the top, the Text mode with Scenario Claude Fable 5.2 3D, a prompt, the price on Generate and the job list"></p>
 
 ### The panel
 
@@ -80,28 +82,29 @@ preferences. Nothing is sent to Scenario until you sign in.
 
 ## 3D from a prompt
 
-![Prompt, price, Generate, Import: a diesel generator made with Meshy 7.1 lands in a mech maintenance bay](media/flow-3d.gif)
+![Prompt, price, Generate, Import: a diesel generator built with Scenario Claude Fable 5.2 3D lands in a mech maintenance bay](media/flow-3d.gif)
 
 *Recorded in Maya 2027.2 on a live Scenario model; the wait is sped up.
-Videos: [this flow](media/flow-3d.mp4),
-[the same run with the wait in real time](media/session.mp4).*
+[Video](media/flow-3d.mp4).*
 
 ### Generate
 
 | 1. Priced before sending | 2. Followed on Scenario | 3. Imported and checked |
 | --- | --- | --- |
-| ![The 3D tab with Meshy 7.1 and the price on the Generate button](media/panel-3d-priced.png) | ![The result card while Scenario generates](media/panel-3d-generating.png) | ![The result card after the import, with the import checks](media/panel-3d-imported.png) |
+| ![The 3D tab with Scenario Claude Fable 5.2 3D and the price on the Generate button](media/panel-3d-priced.png) | ![The result card while Scenario generates](media/panel-3d-generating.png) | ![The result card after the import, with the import checks](media/panel-3d-imported.png) |
 
-1. Open the **3D** tab, **Text** mode. The default model is Meshy 7.1
-   Text-to-3D, preset to a 30,000-face game mesh. **Change** lists Meshy T2.5
-   Smart Topology (the low-cost choice), Tripo P2 and Rodin Gen-2.5.
-2. Describe one object. The button shows the exact price once Scenario has
-   checked it.
+1. Open the **3D** tab, **Text** mode, and pick the model with **Change**.
+   Scenario Claude Fable 5.2 3D builds a full asset: named parts, a material
+   per part, and a rig and a clip when the prompt asks for them. The default,
+   Meshy 7.1 Text-to-3D, returns one textured 30,000-face mesh in about two
+   minutes for 120 CU.
+2. Describe one object: what it is, its size, its parts. The button shows
+   the exact price once Scenario has checked it.
 3. **Generate** sends the request once. The card follows the job and shows
    what came back: format, faces, size in metres and a preview.
 
-*This run: a portable diesel generator, about 100 seconds, 27,718 faces,
-1.90 x 1.31 x 0.86 m, 120 CU.*
+*This run: a portable diesel generator, about 50 minutes at maximum build
+effort: 38,304 faces in 12 named parts, 1.90 x 1.30 x 1.09 m, 1,800 CU.*
 
 ### Import
 
@@ -112,7 +115,14 @@ size, materials and textures, non-manifold edges, missing textures. One
 Ctrl+Z removes the whole import.
 
 <p align="center"><img src="media/turntable.gif" width="560" alt="The generator turning in Maya's Viewport 2.0"></p>
-<p align="center"><sub>As imported: one material, three textures. <a href="media/turntable.mp4">MP4</a></sub></p>
+<p align="center"><sub>As imported: 12 named parts, 6 materials, 19 textures. <a href="media/turntable.mp4">MP4</a></sub></p>
+
+### A character from a prompt
+
+<p align="center"><img src="media/text-to-3d-mech.gif" width="480" alt="The yellow scout mech walking in place in Maya's Viewport 2.0"></p>
+
+*The scout mech of this scene, from one prompt with the same model: 60 named
+parts, 15 joints and a walk clip.*
 
 ### Import any GLB
 
@@ -122,12 +132,13 @@ shapes and the first animation clip.
 
 ## 3D from an image
 
-| The image | The model, imported in Maya |
-| --- | --- |
-| ![A concept image of a quad-rotor recon drone in worn sand-yellow paint with black hazard stripes](media/image-to-3d-input.jpg) | ![The drone generated from it with Meshy 7.1, in Maya's viewport](media/image-to-3d-result.jpg) |
+| The image | The model, imported in Maya | Its clip |
+| --- | --- | --- |
+| ![A concept image of a quad-rotor recon drone in worn sand-yellow paint with black hazard stripes](media/image-to-3d-input.jpg) | ![The recon drone built from the image with Scenario Claude Fable 5.2 3D](media/image-to-3d-result.jpg) | ![The drone playing its hover clip](media/image-to-3d-hover.gif) |
 
-*Image: GPT Image 2.5 Sunburst, made in the Image tab. Model: Meshy 7.1 Image
-to 3D at its 4K settings, 61,019 faces, as imported in Viewport 2.0.*
+*Image: GPT Image 2.5 Sunburst, made in the Image tab. Model: Scenario Claude
+Fable 5.2 3D, picked with **Change**, at maximum build effort: 38,000
+triangles, 13 named parts, 10 joints and a 4-second hover clip. 2,100 CU.*
 
 ### Add the image
 
@@ -141,12 +152,25 @@ to 3D at its 4K settings, 61,019 faces, as imported in Viewport 2.0.*
 
 A file or a capture is sent to your Scenario project when you add it, once
 per session. One clear image of one object on a plain background works best.
-Meshy 7.1 takes up to four views of the object; models that take one image
-use the first.
+
+### From a blockout
+
+**Viewport** sends the view you look through: block the shape out with cubes
+and cylinders, frame it, and the model follows its proportions and pose.
+
+| The blockout, captured from the viewport | The model | Its clip |
+| --- | --- | --- |
+| ![A service arm blocked out from cubes and cylinders in Maya](media/blockout-input.jpg) | ![The service arm built from the blockout with Scenario Claude Fable 5.2 3D](media/blockout-result.jpg) | ![The arm playing its weld clip](media/blockout-weld.gif) |
+
+*Scenario Claude Fable 5.2 3D, from one viewport capture and a prompt: 28,816
+triangles, 9 named parts, 6 joints and a 6-second weld clip. 2,100 CU.*
 
 ### Which model
 
-Both quick picks, from the image above, one run each:
+Scenario Claude Fable 5.2 3D builds a full asset from text or up to eight
+images: named parts, a material per part, and a rig and a clip when the
+prompt asks for them. The two quick picks return one textured mesh. From the
+drone image above, one run each:
 
 | | Meshy 7.1 Image to 3D, the default | Tripo P2 |
 | --- | --- | --- |
@@ -155,8 +179,6 @@ Both quick picks, from the image above, one run each:
 | Look | Lighter paint, a clean stencil | Darker paint, more wear |
 | Lands | Turned and tilted, like the picture | Level and facing front |
 | Price | 140 CU, up to four views | 260 CU, one image |
-
-**Change** also lists Rodin Gen-2.5, Tripo 3.1 and Hunyuan 3D Pro 3.1.
 
 ## 3D from views of an object
 
@@ -210,15 +232,16 @@ the blockout within three centimetres of its 4.25 m height.
 
 ## Quad meshes and FBX results
 
-The Tripo models have a **quad** setting: the mesh comes back in quads, as an
-FBX file. The plug-in imports it through Maya's own FBX importer, as one
-Ctrl+Z, and lands it like a GLB.
+Scenario Claude Fable 5.2 3D and the Tripo models can return a mesh in quads,
+as an FBX file: **Topology** and **Output format** under More settings for
+Fable, the **quad** setting for Tripo. The plug-in imports the file through
+Maya's own FBX importer, as one Ctrl+Z, and lands it like a GLB.
 
-<p align="center"><img src="media/quad-fbx.jpg" width="600" alt="The quad crane as imported, and with every edge drawn"></p>
+<p align="center"><img src="media/quad-fbx.jpg" width="720" alt="The scout mech with its materials, and with every edge drawn: a grid of quads"></p>
 
-*Tripo 3.1 Multi View with quad on and a face limit of 8,000, from the four
-crane views: 7,481 faces, 7,479 of them quads. 53 CU. In this run the column
-under the arm came back without paint.*
+*The scout mech of this scene, built from a prompt with Scenario Claude Fable
+5.2 3D (face budget 30,000, quads, FBX): 14,932 faces, all quads, in 60 named
+parts with 15 joints.*
 
 ### What the plug-in does around the FBX importer
 
