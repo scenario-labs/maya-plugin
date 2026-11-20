@@ -18,12 +18,12 @@ const PAGE = path.join(SITE, "index.html");
 const html = fs.readFileSync(PAGE, "utf8");
 // The visible text: no styles, scripts or tags.
 const text = html
-  .replace(/<style[\s\S]*?<\/style\s*>/gi, " ")
-  .replace(/<script[\s\S]*?<\/script\s*>/gi, " ")
+  .replace(/<style\b[^>]*>[\s\S]*?<\/style\b[^>]*>/gi, " ")
+  .replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, " ")
   .replace(/<[^>]+>/g, " ");
 
 // The markup alone: the scripts build some links of their own (search results).
-const markup = html.replace(/<script[\s\S]*?<\/script\s*>/gi, " ");
+const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, " ");
 
 function attributes(name) {
   return [...markup.matchAll(new RegExp(`\\s${name}="([^"]*)"`, "g"))].map((m) => m[1]);
