@@ -18,12 +18,12 @@ const PAGE = path.join(SITE, "index.html");
 const html = fs.readFileSync(PAGE, "utf8");
 // The visible text: no styles, scripts or tags.
 const text = html
-  .replace(/<style[\s\S]*?<\/style>/g, " ")
-  .replace(/<script[\s\S]*?<\/script>/g, " ")
+  .replace(/<style[\s\S]*?<\/style\s*>/gi, " ")
+  .replace(/<script[\s\S]*?<\/script\s*>/gi, " ")
   .replace(/<[^>]+>/g, " ");
 
 // The markup alone: the scripts build some links of their own (search results).
-const markup = html.replace(/<script[\s\S]*?<\/script>/g, " ");
+const markup = html.replace(/<script[\s\S]*?<\/script\s*>/gi, " ");
 
 function attributes(name) {
   return [...markup.matchAll(new RegExp(`\\s${name}="([^"]*)"`, "g"))].map((m) => m[1]);
@@ -124,7 +124,10 @@ test("old links to handbook chapters move to /handbook/", () => {
   const script = (html.match(/<script>\s*\/\/ Old links\.[\s\S]*?<\/script>/) || [])[0];
   assert.ok(script, "the forwarding script, in the head");
   assert.ok(html.indexOf(script) < html.indexOf("</head>"), "it runs before the page draws");
-  const list = new Set(script.match(/var HANDBOOK = ((?:"[^"]*"\s*\+?\s*)+);/)[1].match(/"([^"]*)"/g).join(" ").replace(/"/g, "").split(/\s+/).filter(Boolean));
+  const from = script.indexOf("var HANDBOOK = ");
+  assert.ok(from >= 0, "the list of handbook chapters");
+  const strings = script.slice(from, script.indexOf(";", from)).match(/"[^"]*"/g) || [];
+  const list = new Set(strings.join(" ").replace(/"/g, "").split(/\s+/).filter(Boolean));
   for (const chapter of chapters) assert.ok(list.has(chapter), `chapter ${chapter} is forwarded`);
   for (const id of list) assert.ok(!ids.has(id), `${id} is on this page and must not be forwarded`);
   assert.match(script, /location\.replace\("handbook\/#" \+ encodeURIComponent\(id\)\)/);

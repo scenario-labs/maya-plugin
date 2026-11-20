@@ -24,7 +24,6 @@ import {
   AnimationMixer,
   Box3,
   BufferGeometry,
-  Color,
   DirectionalLight,
   Float32BufferAttribute,
   LineBasicMaterial,
