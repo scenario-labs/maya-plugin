@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Scenario for Maya: the launch film and one example scene in eleven steps, with clips, pictures and four results to turn in 3D. The full manual is the handbook under /handbook/.">
+<meta name="description" content="Scenario for Maya in two scenes: Bay 12, with its film and tutorial, and Opening Night, the panel in eleven steps, with clips, pictures and results to turn in 3D. The full manual is the handbook under /handbook/.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Scenario">
 <meta property="og:title" content="Scenario for Maya">
@@ -181,6 +181,10 @@ section { margin-top: 4.5rem; padding-top: 2.5rem; border-top: 1px solid var(--b
 .film[data-state="missing"] .film-msg { display: block; }
 .films2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; margin: 1.4rem 0 1.6rem; }
 .films2 figure { margin: 0; }
+.films2.one { grid-template-columns: minmax(0, 1fr); }
+.films2.stories { margin: 1.8rem 0 0; }
+.films2.stories figcaption b { font-weight: 600; color: var(--fg); }
+.films2 figure:has(.film[data-state="playing"]) { grid-column: 1 / -1; }
 .v3grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4rem 1rem; }
 .v3grid .fig { margin: .6rem 0 .8rem; }
 .v3grid .car-media { aspect-ratio: 16 / 10; }
@@ -572,8 +576,13 @@ ol.steps.short > li { margin-bottom: .55rem; }
         <li><a href="#how">How it works</a><ul>
           <li><a href="#words">Four words</a></li>
         </ul></li>
-        <li><a href="#story">The example</a></li>
-        <li><span class="grp">Eleven steps</span></li>
+        <li><span class="grp">Story one</span></li>
+        <li><a href="#bay12">Bay 12</a><ul>
+          <li><a href="#bay12-technician">The technician</a></li>
+          <li><a href="#bay12-3d">Results to turn</a></li>
+        </ul></li>
+        <li><span class="grp">Story two · eleven steps</span></li>
+        <li><a href="#story">Opening Night</a></li>
         <li><a href="#price">1. Pick a model, see the price</a></li>
         <li><a href="#round-trip">2. From Maya to Scenario and back</a></li>
         <li><a href="#images">3. Dress the set with images</a></li>
@@ -591,11 +600,6 @@ ol.steps.short > li { margin-bottom: .55rem; }
         </ul></li>
         <li><a href="#quads-fbx">10. Quads and FBX</a></li>
         <li><a href="#agents">11. Work with an agent</a></li>
-        <li><span class="grp">A second example</span></li>
-        <li><a href="#bay12">Bay 12</a><ul>
-          <li><a href="#bay12-technician">The technician</a></li>
-          <li><a href="#bay12-3d">Results to turn</a></li>
-        </ul></li>
         <li><a href="#guide">The guide</a></li>
         <li><span class="grp">Reference</span></li>
         <li><a href="#install-update">Install and update</a><ul>
@@ -618,23 +622,34 @@ ol.steps.short > li { margin-bottom: .55rem; }
   <main id="main">
     <!-- ================================================================ OVERVIEW -->
     <div class="hero" id="intro" data-toc="Overview">
-      <p class="eyebrow">Scenario for Maya · Film and example</p>
-      <h1>Scenario for Maya: <span class="it">one scene, eleven steps</span></h1>
+      <p class="eyebrow">Scenario for Maya · Two films, two scenes</p>
+      <h1>Scenario for Maya: <span class="it">two scenes, one panel</span></h1>
       <p class="lede">Scenario for Maya adds a panel beside the Channel Box that runs Scenario's 3D, motion, mesh edit and image models on your scene. The Generate button shows the price before you click, and the result lands in the open scene as one undo step. You need Maya 2025, 2026 or 2027 and a Scenario account on a plan with API access.</p>
       <div class="cta">
         <a class="btn-go" href="#install-update">Install</a>
         <a class="btn-pill" href="handbook/">Open the handbook</a>
         <a class="btn-pill" href="https://github.com/scenario-labs/maya-plugin">Source on GitHub</a>
       </div>
-      <figure>
-        <div class="film" id="film" data-state="poster">
-          <video id="film-v" src="assets/film/film-maya.mp4" poster="assets/film/film-maya-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="Scenario for Maya, the launch film on Opening Night, a toy theatre"></video>
-          <span class="film-tag">Launch film</span>
-          <button class="film-play" type="button" id="film-play"><span class="tri" aria-hidden="true"></span>Watch the film</button>
-          <span class="film-msg" role="status">The film is not on this page yet.</span>
-        </div>
-        <figcaption>The launch film, 3 min 46 s. Opening Night, a toy theatre in Maya: the set, the materials, the cast and their moves made with the panel, the curtains, confetti, cameras and lights made with Maya's own tools.</figcaption>
-      </figure>
+      <div class="films2 stories" role="group" aria-label="Two films">
+        <figure>
+          <div class="film" id="film-bay12" data-state="poster">
+            <video src="assets/film/film-bay12.mp4" poster="assets/film/film-bay12-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="Scenario for Maya, the Bay 12 film: a scout mech wakes in a hangar and walks out at dusk"></video>
+            <span class="film-tag">Bay 12</span>
+            <button class="film-play" type="button"><span class="tri" aria-hidden="true"></span>Watch the film</button>
+            <span class="film-msg" role="status">The film is not on this page yet.</span>
+          </div>
+          <figcaption><b>Bay 12</b>, 3 min 46 s. A scout mech wakes in a hangar and walks out at dusk: eighteen Scenario results in one Maya scene. <a href="#bay12">How it was made</a></figcaption>
+        </figure>
+        <figure>
+          <div class="film" id="film" data-state="poster">
+            <video id="film-v" src="assets/film/film-maya.mp4" poster="assets/film/film-maya-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="Scenario for Maya, the launch film on Opening Night, a toy theatre"></video>
+            <span class="film-tag">Opening Night</span>
+            <button class="film-play" type="button" id="film-play"><span class="tri" aria-hidden="true"></span>Watch the film</button>
+            <span class="film-msg" role="status">The film is not on this page yet.</span>
+          </div>
+          <figcaption><b>Opening Night</b>, 3 min 46 s. A toy theatre built one panel mode at a time: the set, the materials, the cast and their moves. <a href="#story">The eleven steps</a></figcaption>
+        </figure>
+      </div>
       <div class="note" style="margin-top:1.6rem">
         <span class="nk" id="ver-note">Latest release</span>
         <p><a href="/download/latest">Download the latest release</a><span data-version-show hidden>, <code>scenario-maya-<span data-version></span>.zip</code>,</span> and install it as described in <a href="#install-update">Install and update</a>. Checked by hand in Maya 2027.2 on macOS. Open source under the MIT licence.</p>
@@ -642,8 +657,8 @@ ol.steps.short > li { margin-bottom: .55rem; }
       <div class="where" role="group" aria-label="This page and the handbook">
         <div class="where-card">
           <span class="kit-meta">This page <span class="here">You are here</span></span>
-          <b>Two films, one example scene in eleven steps, a second example with its tutorial, the illustrated guide</b>
-          <span class="where-links"><a href="#film">The film</a><a href="#story">The eleven steps</a><a href="#bay12">Bay 12</a><a href="#guide">The guide</a></span>
+          <b>Two stories: Bay 12 with its film and tutorial, Opening Night with its film and eleven steps. Then the illustrated guide</b>
+          <span class="where-links"><a href="#bay12">Bay 12</a><a href="#story">Opening Night</a><a href="#guide">The guide</a></span>
         </div>
         <a class="where-card" href="handbook/">
           <span class="kit-meta">The handbook</span>
@@ -707,10 +722,92 @@ ol.steps.short > li { margin-bottom: .55rem; }
       </dl>
     </section>
 
+    <!-- ================================================================ BAY 12 -->
+    <div class="part"><span>Story one</span><em>Bay 12, one scene from the first picture to the walk out</em></div>
+
+    <section id="bay12" data-toc="Bay 12">
+      <h2>Bay 12: the scout mech leaves the hangar</h2>
+      <p class="what">A hangar at dusk and a four-legged scout mech: a recon drone, a loader crane that sets a weapon pod on the mech, an equipment case and a technician who waves it out. Eighteen Scenario results in one Maya scene; the mech itself is built in <a href="#quads-fbx">step 10</a>. The <a href="#film-bay12">film</a> is at the top of the page, and the tutorial below shows how each piece was made. The tarp is nCloth, and the crane's keys, the nine cameras, the lights and the door are Maya.</p>
+      <div class="films2 one">
+        <figure>
+          <div class="film" id="tutorial-bay12" data-state="poster">
+            <video src="assets/film/tutorial-bay12.mp4" poster="assets/film/tutorial-bay12-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="How Bay 12 was made, a tutorial in eight steps with the prompts, the settings and the Maya scripts"></video>
+            <span class="film-tag">Tutorial</span>
+            <button class="film-play" type="button"><span class="tri" aria-hidden="true"></span>Watch the tutorial</button>
+            <span class="film-msg" role="status">The tutorial is not on this page yet.</span>
+          </div>
+          <figcaption>How Bay 12 was made, 3 min 11 s: eight steps with the prompts, the settings and the Maya scripts.</figcaption>
+        </figure>
+      </div>
+      <div class="car" aria-roledescription="carousel" aria-label="Bay 12, the show shot by shot">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/exit.mp4" poster="assets/bay/exit.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech walks out of the hangar at dusk while the technician turns to watch it leave"></video></div><figcaption><span class="car-kind">Loop</span>The last shot: the mech walks out, and the technician turns to watch it leave.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/tarp.mp4" poster="assets/bay/tarp.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A tarp slides off the crouched scout mech"></video></div><figcaption><span class="car-kind">Loop</span>The tarp slides off the crouched mech. The fabric is a tiling picture from the Image tab; the cloth is nCloth.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/loading.mp4" poster="assets/bay/loading.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A loader crane lowers a small weapon pod onto the crouched scout mech, lets go and lifts away"></video></div><figcaption><span class="car-kind">Loop</span>Loader crane 12 sets the weapon pod on the mech. Both started as blockouts of Maya primitives; each was built from a picture of its blockout together with the mech's own 3D file, through the Scenario MCP, so they came back in its paint. The loading is keyed in Maya on the bones Scenario built.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/powerup.mp4" poster="assets/bay/powerup.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech powers up and stands"></video></div><figcaption><span class="car-kind">Loop</span>The mech stands. Power-up is one of two clips added to the same build by prompt, through the Scenario MCP: the same 60 parts and 15 joints came back.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/drone.mp4" poster="assets/bay/drone.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A recon drone lifts off beside the mech"></video></div><figcaption><span class="car-kind">Loop</span>Recon drone 12 lifts off: built from its concept picture, 13 parts, 10 joints, a Hover clip.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/wave.mp4" poster="assets/bay/wave.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The technician, seen from behind, waves the mech forward"></video></div><figcaption><span class="car-kind">Loop</span>The technician waves the mech forward.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/door.mp4" poster="assets/bay/door.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The hangar door opens on a yard at dusk, behind the mech"></video></div><figcaption><span class="car-kind">Loop</span>The door opens on the yard. The two walls, the yard and the floor are four pictures from the Image tab; the door was cut out of the back wall's picture in Maya.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/walk.mp4" poster="assets/bay/walk.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech walks across the hangar, seen from the side"></video></div><figcaption><span class="car-kind">Loop</span>The walk cycle that came with the build, on a path keyed in Maya.</figcaption></figure>
+        </div>
+      </div>
+
+      <h3 id="bay12-technician">The technician: a picture, a mesh, a captured move</h3>
+      <p>The technician took three steps: a concept picture, one high-resolution mesh, then a performance captured from a video.</p>
+      <div class="car" aria-roledescription="carousel" aria-label="The technician, from a picture to a captured move">
+        <div class="car-track" tabindex="0">
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/captured-move.mp4" poster="assets/bay/captured-move.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="Left, a man in overalls performs a wave, a pause and a turn in a studio. Right, the technician in Maya makes the same moves at the same time"></video></div><figcaption><span class="car-kind">Loop</span>Left, the reference performance, a 20 s video from Seedance 2.5. Right, the same move on the technician in Maya: 52 joints, 481 keyed frames.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media dark"><img src="assets/bay/concept-technician.webp" alt="Concept picture of a yard technician in yellow and grey armour with the number 12, front view, arms away from the body" loading="lazy" width="900" height="1200"></div><figcaption>Step 1, the concept picture from GPT Image 2.6 Sunburst in the Image tab: front view, arms away from the body, the livery of the mech and the drone.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media ui"><img src="assets/bay/pc-tech-concept.webp" alt="Maya with the Scenario panel on the Image tab, the technician's prompt typed and the bay in the viewport" loading="lazy" width="1728" height="922"></div><figcaption>The prompt in the Image tab, with the bay in the viewport.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media ui"><img src="assets/bay/pc-tech-tripo.webp" alt="Maya with the Scenario panel on 3D, Image: the concept picture as input, Tripo 3.1 and its settings, the technician standing in the bay" loading="lazy" width="1728" height="922"></div><figcaption>Step 2, <b>3D</b>, <b>Image</b> with Tripo 3.1: the picture taken from the results, Geometry quality on detailed, a face limit of 300,000.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><img src="assets/bay/tech-grey.webp" alt="The technician's mesh in Maya without its texture: armour plates, straps and pouches modelled" loading="lazy" width="1200" height="675"></div><figcaption>The mesh as it lands: one mesh, 293,068 triangles.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><img src="assets/bay/tech-textured.webp" alt="The same technician in Maya with its colour map, in the bay" loading="lazy" width="1200" height="675"></div><figcaption>The same mesh with its 4K colour map.</figcaption></figure>
+          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/technician.mp4" poster="assets/bay/technician.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The technician in the bay, seen from the front, waving with his right arm"></video></div><figcaption><span class="car-kind">Loop</span>Step 3, the first seconds of the captured move in the bay.</figcaption></figure>
+        </div>
+      </div>
+      <ol class="steps short">
+        <li>In the <b>Image</b> tab, generate the concept: one character, front view, arms away from the body, on a plain background.</li>
+        <li>From the result's <b>...</b> menu, choose <b>Make a 3D model from this image</b>. Press <b>Change</b> and pick Tripo 3.1, set Geometry quality to detailed and raise the face limit. <b>Generate</b>, then <b>Import</b>.</li>
+        <li>For the move, an agent connected to the Scenario MCP sends a video of the performance and the mesh to Uthana Video to Motion 3.0. The result is one GLB: the same mesh on 52 joints, with the performance keyed.</li>
+        <li>Bring it in with <b>Scenario › Import GLB...</b>, which needs no sign-in.</li>
+      </ol>
+      <figure class="fig" id="technician-3d">
+        <div class="v3d" data-src="assets/3d/technician.glb" data-orbit="20 80 1.05" aria-label="The technician as a 3D model you can turn, playing his captured move"></div>
+        <figcaption>The technician with his captured move, 20 seconds. Drag to turn; the buttons at the top switch to Solid, Wireframe, Normals, or Rig for the 52 joints. For this page the mesh is reduced to 64,474 triangles and the textures to 1024 px.</figcaption>
+      </figure>
+      <div class="note"><span class="nk">Video to motion in this version</span><p>The panel's <b>Motion</b> mode runs text to motion models (<a href="#motion">step 8</a>). A move captured from a video runs through the Scenario MCP today, and the result lands in Maya with <b>Scenario › Import GLB...</b>.</p></div>
+
+      <h3 id="bay12-3d">Four more results to turn</h3>
+      <div class="v3grid">
+        <figure class="fig" id="crane-3d">
+          <div class="v3d" data-src="assets/3d/crane.glb" data-orbit="-30 75 1.0" aria-label="Loader crane 12 as a 3D model you can turn"></div>
+          <figcaption>Loader crane 12, from a blockout and the mech's own 3D file: 48 parts, 7 bones, 52,090 triangles.</figcaption>
+        </figure>
+        <figure class="fig" id="pod-3d">
+          <div class="v3d" data-src="assets/3d/pod.glb" data-orbit="30 70 1.05" aria-label="The scout mech carrying its weapon pod as a 3D model you can turn, the turret tracking"></div>
+          <figcaption>The weapon pod on the mech, from a blockout modelled on its shell: 16 parts on one leg, 3 bones, a tracking clip.</figcaption>
+        </figure>
+        <figure class="fig" id="drone-3d">
+          <div class="v3d" data-src="assets/3d/drone.glb" data-orbit="30 70 1.05" aria-label="Recon drone 12 as a 3D model you can turn, playing its Hover clip"></div>
+          <figcaption>Recon drone 12, from its concept picture: 13 parts, 10 joints, its Hover clip.</figcaption>
+        </figure>
+        <figure class="fig" id="case-3d">
+          <div class="v3d" data-src="assets/3d/case.glb" data-orbit="35 65 1.1" aria-label="Equipment case 12 as a 3D model you can turn"></div>
+          <figcaption>Equipment case 12: modelled in Maya, painted by <b>Edit selection</b>, Retexture. Solid and Wireframe show the 2,336 triangles as they were modelled.</figcaption>
+        </figure>
+        <figure class="fig col2">
+          <div class="car-media"><img src="assets/bay/case-grey.webp" alt="The equipment case in Maya before Retexture: a plain grey model" loading="lazy" width="1200" height="675"></div>
+          <figcaption>The case before Retexture. The scout mech itself turns in <a href="#mech-3d">step 10</a>, with its walk cycle.</figcaption>
+        </figure>
+      </div>
+    </section>
+
     <!-- ================================================================ THE EXAMPLE -->
-    <section id="story" data-toc="The example">
-      <h2>The example: a toy theatre in eleven steps</h2>
-      <p class="what">One Maya scene, Opening Night: a painted set, a cast of wind-up characters, a circus cannon and a bowing mannequin. Scenario made the set, the materials, the cast and their moves; the curtains are nCloth, the confetti nParticles, and the cameras, lights and edits are done in Maya.</p>
+    <div class="part"><span>Story two</span><em>Opening Night, the panel one mode at a time</em></div>
+
+    <section id="story" data-toc="Opening Night">
+      <h2>Opening Night: a toy theatre in eleven steps</h2>
+      <p class="what">One Maya scene: a painted set, a cast of wind-up characters, a circus cannon and a bowing mannequin. Scenario made the set, the materials, the cast and their moves; the curtains are nCloth, the confetti nParticles, and the cameras, lights and edits are done in Maya.</p>
       <figure class="fig">
         <div class="wipe" style="--cut:50%">
           <img src="assets/img/compare-scene.webp" alt="The toy theatre in Maya's viewport with every edge drawn: the stage, the curtains, the backdrop and the cast" loading="lazy" width="1200" height="675">
@@ -1042,95 +1139,6 @@ ol.steps.short > li { margin-bottom: .55rem; }
       <div class="note"><span class="nk">In this version</span><p>Skills are instructions an agent reads before it works. The plugin has no agent connection of its own: a local Scenario MCP server inside Maya, so an agent could drive the panel's actions, is listed in <a href="#limits">Known limits</a>.</p></div>
     </section>
 
-    <!-- ================================================================ BAY 12 -->
-    <div class="part"><span>A second example</span><em>Bay 12, built around the scout mech</em></div>
-
-    <section id="bay12" data-toc="Bay 12, a second example">
-      <h2>Bay 12: the scout mech leaves the hangar</h2>
-      <p class="what">The scout mech of <a href="#quads-fbx">step 10</a> in a scene of its own: a hangar at dusk, a recon drone, a loader crane that sets a weapon pod on the mech, an equipment case and a technician who waves it out. Eighteen Scenario results in one Maya scene. The tarp is nCloth, and the crane's keys, the nine cameras, the lights and the door are Maya.</p>
-      <div class="films2">
-        <figure>
-          <div class="film" id="film-bay12" data-state="poster">
-            <video src="assets/film/film-bay12.mp4" poster="assets/film/film-bay12-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="Scenario for Maya, the Bay 12 film: a scout mech wakes in a hangar and walks out at dusk"></video>
-            <span class="film-tag">Film</span>
-            <button class="film-play" type="button"><span class="tri" aria-hidden="true"></span>Watch the film</button>
-            <span class="film-msg" role="status">The film is not on this page yet.</span>
-          </div>
-          <figcaption>The Bay 12 film, 3 min 46 s: the panel at work on one scene, from the first picture to the walk out.</figcaption>
-        </figure>
-        <figure>
-          <div class="film" id="tutorial-bay12" data-state="poster">
-            <video src="assets/film/tutorial-bay12.mp4" poster="assets/film/tutorial-bay12-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="How Bay 12 was made, a tutorial in eight steps with the prompts, the settings and the Maya scripts"></video>
-            <span class="film-tag">Tutorial</span>
-            <button class="film-play" type="button"><span class="tri" aria-hidden="true"></span>Watch the tutorial</button>
-            <span class="film-msg" role="status">The tutorial is not on this page yet.</span>
-          </div>
-          <figcaption>How Bay 12 was made, 3 min 11 s: eight steps with the prompts, the settings and the Maya scripts.</figcaption>
-        </figure>
-      </div>
-      <div class="car" aria-roledescription="carousel" aria-label="Bay 12, the show shot by shot">
-        <div class="car-track" tabindex="0">
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/exit.mp4" poster="assets/bay/exit.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech walks out of the hangar at dusk while the technician turns to watch it leave"></video></div><figcaption><span class="car-kind">Loop</span>The last shot: the mech walks out, and the technician turns to watch it leave.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/tarp.mp4" poster="assets/bay/tarp.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A tarp slides off the crouched scout mech"></video></div><figcaption><span class="car-kind">Loop</span>The tarp slides off the crouched mech. The fabric is a tiling picture from the Image tab; the cloth is nCloth.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/loading.mp4" poster="assets/bay/loading.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A loader crane lowers a small weapon pod onto the crouched scout mech, lets go and lifts away"></video></div><figcaption><span class="car-kind">Loop</span>Loader crane 12 sets the weapon pod on the mech. Both started as blockouts of Maya primitives; each was built from a picture of its blockout together with the mech's own 3D file, through the Scenario MCP, so they came back in its paint. The loading is keyed in Maya on the bones Scenario built.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/powerup.mp4" poster="assets/bay/powerup.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech powers up and stands"></video></div><figcaption><span class="car-kind">Loop</span>The mech stands. Power-up is one of two clips added to the same build by prompt, through the Scenario MCP: the same 60 parts and 15 joints came back.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/drone.mp4" poster="assets/bay/drone.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="A recon drone lifts off beside the mech"></video></div><figcaption><span class="car-kind">Loop</span>Recon drone 12 lifts off: built from its concept picture, 13 parts, 10 joints, a Hover clip.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/wave.mp4" poster="assets/bay/wave.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The technician, seen from behind, waves the mech forward"></video></div><figcaption><span class="car-kind">Loop</span>The technician waves the mech forward.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/door.mp4" poster="assets/bay/door.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The hangar door opens on a yard at dusk, behind the mech"></video></div><figcaption><span class="car-kind">Loop</span>The door opens on the yard. The two walls, the yard and the floor are four pictures from the Image tab; the door was cut out of the back wall's picture in Maya.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/walk.mp4" poster="assets/bay/walk.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The scout mech walks across the hangar, seen from the side"></video></div><figcaption><span class="car-kind">Loop</span>The walk cycle that came with the build, on a path keyed in Maya.</figcaption></figure>
-        </div>
-      </div>
-
-      <h3 id="bay12-technician">The technician: a picture, a mesh, a captured move</h3>
-      <p>The technician took three steps: a concept picture, one high-resolution mesh, then a performance captured from a video.</p>
-      <div class="car" aria-roledescription="carousel" aria-label="The technician, from a picture to a captured move">
-        <div class="car-track" tabindex="0">
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/captured-move.mp4" poster="assets/bay/captured-move.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="Left, a man in overalls performs a wave, a pause and a turn in a studio. Right, the technician in Maya makes the same moves at the same time"></video></div><figcaption><span class="car-kind">Loop</span>Left, the reference performance, a 20 s video from Seedance 2.5. Right, the same move on the technician in Maya: 52 joints, 481 keyed frames.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media dark"><img src="assets/bay/concept-technician.webp" alt="Concept picture of a yard technician in yellow and grey armour with the number 12, front view, arms away from the body" loading="lazy" width="900" height="1200"></div><figcaption>Step 1, the concept picture from GPT Image 2.6 Sunburst in the Image tab: front view, arms away from the body, the livery of the mech and the drone.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media ui"><img src="assets/bay/pc-tech-concept.webp" alt="Maya with the Scenario panel on the Image tab, the technician's prompt typed and the bay in the viewport" loading="lazy" width="1728" height="922"></div><figcaption>The prompt in the Image tab, with the bay in the viewport.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media ui"><img src="assets/bay/pc-tech-tripo.webp" alt="Maya with the Scenario panel on 3D, Image: the concept picture as input, Tripo 3.1 and its settings, the technician standing in the bay" loading="lazy" width="1728" height="922"></div><figcaption>Step 2, <b>3D</b>, <b>Image</b> with Tripo 3.1: the picture taken from the results, Geometry quality on detailed, a face limit of 300,000.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><img src="assets/bay/tech-grey.webp" alt="The technician's mesh in Maya without its texture: armour plates, straps and pouches modelled" loading="lazy" width="1200" height="675"></div><figcaption>The mesh as it lands: one mesh, 293,068 triangles.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><img src="assets/bay/tech-textured.webp" alt="The same technician in Maya with its colour map, in the bay" loading="lazy" width="1200" height="675"></div><figcaption>The same mesh with its 4K colour map.</figcaption></figure>
-          <figure class="car-slide"><div class="car-media film"><video data-loop src="assets/bay/technician.mp4" poster="assets/bay/technician.webp" width="1280" height="720" muted loop playsinline preload="none" aria-label="The technician in the bay, seen from the front, waving with his right arm"></video></div><figcaption><span class="car-kind">Loop</span>Step 3, the first seconds of the captured move in the bay.</figcaption></figure>
-        </div>
-      </div>
-      <ol class="steps short">
-        <li>In the <b>Image</b> tab, generate the concept: one character, front view, arms away from the body, on a plain background.</li>
-        <li>From the result's <b>...</b> menu, choose <b>Make a 3D model from this image</b>. Press <b>Change</b> and pick Tripo 3.1, set Geometry quality to detailed and raise the face limit. <b>Generate</b>, then <b>Import</b>.</li>
-        <li>For the move, an agent connected to the Scenario MCP sends a video of the performance and the mesh to Uthana Video to Motion 3.0. The result is one GLB: the same mesh on 52 joints, with the performance keyed.</li>
-        <li>Bring it in with <b>Scenario › Import GLB...</b>, which needs no sign-in.</li>
-      </ol>
-      <figure class="fig" id="technician-3d">
-        <div class="v3d" data-src="assets/3d/technician.glb" data-orbit="20 80 1.05" aria-label="The technician as a 3D model you can turn, playing his captured move"></div>
-        <figcaption>The technician with his captured move, 20 seconds. Drag to turn; the buttons at the top switch to Solid, Wireframe, Normals, or Rig for the 52 joints. For this page the mesh is reduced to 64,474 triangles and the textures to 1024 px.</figcaption>
-      </figure>
-      <div class="note"><span class="nk">Video to motion in this version</span><p>The panel's <b>Motion</b> mode runs text to motion models (<a href="#motion">step 8</a>). A move captured from a video runs through the Scenario MCP today, and the result lands in Maya with <b>Scenario › Import GLB...</b>.</p></div>
-
-      <h3 id="bay12-3d">Four more results to turn</h3>
-      <div class="v3grid">
-        <figure class="fig" id="crane-3d">
-          <div class="v3d" data-src="assets/3d/crane.glb" data-orbit="-30 75 1.0" aria-label="Loader crane 12 as a 3D model you can turn"></div>
-          <figcaption>Loader crane 12, from a blockout and the mech's own 3D file: 48 parts, 7 bones, 52,090 triangles.</figcaption>
-        </figure>
-        <figure class="fig" id="pod-3d">
-          <div class="v3d" data-src="assets/3d/pod.glb" data-orbit="30 70 1.05" aria-label="The scout mech carrying its weapon pod as a 3D model you can turn, the turret tracking"></div>
-          <figcaption>The weapon pod on the mech, from a blockout modelled on its shell: 16 parts on one leg, 3 bones, a tracking clip.</figcaption>
-        </figure>
-        <figure class="fig" id="drone-3d">
-          <div class="v3d" data-src="assets/3d/drone.glb" data-orbit="30 70 1.05" aria-label="Recon drone 12 as a 3D model you can turn, playing its Hover clip"></div>
-          <figcaption>Recon drone 12, from its concept picture: 13 parts, 10 joints, its Hover clip.</figcaption>
-        </figure>
-        <figure class="fig" id="case-3d">
-          <div class="v3d" data-src="assets/3d/case.glb" data-orbit="35 65 1.1" aria-label="Equipment case 12 as a 3D model you can turn"></div>
-          <figcaption>Equipment case 12: modelled in Maya, painted by <b>Edit selection</b>, Retexture. Solid and Wireframe show the 2,336 triangles as they were modelled.</figcaption>
-        </figure>
-        <figure class="fig col2">
-          <div class="car-media"><img src="assets/bay/case-grey.webp" alt="The equipment case in Maya before Retexture: a plain grey model" loading="lazy" width="1200" height="675"></div>
-          <figcaption>The case before Retexture. The scout mech itself turns in <a href="#mech-3d">step 10</a>, with its walk cycle.</figcaption>
-        </figure>
-      </div>
-    </section>
-
     <!-- ================================================================ THE GUIDE -->
     <section id="guide" data-toc="The guide">
       <h2>The illustrated guide</h2>
@@ -1345,7 +1353,7 @@ ol.steps.short > li { margin-bottom: .55rem; }
     <a href="https://docs.scenario.com">Scenario docs</a>
     <a href="https://www.scenario.com">scenario.com</a>
     <span class="addr legal">support@scenario.com</span>
-    <p class="fine"><b>This page</b> shows the launch film, one example scene in eleven steps and the illustrated guide. <b>The <a href="handbook/">handbook</a></b> is the full manual: install, every mode, prices, jobs, files, privacy, troubleshooting and agents. Scenario for Maya is open source under the <a href="https://github.com/scenario-labs/maya-plugin/blob/main/LICENSE">MIT licence</a>; the Scenario logo is a trademark of Scenario, not covered by the licence. Autodesk and Maya are trademarks of Autodesk. This project is not affiliated with or endorsed by Autodesk.</p>
+    <p class="fine"><b>This page</b> shows two scenes made with the panel, Bay 12 and Opening Night, each with its film, and the illustrated guide. <b>The <a href="handbook/">handbook</a></b> is the full manual: install, every mode, prices, jobs, files, privacy, troubleshooting and agents. Scenario for Maya is open source under the <a href="https://github.com/scenario-labs/maya-plugin/blob/main/LICENSE">MIT licence</a>; the Scenario logo is a trademark of Scenario, not covered by the licence. Autodesk and Maya are trademarks of Autodesk. This project is not affiliated with or endorsed by Autodesk.</p>
   </div>
 </footer>
 
