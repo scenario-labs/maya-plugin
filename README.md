@@ -17,7 +17,7 @@ leaving Maya 2025, 2026 or 2027. Give the panel a prompt, an image, views of
 an object, a mesh or a character, see the exact price on the button, and the
 result lands in the open scene as one undo step.
 
-![Maya 2027 with the Scenario panel docked on the right: a brass lantern generated with Meshy 7.1 and a wooden chest, imported side by side](docs/media/hero.png)
+![Maya 2027 with the Scenario panel docked on the right: a mech maintenance bay, and a diesel generator made from a prompt with Meshy 7.1, just imported between the mech and the crane](docs/media/hero.png)
 
 ## What it does
 

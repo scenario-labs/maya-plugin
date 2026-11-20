@@ -16,10 +16,11 @@ Maya 2027.2 with live Scenario models.
 2. In the Scenario panel, choose **Sign in with Scenario** and approve in your
    browser. If your account has several teams or projects, pick one.
 3. Open the **3D** tab, keep the **Text** mode and its default model, Meshy
-   7.1, and write a prompt: `weathered brass ship lantern, game prop`.
+   7.1, and describe one object: `portable diesel generator for an aircraft
+   hangar, yellow steel housing, two wheels and a tow handle, game prop`.
 4. The button shows the price once Scenario has checked it, for example
    `Generate . 120 CU`; the check is free. Press it.
-5. When the card says Ready to apply, press **Import**. The lantern lands on
+5. When the card says Ready to apply, press **Import**. The generator lands on
    the ground in front of the camera at its real size. Ctrl+Z removes it in
    one step.
 
@@ -79,11 +80,12 @@ preferences. Nothing is sent to Scenario until you sign in.
 
 ## 3D from a prompt
 
-![Typing a prompt, pricing it, generating with Meshy 7.1 and importing the lantern into the scene](media/flow-3d.gif)
+![Typing a prompt, pricing it, generating with Meshy 7.1 and importing a diesel generator into a mech maintenance bay](media/flow-3d.gif)
 
-*Recorded in Maya 2027.2 with a live Scenario model. The wait for Scenario
-is sped up; everything else plays in real time. Videos:
-[this flow](media/flow-3d.mp4), [the whole session](media/session.mp4).*
+*Recorded in Maya 2027.2 with a live Scenario model, in a scene whose mech
+and crane also came from Scenario. The wait for Scenario is sped up.
+Videos: [this flow](media/flow-3d.mp4),
+[the same run with the wait in real time](media/session.mp4).*
 
 ### Generate
 
@@ -102,6 +104,10 @@ is sped up; everything else plays in real time. Videos:
    the GLB when it is ready and shows what came back: format, faces and size
    in metres, with Scenario's preview picture.
 
+*The run above: a five-line description of a portable diesel generator,
+Meshy 7.1 at its 30,000-face preset. It came back in about 100 seconds:
+27,718 faces, 1.90 x 1.31 x 0.86 m, 120 CU.*
+
 ### Import
 
 **Import** adds the model as a new group at the size Scenario returns, its
@@ -111,8 +117,8 @@ card reports the import checks: size, materials and textures, non-manifold
 edges, missing textures. One Ctrl+Z removes the whole import; redo brings it
 back.
 
-<p align="center"><img src="media/turntable.gif" width="560" alt="The lantern and the chest turning in Maya's viewport"></p>
-<p align="center"><sub>Viewport 2.0 with one key light. <a href="media/turntable.mp4">MP4</a></sub></p>
+<p align="center"><img src="media/turntable.gif" width="560" alt="The generated diesel generator turning: yellow housing, hazard stripes, two wheels, tow bar and exhaust stack"></p>
+<p align="center"><sub>The same generator in Viewport 2.0, as imported: one material, three textures. <a href="media/turntable.mp4">MP4</a></sub></p>
 
 ### Import any GLB
 
@@ -124,11 +130,12 @@ shapes and the first animation clip.
 
 | The image | The model, imported in Maya |
 | --- | --- |
-| ![A concept image of a carved wooden treasure chest](media/image-to-3d-input.jpg) | ![The chest generated from it with Meshy 7.1, in Maya's viewport](media/image-to-3d-result.jpg) |
+| ![A concept image of a quad-rotor recon drone in worn sand-yellow paint with black hazard stripes](media/image-to-3d-input.jpg) | ![The drone generated from it with Meshy 7.1, in Maya's viewport](media/image-to-3d-result.jpg) |
 
-*The image was generated in the Image tab with GPT Image 2.5 Flare. The
-model is Meshy 7.1 Image to 3D at the 30,000-face preset (28,984 faces),
-imported by the plug-in and rendered in Maya's Viewport 2.0.*
+*The image was generated in the Image tab with GPT Image 2.5 Sunburst. The
+model is Meshy 7.1 Image to 3D with its 4K geometry and texture settings and
+a 60,000-face target (61,019 faces), imported by the plug-in and rendered in
+Maya's Viewport 2.0.*
 
 ### Add the image
 
@@ -158,7 +165,7 @@ Both quick picks, from the image above, one run each:
 | Meshy 7.1 Image to 3D, the default | Tripo P2 |
 | --- | --- |
 | ![Meshy 7.1 result, front and back](media/image-to-3d-meshy.jpg) | ![Tripo P2 result, front and back](media/image-to-3d-tripo.jpg) |
-| 28,984 faces (30,000 preset), carving kept on every side, about 140 s, 120 CU, up to four views | 4,222 faces, clean mesh with flatter carving and a plain back, about 85 s, 220 CU, one image |
+| 61,019 faces (4K geometry and textures, 60,000-face target), lighter paint and a clean stencil; it kept the picture's three-quarter attitude, so it lands turned and tilted; 140 CU, up to four views | 49,341 faces (50,000 face limit, extreme texture quality), darker paint with more wear; it lands level and facing front; 260 CU, one image |
 
 **Change** also lists Rodin Gen-2.5, Tripo 3.1 and Hunyuan 3D Pro 3.1.
 
@@ -172,7 +179,7 @@ over it.
 
 | | Front, left, back, right |
 | --- | --- |
-| Captured around a blockout | ![The four views captured around a blockout robot](media/views-capture.jpg) |
+| Captured around a blockout | ![The four views captured around a blockout of a service crane: a yellow arm on a wheeled base](media/views-capture.jpg) |
 | Tripo P2 Multi View, the default | ![The Tripo P2 result seen from the same four sides](media/views-tripo-p2.jpg) |
 | Tripo 3.1 Multi View | ![The Tripo 3.1 result seen from the same four sides](media/views-tripo-v31.jpg) |
 
@@ -200,10 +207,10 @@ object's size and facing the same way, as a new group. Your object is not
 changed: hide it, or keep it to compare. Views added as files land like any
 3D result, on the ground in front of the camera.
 
-<p align="center"><img src="media/views-turntable.gif" width="300" alt="The Tripo P2 robot turning in Maya's Viewport 2.0"> <img src="media/views-tripo-p2-wire.jpg" width="300" alt="The Tripo P2 robot with every edge drawn: 4,987 faces"></p>
+<p align="center"><img src="media/views-turntable.gif" width="300" alt="The Tripo P2 crane turning in Maya's Viewport 2.0"> <img src="media/views-tripo-p2-wire.jpg" width="300" alt="The Tripo P2 crane with every edge drawn: 4,822 faces"></p>
 
-*A robot blocked out from cubes in Maya and one Tripo P2 run on its four
-views. Right, the same mesh with every edge drawn.*
+*A service crane blocked out from cubes and cylinders in Maya and one Tripo
+P2 run on its four views. Right, the same mesh with every edge drawn.*
 
 ### Which model
 
@@ -211,13 +218,12 @@ Same four views, one run each:
 
 | Model | Faces | GLB | Price |
 | --- | --- | --- | --- |
-| Tripo P2 Multi View, the default | 4,987, a clean low-poly mesh | 1.4 MB | 220 CU |
-| Tripo 3.1 Multi View, the low-cost choice | 1,425,173, dense | 42 MB | 45 CU |
+| Tripo P2 Multi View, the default | 4,822, a clean low-poly mesh | 1.8 MB | 240 CU |
+| Tripo 3.1 Multi View, the low-cost choice | 1,466,572, dense | 44 MB | 45 CU |
 | Hunyuan 3D Pro 3.1 Multiview | starts at 40,000, its lightest setting | not run yet | 120 CU |
 
-Both Tripo results kept the shape and colours on every side, took under four
-minutes and landed on the blockout within half a centimetre of its 82 cm
-height.
+Both Tripo results kept the shape and colours on every side and landed on
+the blockout within three centimetres of its 4.25 m height.
 
 ## Quad meshes and FBX results
 
@@ -227,10 +233,11 @@ through Maya's own FBX importer, as one Ctrl+Z, and lands it like a GLB: on
 the ground in front of the camera, or over the captured object in the
 Multi-view mode.
 
-<p align="center"><img src="media/quad-fbx.jpg" width="600" alt="The robot from Tripo 3.1 Multi View with quad on: as imported, and with every edge drawn, a grid of quads"></p>
+<p align="center"><img src="media/quad-fbx.jpg" width="600" alt="The crane from Tripo 3.1 Multi View with quad on: as imported, and with every edge drawn, a grid of quads"></p>
 
 *Tripo 3.1 Multi View with quad on and a face limit of 8,000, from the four
-robot views: 8,153 faces, 8,132 of them quads. 53 CU.*
+crane views: 7,481 faces, 7,479 of them quads. 53 CU. In this run the column
+under the arm came back without paint.*
 
 ### What the plug-in does around the FBX importer
 
@@ -280,23 +287,24 @@ and the import message says so.
 
 ### What came back
 
-A bevelled crate of 1,052 triangles with the cube's default UVs, one run per
-model:
+A grey equipment case of 2,336 triangles with its own UVs, one run per
+model. The retexture prompt asked for sand-yellow painted metal with a band
+of black hazard stripes and worn edges:
 
 | Your mesh | Meshy 7 Retexture | Tripo 3.0 Texturing |
 | --- | --- | --- |
-| ![The crate sent, grey, before any edit](media/edit-input.jpg) | ![The crate retextured by Meshy 7 as weathered planks with metal corners](media/edit-meshy-retexture.jpg) | ![The crate retextured by Tripo 3.0 in dark brown wood](media/edit-tripo-texturing.jpg) |
-| 1,052 triangles | Same triangles and the same UVs; base colour, normal, metallic and roughness maps; 40 CU | Same triangles and the same UVs; PBR textures; 15 CU |
+| ![The equipment case sent, grey, before any edit](media/edit-input.jpg) | ![The case retextured by Meshy 7: yellow paint, black bands, a stencilled 12, chipped edges](media/edit-meshy-retexture.jpg) | ![The case retextured by Tripo 3.0 in a plain olive-sand paint](media/edit-tripo-texturing.jpg) |
+| 2,336 triangles | Same triangles and the same UVs; base colour, normal, metallic and roughness maps; 40 CU | Same triangles and the same UVs; PBR textures at the detailed quality; 30 CU |
 
 | Your UVs, on a checker | Tripo Smart UV |
 | --- | --- |
-| ![The crate with its default UVs on a checker: large squares, stretched on the bevels](media/edit-uv-input.jpg) | ![The crate with Tripo Smart UV's layout on the same checker: even squares across the faces](media/edit-uv-smart.jpg) |
-| The cube's default layout | A new layout on the same triangles; 40 CU |
+| ![The case with its own UVs on a checker: squares of several sizes, narrow strips on the side panels](media/edit-uv-input.jpg) | ![The case with Tripo Smart UV's layout on the same checker: squares closer to one size across the panels](media/edit-uv-smart.jpg) |
+| The layout the mesh came with | A new layout on the same triangles; 40 CU |
 
 | What was sent | Meshy Remesh | Tripo Retopology v3 |
 | --- | --- | --- |
-| ![The crate as sent, every edge drawn: an even grid of bevelled panels split in triangles](media/edit-remesh-sent.jpg) | ![The crate remeshed by Meshy: larger, irregular triangles over the same shape](media/edit-remesh-meshy.jpg) | ![The crate remeshed by Tripo: larger triangles in a more regular pattern over the same shape](media/edit-remesh-tripo.jpg) |
-| 1,052 triangles (398 faces in Maya) | 522 triangles, new UVs, base colour and metal-roughness maps baked; 20 CU | 560 triangles, a baked normal map; 70 CU |
+| ![The case as sent, every edge drawn](media/edit-remesh-sent.jpg) | ![The case remeshed by Meshy: about half the triangles over the same shape](media/edit-remesh-meshy.jpg) | ![The case remeshed by Tripo: about half the triangles over the same shape](media/edit-remesh-tripo.jpg) |
+| 2,336 triangles (1,184 faces in Maya) | 1,212 triangles for a target of 1,200, new UVs, base colour and metal-roughness maps baked; 20 CU | 1,128 triangles for a face limit of 1,200, new UVs and a baked normal map; 70 CU |
 
 ### Apply onto the mesh
 
@@ -310,8 +318,6 @@ what needs your confirmation. One Ctrl+Z undoes the whole apply.
 | UV unwrap | The current UV set gets the result's UVs | The old layout as `<set>_scnPrev`, geometry, other UV sets, materials |
 | Retexture | A new material from the result's maps (base colour, metal and roughness, normal) is assigned to the mesh; UVs too if the model changed them | The old material, unassigned; Maya's default material is never edited |
 | Remesh | The mesh's shape is replaced by the result's mesh, under your transform and with your shape's name; it gets the result's material when the result has textures | The transform (name, place, attributes, parent, sets, connections); the old shape, hidden, as `<shape>_scnPrev` with its history |
-
-All five results above were applied onto the crate this way.
 
 ### What Apply asks or refuses
 
@@ -328,12 +334,12 @@ The **Motion** mode turns a prompt into a character that moves: a skinned
 mesh, its joints and a clip, imported as one Ctrl+Z. Some models bring their
 own character; others rig and animate yours.
 
-<p align="center"><img src="media/motion-wave.gif" width="300" alt="A wooden mannequin waving its right hand, from Meshy Text to Motion"> <img src="media/motion-robot.gif" width="300" alt="The Multi-view robot, rigged and animated by Uthana Text to Motion 3.0, raising its right arm"></p>
+<p align="center"><img src="media/motion-wave.gif" width="300" alt="A wooden mannequin waving its right hand, from Meshy Text to Motion"> <img src="media/motion-robot.gif" width="300" alt="A yard technician in a yellow and black hardshell suit, rigged and animated by Uthana Text to Motion 3.0, waving the right hand"></p>
 
 *"waves hello with the right hand". Left, Meshy Text to Motion from the
-prompt alone: its own mannequin, 52 joints, 3 seconds. Right, Uthana Text to
-Motion 3.0 on the robot from the Multi-view chapter, sent from the scene:
-rigged with 52 joints and animated for 4 seconds.*
+prompt alone: its own mannequin, 52 joints, 5 seconds. Right, Uthana Text to
+Motion 3.0 on a character of the scene, a technician of 293,068 triangles
+sent from Maya: rigged with 52 joints and animated for 4 seconds.*
 
 ### From a prompt alone
 
@@ -354,8 +360,8 @@ a jump), 2 to 10 seconds, 40 CU whatever the length.
    the clip's first frame. Your character is not changed.
 
 Model the character standing, facing front (+Z), arms away from the body.
-Check which way a rig faces before animating further: in our test,
-Cartwheel's rig faced the robot's back.
+Check which way a rig faces before animating further; on the technician,
+both Uthana's and Cartwheel's rigs faced front.
 
 ### Frame rate and timeline
 
@@ -372,22 +378,23 @@ One prompt, one run each:
 
 | Model | Character | Result | Price |
 | --- | --- | --- | --- |
-| Meshy Text to Motion, the default | Its own wooden mannequin (52 joints) | FBX, in about 30 seconds | 40 CU, 2 to 10 s |
-| Uthana Text to Motion 3.0, first pick for your character | Yours (auto-rigged) or its own (160 joints) | GLB, in about 3 minutes | 104 CU for 4 s; 124 CU with a character |
-| Cartwheel Text to Motion | Yours, required | Maya FBX, in 2 to 4 minutes | 72 CU for 3 s |
+| Meshy Text to Motion, the default | Its own wooden mannequin (52 joints) | FBX; a full arm wave, then back to rest | 40 CU, 2 to 10 s |
+| Uthana Text to Motion 3.0, first pick for your character | Yours (auto-rigged, 52 joints) or its own (160 joints) | GLB; the hand comes up beside the head and waves | 104 CU for 4 s; 124 CU with a character |
+| Cartwheel Text to Motion | Yours, required (52 joints) | Maya FBX; a smaller wave at chest height | 192 CU for 8 s |
 
-![One row per run: Meshy's mannequin and Uthana's own character wave from the prompt alone; Uthana rigs the robot facing front; Cartwheel's rig faces the robot's back](media/motion-shootout.jpg)
+![One row per run: Meshy's mannequin and Uthana's own character wave from the prompt alone; Uthana and Cartwheel each rig and animate the technician sent from the scene](media/motion-shootout.jpg)
 
 ## Generate an image
 
 | Ready | As a card facing the camera | As a material on a selected mesh |
 | --- | --- | --- |
-| ![The Image tab with a ready result](media/panel-image-ready.png) | ![A generated image as a card in the viewport](media/image-card.png) | ![The image as the material of a cube](media/image-material.png) |
+| ![The Image tab with a ready result: a character concept, with Card, Material and Image plane](media/panel-image-ready.png) | ![The character concept as a card standing in the scene, facing the camera](media/image-card.png) | ![A generated canvas texture as the material of a selected cube](media/image-material.png) |
 
 ### Land it in the scene
 
 The **Image** tab prices and generates like the 3D tab (default model: GPT
-Image 2.5 Flare). A ready image lands three ways, each one Ctrl+Z:
+Image 2.5 Flare; the pictures above use GPT Image 2.6 Sunburst, picked with
+**Change**). A ready image lands three ways, each one Ctrl+Z:
 
 - **Card**: a textured plane facing the camera, at its centre of interest. Use
   it as a reference board next to your model.
