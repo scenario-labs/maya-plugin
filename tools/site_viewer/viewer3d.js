@@ -98,6 +98,13 @@ function twin(mesh, material) {
   return t;
 }
 
+// A page keeps a limited number of WebGL contexts (8 on Android Chromium); past it the
+// browser drops the oldest one and that viewer stops drawing. A page may hold more viewers
+// than that, so a viewer out of view gives its context back when another one needs it, and
+// takes a new one when it comes back near the view.
+const MAX_CONTEXTS = 6;
+const holders = []; // the viewers holding a context, least recently in view first
+
 export function mount(box) {
   if (box._v3d) return box._v3d;
   const state = { box };
@@ -109,30 +116,8 @@ export function mount(box) {
     wait.textContent = why || "The 3D view could not load.";
   };
 
-  let renderer;
-  try {
-    renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
-  } catch (e) {
-    fail("This browser cannot show 3D here.");
-    return state;
-  }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.outputColorSpace = SRGBColorSpace;
-  renderer.toneMapping = NeutralToneMapping;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFShadowMap;
-  renderer.setClearColor(0x000000, 0);
-  const canvas = renderer.domElement;
-  canvas.className = "v3d-canvas";
-  canvas.setAttribute("role", "img");
-  canvas.setAttribute("aria-label", (box.getAttribute("aria-label") || "A 3D model") + ". Drag to turn, scroll or pinch to zoom.");
-  box.insertBefore(canvas, box.firstChild);
-
   const scene = new Scene();
-  const pmrem = new PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   scene.environmentIntensity = 0.9;
-  pmrem.dispose();
   const sun = new DirectionalLight(0xffffff, 1.4);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
@@ -142,15 +127,76 @@ export function mount(box) {
   scene.add(sun, sun.target);
 
   const camera = new PerspectiveCamera(30, 1, 0.01, 1000);
-  const controls = new OrbitControls(camera, canvas);
+  const controls = new OrbitControls(camera); // joins the canvas in gl()
   controls.enableDamping = true;
   controls.dampingFactor = 0.12;
   controls.enablePan = false;
-  canvas.style.touchAction = "pan-y"; // a vertical swipe scrolls the page; a sideways drag turns
   let interacting = false;
   controls.addEventListener("start", () => { interacting = true; wake(); });
   controls.addEventListener("end", () => { interacting = false; });
   controls.addEventListener("change", () => wake());
+
+  // The WebGL context: taken at mount and whenever the viewer comes back near the view,
+  // given back by release(). The scene, the camera and the clip's time stay as they are.
+  let renderer = null, canvas = null;
+  let visible = false, near = true;
+  function gl() {
+    if (renderer) return true;
+    for (let i = 0; holders.length >= MAX_CONTEXTS && i < holders.length; ) {
+      if (holders[i] !== state && !holders[i].near()) holders[i].release();
+      else i++;
+    }
+    try {
+      renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
+    } catch (e) {
+      renderer = null;
+      fail("This browser cannot show 3D here.");
+      return false;
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = SRGBColorSpace;
+    renderer.toneMapping = NeutralToneMapping;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = PCFShadowMap;
+    renderer.setClearColor(0x000000, 0);
+    canvas = renderer.domElement;
+    canvas.className = "v3d-canvas";
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", (box.getAttribute("aria-label") || "A 3D model") + ". Drag to turn, scroll or pinch to zoom.");
+    // A context the browser took back (too many on the page, a GPU reset): a new one, if in view.
+    const mine = canvas;
+    mine.addEventListener("webglcontextlost", () => {
+      if (canvas !== mine) return;
+      release();
+      setTimeout(() => { if (visible && gl()) wake(); }, 300);
+    });
+    box.insertBefore(canvas, box.firstChild);
+    const pmrem = new PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+    controls.connect(canvas);
+    canvas.style.touchAction = "pan-y"; // a vertical swipe scrolls the page; a sideways drag turns
+    holders.push(state);
+    if (state.ready) box.setAttribute("data-state", "ready");
+    resize();
+    return true;
+  }
+  function release() {
+    if (!renderer) return;
+    const i = holders.indexOf(state);
+    if (i >= 0) holders.splice(i, 1);
+    controls.disconnect();
+    interacting = false;
+    if (scene.environment) { scene.environment.dispose(); scene.environment = null; }
+    if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+    const old = renderer, was = canvas;
+    renderer = canvas = null;
+    old.dispose();
+    old.forceContextLoss();
+    was.remove();
+  }
+  state.near = () => near;
+  state.release = release;
 
   // The bar: Play and the clips at the bottom, the views at the top.
   const views = el("div", "v3d-views");
@@ -170,11 +216,11 @@ export function mount(box) {
   const parts = []; // { mesh, original, solid, wire }
   let rig = null, joints = null, jointList = [];
   let view = "textured";
-  let visible = false, running = false, last = 0;
+  let running = false, last = 0;
 
   function frame(now) {
     running = false;
-    if (!state.ready) return;
+    if (!state.ready || !renderer) return;
     const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
     last = now;
     const animating = mixer.m && !mixer.paused && mixer.current;
@@ -195,7 +241,7 @@ export function mount(box) {
   function resize() {
     const w = box.clientWidth, h = box.clientHeight;
     if (!w || !h) return;
-    renderer.setSize(w, h, false);
+    if (renderer) renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     if (state.ready && state.refit) state.refit();
@@ -203,13 +249,23 @@ export function mount(box) {
   }
   if (window.ResizeObserver) new ResizeObserver(resize).observe(box);
   else window.addEventListener("resize", resize);
-  resize();
+  if (!gl()) return state;
 
   if (window.IntersectionObserver) {
     new IntersectionObserver((es) => {
       visible = es.some((e) => e.isIntersecting);
-      if (visible) { last = 0; schedule(); }
+      if (visible) {
+        const i = holders.indexOf(state);
+        if (i >= 0) holders.push(holders.splice(i, 1)[0]); // the most recently in view
+        last = 0;
+        schedule();
+      }
     }).observe(box);
+    // Near the view: the context is back, and one frame drawn, before the viewer shows.
+    new IntersectionObserver((es) => {
+      near = es.some((e) => e.isIntersecting);
+      if (near && !renderer && gl() && state.ready) renderer.render(scene, camera);
+    }, { rootMargin: "600px 0px" }).observe(box);
   } else visible = true;
 
   function setPlayLabel() {
@@ -435,7 +491,7 @@ export function mount(box) {
     box.setAttribute("data-state", "ready");
     box.setAttribute("data-view", "textured");
     last = 0;
-    renderer.render(scene, camera);
+    if (renderer) renderer.render(scene, camera);
     wake();
   }
 
