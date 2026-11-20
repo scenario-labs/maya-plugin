@@ -573,6 +573,7 @@ ol.steps.short > li { margin-bottom: .55rem; }
       <summary class="eyebrow">Contents</summary>
       <ul>
         <li><a href="#intro">Overview</a></li>
+        <li><a href="#guide">The guide</a></li>
         <li><a href="#how">How it works</a><ul>
           <li><a href="#words">Four words</a></li>
         </ul></li>
@@ -600,7 +601,6 @@ ol.steps.short > li { margin-bottom: .55rem; }
         </ul></li>
         <li><a href="#quads-fbx">10. Quads and FBX</a></li>
         <li><a href="#agents">11. Work with an agent</a></li>
-        <li><a href="#guide">The guide</a></li>
         <li><span class="grp">Reference</span></li>
         <li><a href="#install-update">Install and update</a><ul>
           <li><a href="#update">Update</a></li>
@@ -657,8 +657,8 @@ ol.steps.short > li { margin-bottom: .55rem; }
       <div class="where" role="group" aria-label="This page and the handbook">
         <div class="where-card">
           <span class="kit-meta">This page <span class="here">You are here</span></span>
-          <b>Two stories: Bay 12 with its film and tutorial, Opening Night with its film and eleven steps. Then the illustrated guide</b>
-          <span class="where-links"><a href="#bay12">Bay 12</a><a href="#story">Opening Night</a><a href="#guide">The guide</a></span>
+          <b>The illustrated guide, then two stories: Bay 12 with its film and tutorial, Opening Night with its film and eleven steps</b>
+          <span class="where-links"><a href="#guide">The guide</a><a href="#bay12">Bay 12</a><a href="#story">Opening Night</a></span>
         </div>
         <a class="where-card" href="handbook/">
           <span class="kit-meta">The handbook</span>
@@ -667,6 +667,28 @@ ol.steps.short > li { margin-bottom: .55rem; }
         </a>
       </div>
     </div>
+
+    <!-- ================================================================ THE GUIDE -->
+    <section id="guide" data-toc="The guide">
+      <h2>The illustrated guide</h2>
+      <p class="what">Every mode of the panel as a 20-page PDF, one chapter each, then install, models, prices, files, agents and troubleshooting. Read it here page by page, or open the PDF.</p>
+      <div class="kit">
+        <div class="kit-card kit-guide wide">
+          <button class="kit-media" type="button" id="kit-guide" aria-label="Read the guide"><img class="pg-l" src="assets/guide/pages/p06.webp" alt="" loading="lazy" width="909" height="1286"><img class="pg-r" src="assets/guide/pages/p08.webp" alt="" loading="lazy" width="909" height="1286"><img class="pg-c" src="assets/guide/pages/p01.webp" alt="The guide's cover page" loading="lazy" width="909" height="1286"></button>
+          <div class="kit-body">
+            <span class="kit-meta">Guide · PDF · 20 pages A4 · 5.1 MB</span>
+            <h3>Scenario's models work inside Maya and land in your scene</h3>
+            <p>Sixteen chapters. Bay 12 illustrates every mode, with its prompts, settings and prices; Opening Night, the toy theatre, has its own page.</p>
+            <div class="kit-act"><button class="btn-go" type="button" id="kit-guide-go">Read the guide</button><a class="btn-pill" href="assets/guide/scenario-for-maya-guide.pdf" target="_blank" rel="noopener">Open the PDF</a></div>
+            <span class="kit-note">If the PDF does not open here, read it page by page. The full manual is the <a href="handbook/">handbook</a>.</span>
+          </div>
+        </div>
+      </div>
+      <div class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-label="The guide, page by page">
+        <div class="reader-bar"><b>Scenario for Maya, the guide</b><span id="reader-n">1 / 20</span><button type="button" id="reader-x" aria-label="Close the guide">Close</button></div>
+        <div class="reader-stage"><button type="button" id="reader-prev" aria-label="Previous page">‹</button><img id="reader-img" src="assets/guide/pages/p01.webp" loading="lazy" alt="Guide page 1 of 20" width="909" height="1286"><button type="button" id="reader-next" aria-label="Next page">›</button></div>
+      </div>
+    </section>
 
     <!-- ================================================================ HOW IT WORKS -->
     <section id="how" data-toc="How it works">
@@ -1139,28 +1161,6 @@ ol.steps.short > li { margin-bottom: .55rem; }
       <div class="note"><span class="nk">In this version</span><p>Skills are instructions an agent reads before it works. The plugin has no agent connection of its own: a local Scenario MCP server inside Maya, so an agent could drive the panel's actions, is listed in <a href="#limits">Known limits</a>.</p></div>
     </section>
 
-    <!-- ================================================================ THE GUIDE -->
-    <section id="guide" data-toc="The guide">
-      <h2>The illustrated guide</h2>
-      <p class="what">The same steps as an 18-page PDF, one chapter per mode, then install, models, prices, files, agents and troubleshooting. Read it here page by page, or open the PDF.</p>
-      <div class="kit">
-        <div class="kit-card kit-guide wide">
-          <button class="kit-media" type="button" id="kit-guide" aria-label="Read the guide"><img class="pg-l" src="assets/guide/pages/p06.webp" alt="" loading="lazy" width="909" height="1286"><img class="pg-r" src="assets/guide/pages/p10.webp" alt="" loading="lazy" width="909" height="1286"><img class="pg-c" src="assets/guide/pages/p01.webp" alt="The guide's cover page" loading="lazy" width="909" height="1286"></button>
-          <div class="kit-body">
-            <span class="kit-meta">Guide · PDF · 18 pages A4 · 3.6 MB</span>
-            <h3>Scenario's models work inside Maya and land in your scene</h3>
-            <p>Seventeen chapters. Opening Night, the toy theatre of the film, illustrates every mode.</p>
-            <div class="kit-act"><button class="btn-go" type="button" id="kit-guide-go">Read the guide</button><a class="btn-pill" href="assets/guide/scenario-for-maya-guide.pdf" target="_blank" rel="noopener">Open the PDF</a></div>
-            <span class="kit-note">If the PDF does not open here, read it page by page. The full manual is the <a href="handbook/">handbook</a>.</span>
-          </div>
-        </div>
-      </div>
-      <div class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-label="The guide, page by page">
-        <div class="reader-bar"><b>Scenario for Maya, the guide</b><span id="reader-n">1 / 18</span><button type="button" id="reader-x" aria-label="Close the guide">Close</button></div>
-        <div class="reader-stage"><button type="button" id="reader-prev" aria-label="Previous page">‹</button><img id="reader-img" src="assets/guide/pages/p01.webp" loading="lazy" alt="Guide page 1 of 18" width="909" height="1286"><button type="button" id="reader-next" aria-label="Next page">›</button></div>
-      </div>
-    </section>
-
     <!-- ================================================================ REFERENCE -->
     <div class="part"><span>Reference</span><em>The short version; the handbook has the rest</em></div>
 
@@ -1607,7 +1607,7 @@ function pageBehind(dialog, on) {
   });
 
   // The guide, page by page, for viewers whose browser does not open the PDF.
-  var N = 18, page = 1, rd = document.getElementById("reader"), img = document.getElementById("reader-img"), num = document.getElementById("reader-n"), back = null;
+  var N = 20, page = 1, rd = document.getElementById("reader"), img = document.getElementById("reader-img"), num = document.getElementById("reader-n"), back = null;
   function src(n) { return "assets/guide/pages/p" + (n < 10 ? "0" : "") + n + ".webp"; }
   function show(n) {
     page = Math.max(1, Math.min(N, n));
