@@ -297,7 +297,6 @@ export function mount(box) {
       const side = Array.isArray(mesh.material) ? mesh.material[0].side : mesh.material.side;
       const s = side === solid.side ? solid : Object.assign(solid.clone(), { side });
       const wire = twin(mesh, wireMat);
-      mesh.parent.add(wire);
       parts.push({ mesh, original: mesh.material, solid: s, wire, normals, ghost });
     }
 
@@ -327,6 +326,8 @@ export function mount(box) {
       return u;
     });
     if (mixer.m) mixer.m.setTime(0);
+    // The wire twins join the scene only now, so the sampling above read each mesh once.
+    for (const part of parts) part.mesh.parent.add(part.wire);
     const bounds = rest.clone();
     clipBounds.forEach((u) => bounds.union(u));
     const size = bounds.getSize(new Vector3());
