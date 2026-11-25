@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.1](https://github.com/scenario-labs/maya-plugin/compare/maya-plugin-v0.2.0...maya-plugin-v0.2.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **core:** download Blender-file 3D results converted to GLB or FBX ([867cdd8](https://github.com/scenario-labs/maya-plugin/commit/867cdd89ad435acc85109d8c48e9012b070e6902))
+
+
+### Documentation
+
+* **docs:** add the maya.scenario.com page, the films and the guide ([cb28107](https://github.com/scenario-labs/maya-plugin/commit/cb281078e820478e4dc8f92bad3965a2f2a5870c))
+
+
+### Miscellaneous Chores
+
+* **deps:** Bump coverage from 7.17.1 to 7.17.2 in the python group ([#29](https://github.com/scenario-labs/maya-plugin/issues/29)) ([1b468b9](https://github.com/scenario-labs/maya-plugin/commit/1b468b9af6a10072105746bcb0289d503d44d5e2))
+* **repo:** add CodeRabbit configuration ([#33](https://github.com/scenario-labs/maya-plugin/issues/33)) ([a2be38b](https://github.com/scenario-labs/maya-plugin/commit/a2be38be557fc42253ac949ffa2a57a4ec2a17a7))
+
+
+### Continuous Integration
+
+* **ci:** build maya.scenario.com with scenario-labs/components, plugin-site renamed ([edf13a6](https://github.com/scenario-labs/maya-plugin/commit/edf13a6febd1da9a62671ef53888d2469aa5b515))
+* **ci:** pin scenario-labs/components to v0.1.0 ([16ef81f](https://github.com/scenario-labs/maya-plugin/commit/16ef81f0d7346237657a526d07e060cdfe7a7b4f))
+* **deps:** Bump github/codeql-action/upload-sarif ([1922ede](https://github.com/scenario-labs/maya-plugin/commit/1922ededb1f3aa49cc99d9ac5bd72be44481cb50))
+* **deps:** Bump github/codeql-action/upload-sarif from 4.39.2 to 4.39.3 in the actions group ([#28](https://github.com/scenario-labs/maya-plugin/issues/28)) ([1922ede](https://github.com/scenario-labs/maya-plugin/commit/1922ededb1f3aa49cc99d9ac5bd72be44481cb50))
+
 ## [0.2.0](https://github.com/scenario-labs/maya-plugin/compare/maya-plugin-v0.1.0...maya-plugin-v0.2.0) (2026-11-16)
 
 
