@@ -1,12 +1,15 @@
-# GitHub Pages publish for https://maya.scenario.com: the handbook built from
-# the docs (handbook.config.json) at the root, and the latest release's ZIP
-# under /download/, by scenario-labs/components, the site tooling the Scenario
-# plug-ins share. Runs after each release, on every push to main that changes
-# the docs, and by hand. The handbook comes from the newest published release,
-# so the site never describes a feature people cannot download yet.
-# Pages serves it at https://scenario-labs.github.io/maya-plugin/; the Vercel
-# project on tools/site_proxy holds maya.scenario.com and forwards every path
-# there. RELEASING.md ("Site") lists what an administrator sets once.
+# GitHub Pages publish for https://maya.scenario.com: the page in site/ at
+# the root, the handbook built from the docs (handbook.config.json) under
+# /handbook/, and the latest release's ZIP under /download/, by
+# scenario-labs/components, the site tooling the Scenario plug-ins share. Runs
+# after each release, on every push to main that changes the page or the docs,
+# and by hand. The handbook comes from the newest published release, and so
+# does the page once a release carries site/, so the site never describes a
+# feature people cannot download yet. The page reads the version from
+# download/latest.json. Pages serves it at
+# https://scenario-labs.github.io/maya-plugin/; the Vercel project on
+# tools/site_proxy holds maya.scenario.com and forwards every path there.
+# RELEASING.md ("Site") lists what an administrator sets once.
 name: Publish site
 
 on:
@@ -22,6 +25,7 @@ on:
     paths:
       - "README.md"
       - "CHANGELOG.md"
+      - "site/**"
       - "docs/**"
       - "handbook.config.json"
       - ".github/workflows/pages.yml"
@@ -52,15 +56,45 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          lfs: true
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-      # The handbook from the newest release's docs, and its ZIP once the
-      # release's SHA256SUMS and build attestation verify.
+      # The page from the newest release when that release has one; before
+      # that, main's page. The action below restores only the docs.
+      - name: Take the page from the newest published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$(gh release list --repo "$GITHUB_REPOSITORY" --json tagName,isLatest --jq '[.[] | select(.isLatest)][0].tagName // ""')"
+          if [ -n "$tag" ]; then
+            git fetch --no-tags --depth=1 origin "refs/tags/$tag:refs/tags/$tag"
+            if git cat-file -e "refs/tags/$tag^{commit}:site/index.html" 2>/dev/null; then
+              rm -rf site
+              git restore --source="refs/tags/$tag^{commit}" -- site
+            else
+              echo "::notice::$tag has no site/: main's page"
+            fi
+          fi
+      # The site's media are Git LFS files: a pointer left in site/ would be
+      # published in place of a film or a picture.
+      - name: Check that the page's media are real files
+        run: |
+          set -euo pipefail
+          if grep -rlIx 'version https://git-lfs.github.com/spec/v1' site; then
+            echo "::error::Git LFS pointers in site/: the media were not fetched."
+            exit 1
+          fi
+      # The handbook from the newest release's docs under /handbook/, the page
+      # in site/ at the root, and the ZIP once the release's SHA256SUMS and
+      # build attestation verify.
       - id: site
         uses: scenario-labs/components@dc4d1c4246a992432bd64af4f093e2558a6ca9b1 # v0.1.0
         with:
+          static: site
+          handbook-path: handbook
           download: scenario-maya-{version}.zip
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

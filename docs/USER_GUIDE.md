@@ -15,17 +15,20 @@ Maya 2027.2 with live Scenario models.
    ([Install](../README.md#install)).
 2. In the Scenario panel, choose **Sign in with Scenario** and approve in your
    browser. If your account has several teams or projects, pick one.
-3. Open the **3D** tab, keep the **Text** mode and its default model, Meshy
-   7.1, and write a prompt: `weathered brass ship lantern, game prop`.
+3. Open the **3D** tab, **Text** mode. Press **Change** and pick Scenario
+   Claude Fable 5.2 3D for a full build with named parts, or keep the default,
+   Meshy 7.1, for one textured mesh in about two minutes. Describe one object:
+   `portable diesel generator for an aircraft hangar, yellow steel housing,
+   two wheels and a tow bar, game prop`.
 4. The button shows the price once Scenario has checked it, for example
-   `Generate . 120 CU`; the check is free. Press it.
-5. When the card says Ready to apply, press **Import**. The lantern lands on
+   `Generate . 1,800 CU`; the check is free. Press it.
+5. When the card says Ready to apply, press **Import**. The generator lands on
    the ground in front of the camera at its real size. Ctrl+Z removes it in
    one step.
 
 ## Find your way around
 
-<p align="center"><img src="media/panel-3d-priced.png" width="320" alt="The Scenario panel on the 3D tab: workspace at the top, the Text mode with Meshy 7.1, a prompt, the price on Generate and the job list"></p>
+<p align="center"><img src="media/panel-3d-priced.png" width="320" alt="The Scenario panel on the 3D tab: workspace at the top, the Text mode with Scenario Claude Fable 5.2 3D, a prompt, the price on Generate and the job list"></p>
 
 ### The panel
 
@@ -79,40 +82,47 @@ preferences. Nothing is sent to Scenario until you sign in.
 
 ## 3D from a prompt
 
-![Typing a prompt, pricing it, generating with Meshy 7.1 and importing the lantern into the scene](media/flow-3d.gif)
+![Prompt, price, Generate, Import: a diesel generator built with Scenario Claude Fable 5.2 3D lands in a mech maintenance bay](media/flow-3d.gif)
 
-*Recorded in Maya 2027.2 with a live Scenario model. The wait for Scenario
-is sped up; everything else plays in real time. Videos:
-[this flow](media/flow-3d.mp4), [the whole session](media/session.mp4).*
+*Recorded in Maya 2027.2 on a live Scenario model; the wait is sped up.
+[Video](media/flow-3d.mp4).*
 
 ### Generate
 
 | 1. Priced before sending | 2. Followed on Scenario | 3. Imported and checked |
 | --- | --- | --- |
-| ![The 3D tab with Meshy 7.1 and the price on the Generate button](media/panel-3d-priced.png) | ![The result card while Scenario generates](media/panel-3d-generating.png) | ![The result card after the import, with the import checks](media/panel-3d-imported.png) |
+| ![The 3D tab with Scenario Claude Fable 5.2 3D and the price on the Generate button](media/panel-3d-priced.png) | ![The result card while Scenario generates](media/panel-3d-generating.png) | ![The result card after the import, with the import checks](media/panel-3d-imported.png) |
 
-1. Open the **3D** tab, **Text** mode. The default model is Meshy 7.1
-   Text-to-3D, preset to a 30,000-face game mesh (the raw mesh is close to a
-   million triangles for the same price). **Change** lists the other
-   text-to-3D models: Meshy T2.5 Smart Topology, the low-cost choice, Tripo P2
-   and Rodin Gen-2.5.
-2. Describe one object. The button shows the exact price as soon as Scenario
-   has checked it.
-3. **Generate** sends the request once. The card follows the job, downloads
-   the GLB when it is ready and shows what came back: format, faces and size
-   in metres, with Scenario's preview picture.
+1. Open the **3D** tab, **Text** mode, and pick the model with **Change**.
+   Scenario Claude Fable 5.2 3D builds a full asset: named parts, a material
+   per part, and a rig and a clip when the prompt asks for them. The default,
+   Meshy 7.1 Text-to-3D, returns one textured 30,000-face mesh in about two
+   minutes for 120 CU.
+2. Describe one object: what it is, its size, its parts. The button shows
+   the exact price once Scenario has checked it.
+3. **Generate** sends the request once. The card follows the job and shows
+   what came back: format, faces, size in metres and a preview.
+
+*This run: a portable diesel generator, about 50 minutes at maximum build
+effort: 38,304 faces in 12 named parts, 1.90 x 1.30 x 1.09 m, 1,800 CU.*
 
 ### Import
 
-**Import** adds the model as a new group at the size Scenario returns, its
-bottom centre on the ground below the camera's centre of interest. Materials
-are OpenPBR, with their textures written to `sourceimages/scenario/`. The
-card reports the import checks: size, materials and textures, non-manifold
-edges, missing textures. One Ctrl+Z removes the whole import; redo brings it
-back.
+**Import** adds the model as a new group at the size Scenario returns, on the
+ground below the camera's centre of interest, with OpenPBR materials and
+textures in `sourceimages/scenario/`. The card reports the import checks:
+size, materials and textures, non-manifold edges, missing textures. One
+Ctrl+Z removes the whole import.
 
-<p align="center"><img src="media/turntable.gif" width="560" alt="The lantern and the chest turning in Maya's viewport"></p>
-<p align="center"><sub>Viewport 2.0 with one key light. <a href="media/turntable.mp4">MP4</a></sub></p>
+<p align="center"><img src="media/turntable.gif" width="560" alt="The generator turning in Maya's Viewport 2.0"></p>
+<p align="center"><sub>As imported: 12 named parts, 6 materials, 19 textures. <a href="media/turntable.mp4">MP4</a></sub></p>
+
+### A character from a prompt
+
+<p align="center"><img src="media/text-to-3d-mech.gif" width="480" alt="The yellow scout mech walking in place in Maya's Viewport 2.0"></p>
+
+*The scout mech of this scene, from one prompt with the same model: 60 named
+parts, 15 joints and a walk clip.*
 
 ### Import any GLB
 
@@ -122,88 +132,90 @@ shapes and the first animation clip.
 
 ## 3D from an image
 
-| The image | The model, imported in Maya |
-| --- | --- |
-| ![A concept image of a carved wooden treasure chest](media/image-to-3d-input.jpg) | ![The chest generated from it with Meshy 7.1, in Maya's viewport](media/image-to-3d-result.jpg) |
+| The image | The model, imported in Maya | Its clip |
+| --- | --- | --- |
+| ![A concept image of a quad-rotor recon drone in worn sand-yellow paint with black hazard stripes](media/image-to-3d-input.jpg) | ![The recon drone built from the image with Scenario Claude Fable 5.2 3D](media/image-to-3d-result.jpg) | ![The drone playing its hover clip](media/image-to-3d-hover.gif) |
 
-*The image was generated in the Image tab with GPT Image 2.5 Flare. The
-model is Meshy 7.1 Image to 3D at the 30,000-face preset (28,984 faces),
-imported by the plug-in and rendered in Maya's Viewport 2.0.*
+*Image: GPT Image 2.5 Sunburst, made in the Image tab. Model: Scenario Claude
+Fable 5.2 3D, picked with **Change**, at maximum build effort: 38,000
+triangles, 13 named parts, 10 joints and a 4-second hover clip. 2,100 CU.*
 
 ### Add the image
 
 1. Open the **3D** tab and choose the **Image** mode.
-2. Add the image:
-   - **File...**: a PNG, JPEG or WebP;
-   - **Viewport**: a capture of the view you look through, with the grid and
-     the selection highlight hidden, so a blockout or a quick paint-over can
-     be the start;
-   - **Image results**: anything made in the Image tab. An Image result also
-     has **Make a 3D model from this image** in its **...** menu, which opens
-     this mode with the image in place.
-3. A file or a capture is sent to your Scenario project when you add it, once
-   per session. An Image result is already on Scenario and is used as it is.
-4. The price shows on **Generate**; the card then follows the job and offers
-   **Import**, as for a prompt. A job without a prompt is named after its
-   image.
+2. Add the image: **File...** (PNG, JPEG or WebP), **Viewport** (a capture of
+   the view you look through, grid and selection highlight hidden, so a
+   blockout or a quick paint-over can be the start) or **Image results**
+   (anything made in the Image tab).
+3. The price shows on **Generate**; the card then follows the job and offers
+   **Import**, as for a prompt.
 
-One clear image of one object, on a plain background, works best. Meshy 7.1
-also takes up to four views of the same object; models that take one image
-use the first.
+A file or a capture is sent to your Scenario project when you add it, once
+per session. One clear image of one object on a plain background works best.
+
+### From a blockout
+
+**Viewport** sends the view you look through: block the shape out with cubes
+and cylinders, frame it, and the model follows its proportions and pose.
+
+| The blockout, captured from the viewport | The model | Its clip |
+| --- | --- | --- |
+| ![A service arm blocked out from cubes and cylinders in Maya](media/blockout-input.jpg) | ![The service arm built from the blockout with Scenario Claude Fable 5.2 3D](media/blockout-result.jpg) | ![The arm playing its weld clip](media/blockout-weld.gif) |
+
+*Scenario Claude Fable 5.2 3D, from one viewport capture and a prompt: 28,816
+triangles, 9 named parts, 6 joints and a 6-second weld clip. 2,100 CU.*
 
 ### Which model
 
-Both quick picks, from the image above, one run each:
+Scenario Claude Fable 5.2 3D builds a full asset from text or up to eight
+images: named parts, a material per part, and a rig and a clip when the
+prompt asks for them. The two quick picks return one textured mesh. From the
+drone image above, one run each:
 
-| Meshy 7.1 Image to 3D, the default | Tripo P2 |
-| --- | --- |
-| ![Meshy 7.1 result, front and back](media/image-to-3d-meshy.jpg) | ![Tripo P2 result, front and back](media/image-to-3d-tripo.jpg) |
-| 28,984 faces (30,000 preset), carving kept on every side, about 140 s, 120 CU, up to four views | 4,222 faces, clean mesh with flatter carving and a plain back, about 85 s, 220 CU, one image |
-
-**Change** also lists Rodin Gen-2.5, Tripo 3.1 and Hunyuan 3D Pro 3.1.
+| | Meshy 7.1 Image to 3D, the default | Tripo P2 |
+| --- | --- | --- |
+| Front and back | ![Meshy 7.1 result, front and back](media/image-to-3d-meshy.jpg) | ![Tripo P2 result, front and back](media/image-to-3d-tripo.jpg) |
+| Faces | 61,019 (4K settings, 60,000-face target) | 49,341 (50,000 face limit, extreme texture quality) |
+| Look | Lighter paint, a clean stencil | Darker paint, more wear |
+| Lands | Turned and tilted, like the picture | Level and facing front |
+| Price | 140 CU, up to four views | 260 CU, one image |
 
 ## 3D from views of an object
 
 The **Multi-view** mode builds a model from pictures of one object taken from
-named sides. Start from a blockout, a kitbash or an old asset in your scene:
-the plug-in photographs it from the front, left, back and right, and the
-model returns a textured mesh of the same object, facing the same way, landed
-over it.
+named sides. Select a blockout, a kitbash or an old asset: the plug-in
+photographs it from the front, left, back and right, and the textured result
+lands over it, facing the same way.
 
 | | Front, left, back, right |
 | --- | --- |
-| Captured around a blockout | ![The four views captured around a blockout robot](media/views-capture.jpg) |
+| Captured around a blockout | ![The four views captured around a blockout of a service crane: a yellow arm on a wheeled base](media/views-capture.jpg) |
 | Tripo P2 Multi View, the default | ![The Tripo P2 result seen from the same four sides](media/views-tripo-p2.jpg) |
 | Tripo 3.1 Multi View | ![The Tripo 3.1 result seen from the same four sides](media/views-tripo-v31.jpg) |
 
 ### Capture the views
 
-1. Open the **3D** tab and choose **Multi-view**. Each view the model takes
-   has a slot: Front, Left, Back and Right for the Tripo models; Hunyuan 3D
-   Pro 3.1 adds Top, Bottom and the two front three-quarter views.
-2. Select one object and press **Capture views**. The plug-in renders it from
-   each side with temporary orthographic cameras, all at one scale, clipped
-   close around the object so the floor and its neighbours stay out of the
-   pictures. Nothing is added to the scene or to the undo queue, and the
-   render settings it touches are put back.
-3. Left is the object's own left: with the object facing front (+Z), the side
-   Maya's Right view shows. Model your blockout facing +Z.
-4. A slot also takes a file or an Image result, from its menu. Each view is
-   sent to your project once. The Tripo models need the front and at least
-   one more view; the Generate button says what is missing, then shows the
-   price.
+1. Open the **3D** tab and choose **Multi-view**. Each view has a slot:
+   Front, Left, Back and Right for the Tripo models; Hunyuan 3D Pro 3.1 adds
+   Top, Bottom and the two front three-quarter views.
+2. Select one object and press **Capture views**. It is rendered from each
+   side at one scale, without the floor or its neighbours. Nothing is added
+   to the scene or to the undo queue, and render settings are put back.
+3. Model your blockout facing +Z: Left is the object's own left.
+4. A slot also takes a file or an Image result, from its menu. The Tripo
+   models need the front and at least one more view; **Generate** says what
+   is missing, then shows the price.
 
 ### Where the result lands
 
-**Import** places the result over the object its views came from, at the
-object's size and facing the same way, as a new group. Your object is not
-changed: hide it, or keep it to compare. Views added as files land like any
-3D result, on the ground in front of the camera.
+**Import** places the result over the object its views came from, at its size
+and facing the same way, as a new group. Your object is not changed. Views
+added as files land like any 3D result, on the ground in front of the camera.
 
-<p align="center"><img src="media/views-turntable.gif" width="300" alt="The Tripo P2 robot turning in Maya's Viewport 2.0"> <img src="media/views-tripo-p2-wire.jpg" width="300" alt="The Tripo P2 robot with every edge drawn: 4,987 faces"></p>
+<p align="center"><img src="media/views-turntable.gif" width="300" alt="The Tripo P2 crane turning in Maya's Viewport 2.0"> <img src="media/views-tripo-p2-wire.jpg" width="300" alt="The same mesh with every edge drawn: 4,822 faces"></p>
 
-*A robot blocked out from cubes in Maya and one Tripo P2 run on its four
-views. Right, the same mesh with every edge drawn.*
+*One Tripo P2 run on the four views of a crane blocked out from cubes and
+cylinders.*
 
 ### Which model
 
@@ -211,46 +223,63 @@ Same four views, one run each:
 
 | Model | Faces | GLB | Price |
 | --- | --- | --- | --- |
-| Tripo P2 Multi View, the default | 4,987, a clean low-poly mesh | 1.4 MB | 220 CU |
-| Tripo 3.1 Multi View, the low-cost choice | 1,425,173, dense | 42 MB | 45 CU |
+| Tripo P2 Multi View, the default | 4,822, a clean low-poly mesh | 1.8 MB | 240 CU |
+| Tripo 3.1 Multi View, the low-cost choice | 1,466,572, dense | 44 MB | 45 CU |
 | Hunyuan 3D Pro 3.1 Multiview | starts at 40,000, its lightest setting | not run yet | 120 CU |
 
-Both Tripo results kept the shape and colours on every side, took under four
-minutes and landed on the blockout within half a centimetre of its 82 cm
-height.
+Both Tripo results kept the shape and colours on every side and landed on
+the blockout within three centimetres of its 4.25 m height.
 
 ## Quad meshes and FBX results
 
-The Tripo models have a **quad** setting: the mesh comes back in quads,
-delivered as an FBX file (Scenario sends no GLB then). The plug-in imports it
-through Maya's own FBX importer, as one Ctrl+Z, and lands it like a GLB: on
-the ground in front of the camera, or over the captured object in the
-Multi-view mode.
+Scenario Claude Fable 5.2 3D and the Tripo models can return a mesh in quads,
+as an FBX file: **Topology** and **Output format** under More settings for
+Fable, the **quad** setting for Tripo. The plug-in imports the file through
+Maya's own FBX importer, as one Ctrl+Z, and lands it like a GLB.
 
-<p align="center"><img src="media/quad-fbx.jpg" width="600" alt="The robot from Tripo 3.1 Multi View with quad on: as imported, and with every edge drawn, a grid of quads"></p>
+<p align="center"><img src="media/quad-fbx.jpg" width="720" alt="The scout mech with its materials, and with every edge drawn: a grid of quads"></p>
 
-*Tripo 3.1 Multi View with quad on and a face limit of 8,000, from the four
-robot views: 8,153 faces, 8,132 of them quads. 53 CU.*
+*The scout mech of this scene, built from a prompt with Scenario Claude Fable
+5.2 3D (face budget 30,000, quads, FBX): 14,932 faces, all quads, in 60 named
+parts with 15 joints.*
 
 ### What the plug-in does around the FBX importer
 
-- Keeps the scene's unit, up axis, playback range, current frame and frame
-  rate, which the importer would change.
-- Imports even when the scene already has nodes of the same names.
-- Writes the file's textures under `sourceimages/scenario/`.
-- Cleans up the names the FBX format mangles.
+- Keeps the scene's unit, up axis, frame rate, playback range and current
+  frame, which the importer would change.
+- Imports even when the scene already has nodes of the same names, and
+  cleans up the names the FBX format mangles.
 - Keeps the importer's materials, with colour textures in sRGB and the other
-  maps Raw.
+  maps Raw, and writes the textures under `sourceimages/scenario/`.
 - Lands a rigged character upright and in one piece, in a Y-up or a Z-up
-  scene.
-- Starts a clip on the scene's start frame, as for a GLB, and reports the same
-  import checks.
+  scene, its clip on the scene's start frame.
 
 ## Edit a mesh of the scene
 
 The **Edit selection** mode sends one of your meshes to an edit model and
 brings the result back: over the mesh as a new object, or onto the mesh
 itself.
+
+### What came back
+
+A grey equipment case of 2,336 triangles, one run per model. The retexture
+prompt: sand-yellow painted metal, a band of black hazard stripes, worn
+edges.
+
+| Your mesh | Meshy 7 Retexture | Tripo 3.0 Texturing |
+| --- | --- | --- |
+| ![The equipment case sent, grey, before any edit](media/edit-input.jpg) | ![The case retextured by Meshy 7: yellow paint, black bands, a stencilled 12, chipped edges](media/edit-meshy-retexture.jpg) | ![The case retextured by Tripo 3.0 in a plain olive-sand paint](media/edit-tripo-texturing.jpg) |
+| 2,336 triangles | Same triangles and UVs. Base colour, normal, metallic and roughness maps. 40 CU | Same triangles and UVs. PBR textures at the detailed quality. 30 CU |
+
+| Your UVs, on a checker | Tripo Smart UV |
+| --- | --- |
+| ![The case with its own UVs on a checker: squares of several sizes, narrow strips on the side panels](media/edit-uv-input.jpg) | ![The case with Tripo Smart UV's layout on the same checker: squares closer to one size across the panels](media/edit-uv-smart.jpg) |
+| The layout the mesh came with | A new layout on the same triangles. 40 CU |
+
+| What was sent | Meshy Remesh | Tripo Retopology v3 |
+| --- | --- | --- |
+| ![The case as sent, every edge drawn](media/edit-remesh-sent.jpg) | ![The case remeshed by Meshy: about half the triangles over the same shape](media/edit-remesh-meshy.jpg) | ![The case remeshed by Tripo: about half the triangles over the same shape](media/edit-remesh-tripo.jpg) |
+| 2,336 triangles (1,184 faces in Maya) | 1,212 triangles for a target of 1,200. New UVs, base colour and metal-roughness maps baked. 20 CU | 1,128 triangles for a face limit of 1,200. New UVs and a baked normal map. 70 CU |
 
 ### Send a mesh
 
@@ -259,68 +288,40 @@ itself.
 2. Choose the task: **Remesh**, **UV unwrap** or **Retexture**. Each task
    keeps its own model; the defaults are Tripo Retopology v3, Tripo Smart UV
    and Meshy 7 Retexture.
-3. **Use selection** writes the mesh, with its UVs and base colour textures,
-   to a file in the project's `images/scenario/captures` folder. Object,
+3. Press **Use selection**. The mesh is written with its UVs and base colour
+   textures, then checked against the model's limit (Tripo Smart UV takes up
+   to 80,000 triangles, Meshy UV Unwrap 44,000, Hunyuan UV Unwrapping
+   30,000); a mesh the model cannot take shows why and is not sent. Object,
    scene and path names stay on your machine.
-4. The mesh is checked against the model before anything is sent (Tripo Smart
-   UV takes up to 80,000 triangles, Meshy UV Unwrap 44,000, Hunyuan UV
-   Unwrapping 30,000); a mesh it cannot take shows why and is not sent. An
-   unchanged mesh is sent once.
-5. Retexture needs a prompt. The price shows on **Generate**.
+4. Retexture needs a prompt. The price shows on **Generate**.
 
 ### Import over the mesh
 
 **Import** places the result over the mesh it came from, as a new group, even
-if you moved the mesh after sending it. Your mesh is not changed.
-
-Most edit models return the mesh resized and centred. The plug-in keeps the
-file it sent, fits the result back onto it and onto the mesh's current place,
-then checks that both are the same shape. A result that is not still lands,
-and the import message says so.
-
-### What came back
-
-A bevelled crate of 1,052 triangles with the cube's default UVs, one run per
-model:
-
-| Your mesh | Meshy 7 Retexture | Tripo 3.0 Texturing |
-| --- | --- | --- |
-| ![The crate sent, grey, before any edit](media/edit-input.jpg) | ![The crate retextured by Meshy 7 as weathered planks with metal corners](media/edit-meshy-retexture.jpg) | ![The crate retextured by Tripo 3.0 in dark brown wood](media/edit-tripo-texturing.jpg) |
-| 1,052 triangles | Same triangles and the same UVs; base colour, normal, metallic and roughness maps; 40 CU | Same triangles and the same UVs; PBR textures; 15 CU |
-
-| Your UVs, on a checker | Tripo Smart UV |
-| --- | --- |
-| ![The crate with its default UVs on a checker: large squares, stretched on the bevels](media/edit-uv-input.jpg) | ![The crate with Tripo Smart UV's layout on the same checker: even squares across the faces](media/edit-uv-smart.jpg) |
-| The cube's default layout | A new layout on the same triangles; 40 CU |
-
-| What was sent | Meshy Remesh | Tripo Retopology v3 |
-| --- | --- | --- |
-| ![The crate as sent, every edge drawn: an even grid of bevelled panels split in triangles](media/edit-remesh-sent.jpg) | ![The crate remeshed by Meshy: larger, irregular triangles over the same shape](media/edit-remesh-meshy.jpg) | ![The crate remeshed by Tripo: larger triangles in a more regular pattern over the same shape](media/edit-remesh-tripo.jpg) |
-| 1,052 triangles (398 faces in Maya) | 522 triangles, new UVs, base colour and metal-roughness maps baked; 20 CU | 560 triangles, a baked normal map; 70 CU |
+if you moved the mesh after sending it. Your mesh is not changed. Most edit
+models return the mesh resized and centred: the plug-in fits the result back
+onto your mesh and checks that both are the same shape. A result that is not
+still lands, and the import message says so.
 
 ### Apply onto the mesh
 
-**Apply...** writes the result onto the mesh itself. Before anything changes,
-the plug-in checks that the result is the same surface as your mesh (for a
-remesh, the same shape), then a review lists what changes, what is kept and
-what needs your confirmation. One Ctrl+Z undoes the whole apply.
+**Apply...** writes the result onto the mesh itself. The plug-in first checks
+that the result is the same surface as your mesh (for a remesh, the same
+shape), then a review lists what changes and what is kept. One Ctrl+Z undoes
+the whole apply.
 
 | Task | What Apply changes | What it keeps |
 | --- | --- | --- |
 | UV unwrap | The current UV set gets the result's UVs | The old layout as `<set>_scnPrev`, geometry, other UV sets, materials |
-| Retexture | A new material from the result's maps (base colour, metal and roughness, normal) is assigned to the mesh; UVs too if the model changed them | The old material, unassigned; Maya's default material is never edited |
-| Remesh | The mesh's shape is replaced by the result's mesh, under your transform and with your shape's name; it gets the result's material when the result has textures | The transform (name, place, attributes, parent, sets, connections); the old shape, hidden, as `<shape>_scnPrev` with its history |
+| Retexture | A new material from the result's maps is assigned to the mesh; UVs too if the model changed them | The old material, unassigned; Maya's default material is never edited |
+| Remesh | The shape is replaced by the result's mesh, under your transform and name, with the result's material when it has textures | The transform and its connections; the old shape, hidden, as `<shape>_scnPrev` with its history |
 
-All five results above were applied onto the crate this way.
-
-### What Apply asks or refuses
-
-- It asks before deleting the mesh's construction history, which would
+- Apply asks before deleting the mesh's construction history, which would
   overwrite new UVs, and before giving one material to a mesh that has
   several.
 - It refuses deformed (skinned), referenced and locked meshes in this
-  version, and a remesh refuses instanced ones. **Import** still works
-  on them.
+  version, and a remesh refuses instanced ones. **Import** still works on
+  them.
 
 ## Animate a character
 
@@ -328,43 +329,38 @@ The **Motion** mode turns a prompt into a character that moves: a skinned
 mesh, its joints and a clip, imported as one Ctrl+Z. Some models bring their
 own character; others rig and animate yours.
 
-<p align="center"><img src="media/motion-wave.gif" width="300" alt="A wooden mannequin waving its right hand, from Meshy Text to Motion"> <img src="media/motion-robot.gif" width="300" alt="The Multi-view robot, rigged and animated by Uthana Text to Motion 3.0, raising its right arm"></p>
+<p align="center"><img src="media/motion-wave.gif" width="300" alt="Meshy Text to Motion: its own mannequin waves"> <img src="media/motion-robot.gif" width="300" alt="Uthana Text to Motion 3.0: the technician sent from the scene waves"></p>
 
-*"waves hello with the right hand". Left, Meshy Text to Motion from the
-prompt alone: its own mannequin, 52 joints, 3 seconds. Right, Uthana Text to
-Motion 3.0 on the robot from the Multi-view chapter, sent from the scene:
-rigged with 52 joints and animated for 4 seconds.*
+*"waves hello with the right hand". Left, from the prompt alone: 52 joints,
+5 seconds. Right, a technician of 293,068 triangles sent from Maya: rigged
+with 52 joints and animated for 4 seconds.*
 
 ### From a prompt alone
 
 Open the **3D** tab and choose **Motion**. The default model, Meshy Text to
-Motion, needs only the prompt: one simple action works best (a walk, a wave,
-a jump), 2 to 10 seconds, 40 CU whatever the length.
+Motion, needs only the prompt. One simple action works best (a walk, a wave,
+a jump): 2 to 10 seconds, 40 CU whatever the length.
 
 ### On your own character
 
 1. Press **Change** and pick Uthana Text to Motion 3.0 or Cartwheel Text to
-   Motion.
+   Motion. Cartwheel needs a character; Uthana takes one or makes its own.
 2. Select the character (its group or its meshes) and press **Use
-   selection**. The meshes are written as one GLB, with neutral names, and
-   sent to your project once. Nothing is added to the scene or to the undo
-   queue. Cartwheel needs a character, and the Generate button says so until
-   one is sent; Uthana takes one or makes its own.
-3. **Import** lands the result over your character, at its size, measured on
-   the clip's first frame. Your character is not changed.
+   selection**. It is sent to your project once, as one GLB with neutral
+   names. Nothing is added to the scene or to the undo queue.
+3. **Import** lands the result over your character, at its size. Your
+   character is not changed.
 
-Model the character standing, facing front (+Z), arms away from the body.
-Check which way a rig faces before animating further: in our test,
-Cartwheel's rig faced the robot's back.
+Model the character standing, facing front (+Z), arms away from the body,
+and check which way a rig faces before animating further. On the technician,
+both Uthana's and Cartwheel's rigs faced front.
 
 ### Frame rate and timeline
 
-- A model's frame-rate setting starts at the scene's rate when the model
-  offers it (Uthana: 24, 30 or 60 fps). When a clip was made at another rate
-  (30 fps in a 24 fps scene), its keys fall between frames and the result
-  says so.
-- The clip starts on the scene's start frame; the playback range is not
-  changed.
+The clip starts on the scene's start frame; the playback range is not
+changed. A model's frame-rate setting starts at the scene's rate when the
+model offers it (Uthana: 24, 30 or 60 fps). A clip made at another rate has
+keys between frames, and the result says so.
 
 ### Which model
 
@@ -372,22 +368,23 @@ One prompt, one run each:
 
 | Model | Character | Result | Price |
 | --- | --- | --- | --- |
-| Meshy Text to Motion, the default | Its own wooden mannequin (52 joints) | FBX, in about 30 seconds | 40 CU, 2 to 10 s |
-| Uthana Text to Motion 3.0, first pick for your character | Yours (auto-rigged) or its own (160 joints) | GLB, in about 3 minutes | 104 CU for 4 s; 124 CU with a character |
-| Cartwheel Text to Motion | Yours, required | Maya FBX, in 2 to 4 minutes | 72 CU for 3 s |
+| Meshy Text to Motion, the default | Its own wooden mannequin (52 joints) | FBX; a full arm wave, then back to rest | 40 CU, 2 to 10 s |
+| Uthana Text to Motion 3.0, first pick for your character | Yours (auto-rigged, 52 joints) or its own (160 joints) | GLB; the hand comes up beside the head and waves | 104 CU for 4 s; 124 CU with a character |
+| Cartwheel Text to Motion | Yours, required (52 joints) | Maya FBX; a smaller wave at chest height | 192 CU for 8 s |
 
-![One row per run: Meshy's mannequin and Uthana's own character wave from the prompt alone; Uthana rigs the robot facing front; Cartwheel's rig faces the robot's back](media/motion-shootout.jpg)
+![One row per run: Meshy and Uthana from the prompt alone, then Uthana and Cartwheel on the technician](media/motion-shootout.jpg)
 
 ## Generate an image
 
 | Ready | As a card facing the camera | As a material on a selected mesh |
 | --- | --- | --- |
-| ![The Image tab with a ready result](media/panel-image-ready.png) | ![A generated image as a card in the viewport](media/image-card.png) | ![The image as the material of a cube](media/image-material.png) |
+| ![The Image tab with a ready result: a character concept, with Card, Material and Image plane](media/panel-image-ready.png) | ![The character concept as a card standing in the scene, facing the camera](media/image-card.png) | ![A generated canvas texture as the material of a selected cube](media/image-material.png) |
 
 ### Land it in the scene
 
 The **Image** tab prices and generates like the 3D tab (default model: GPT
-Image 2.5 Flare). A ready image lands three ways, each one Ctrl+Z:
+Image 2.5 Flare; the pictures above use GPT Image 2.6 Sunburst, picked with
+**Change**). A ready image lands three ways, each one Ctrl+Z:
 
 - **Card**: a textured plane facing the camera, at its centre of interest. Use
   it as a reference board next to your model.

@@ -17,7 +17,7 @@ leaving Maya 2025, 2026 or 2027. Give the panel a prompt, an image, views of
 an object, a mesh or a character, see the exact price on the button, and the
 result lands in the open scene as one undo step.
 
-![Maya 2027 with the Scenario panel docked on the right: a brass lantern generated with Meshy 7.1 and a wooden chest, imported side by side](docs/media/hero.png)
+![Maya 2027 with the Scenario panel docked on the right: a mech maintenance bay, and a diesel generator built from a prompt with Scenario Claude Fable 5.2 3D, just imported between the mech and the crane](docs/media/hero.png)
 
 ## What it does
 
@@ -84,8 +84,10 @@ The full walkthrough, with every mode, is in the
   prices, jobs and recovery, where results are saved, settings,
   troubleshooting.
 - [Privacy](docs/PRIVACY.md): what leaves your computer and what stays.
-- Handbook: the guide, the privacy notes and the changelog as one page, a
-  single HTML file and a PDF, at [maya.scenario.com](https://maya.scenario.com).
+- [maya.scenario.com](https://maya.scenario.com): the launch film, the
+  example scene step by step, the illustrated guide (PDF), and the handbook
+  (the guide, the privacy notes and the changelog as one page) under
+  [/handbook/](https://maya.scenario.com/handbook/).
 - [Changelog](CHANGELOG.md).
 
 ## Install from a checkout

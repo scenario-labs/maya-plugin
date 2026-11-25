@@ -99,7 +99,20 @@ development (`MAYA_MODULE_PATH=<repo>`). Releases are automated:
   (Scenario's SDK and its dependencies, unpacked by `tools/vendor_sdk.py`, not
   in git), see `VENDORED.md`.
 
-`tests/`: `glb_samples.py` (hand-written GLB fixtures), `site/` (the Vercel middleware of maya.scenario.com, Node's test runner), `unit/` (core, any Python), `maya/` (mayapy, headless), `gui/`
+`site/`: the page at the root of maya.scenario.com (`index.html`, `assets/`:
+the launch film, the step clips, short muted loops cut from the film under
+`loop/`, pictures, the illustrated guide, four results as GLB under `3d/` and
+the 3D viewer under `vendor/`), published by `pages.yml` with the handbook under
+`/handbook/`. The viewer is one bundle, `vendor/viewer3d.min.js` (three.js and
+`tools/site_viewer/viewer3d.js`, licences in `vendor/viewer3d.LICENSE.txt`),
+built with the command below; never edit the bundle by hand. A model on the page
+is one block, `<div class="v3d" data-src="assets/3d/x.glb" aria-label="...">`
+(optional `data-orbit` and `data-clip`, see the source's header). The head of
+`index.html` forwards old `/#<handbook chapter>` links to `/handbook/#<chapter>`:
+add a handbook chapter id there when `handbook.config.json` gains one (a test
+checks it).
+
+`tests/`: `glb_samples.py` (hand-written GLB fixtures), `site/` (the Vercel middleware of maya.scenario.com and the checks of the site page, Node's test runner), `unit/` (core, any Python), `maya/` (mayapy, headless), `gui/`
 (scripted GUI session), `fake_backend/` (a fake Scenario REST API and OAuth
 server), `fixtures/mcp/` (recorded model schemas, scrubbed; the fake turns them
 back into the API's shape).
@@ -139,7 +152,8 @@ tools/test_maya_gui.sh [install generate restart oauth] # scripted GUI session w
 tools/readme_media.sh <signed-in MAYA_APP_DIR> # README pictures, GIFs and videos from a real session; opens Maya; spends one image and one 3D model
 MAYA_DISABLE_CER=1 mayapy tools/render_glb.py result.glb out/ --turn 60 --gif out/turn.gif  # Viewport 2.0 stills or a turntable of a GLB or FBX, headless, 0 CU
 python3 tools/lint.py                          # no em dashes, no secrets, JSON parses
-node --test tests/site/*.test.js               # the maya.scenario.com proxy (Node of .nvmrc)
+node --test tests/site/*.test.js               # the maya.scenario.com proxy and site page (Node of .nvmrc)
+(cd tools/site_viewer && npm ci && npm run build)  # rebuild site/assets/vendor/viewer3d.min.js after a change to viewer3d.js or its three.js pin
 uvx ruff check . && uvx ruff format --check .
 python3 tools/contract_check.py                # free live check, needs a test key
 uv run --python 3.13 --no-project python tools/package.py  # dist/scenario-maya-<version>.zip, the release ZIP
@@ -166,7 +180,7 @@ Any paid run needs explicit authorization for the project and budget first.
 | `project.yml` | non-draft PRs, when opened, reopened or marked ready (not Dependabot's) | adds them to the Plugins project (31) |
 | `release-please.yml` | push to `main` | the release PR; once merged, builds, checks, attests and attaches the ZIP to a draft, checks it again on macOS, publishes it (RELEASING.md) |
 | `publish-changelog.yml` | release published, or by hand | posts the release notes to www.scenario.com/changelog |
-| `pages.yml` | after `release-please`, changes to the docs, by hand | publishes maya.scenario.com with scenario-labs/components: the handbook from the release's docs (`handbook.config.json`), the release ZIP under `/download/` (RELEASING.md, Site) |
+| `pages.yml` | after `release-please`, changes to the docs, by hand | publishes maya.scenario.com with scenario-labs/components: the page in `site/` at the root, the handbook from the release's docs (`handbook.config.json`) under `/handbook/`, the release ZIP under `/download/` (RELEASING.md, Site) |
 
 GitHub runners have no Maya, so `tools/test_maya.sh` and
 `tools/test_maya_gui.sh` run on a Mac with Maya before each release; their
@@ -204,6 +218,8 @@ reports go under `tests/reports/`.
   made by `tools/readme_media.sh` with the team and account names masked,
   and `tools/render_glb.py` (renders of a result, no interface in them);
   look at every file before committing it.
+- The site's media (`site/assets/`, see `.gitattributes`) are Git LFS files:
+  commit them with Git LFS installed, so only pointers enter the history.
 - Name the contributing agent in the PR and keep its co-author trailer on
   commits and in the squash message. A human reviews the complete diff before
   merge.
