@@ -50,7 +50,8 @@ development (`MAYA_MODULE_PATH=<repo>`). Releases are automated:
   - `schema.py`: model schema to form fields, validation, payloads.
   - `delivery.py`: follow a sent job (2 s reads, back-off, pause for review)
     and download its results into one folder with a `scenario.json` sidecar;
-    for 3D, only the GLB, picked by the asset record's format.
+    for 3D, only the GLB, picked by the asset record's format; a Blender
+    file (Fable) is fetched converted, as FBX when the job asked for FBX.
   - `downloads.py`: one file per call: fresh signed link per attempt, `.part`
     resume with range requests, SHA-256 receipt, delivery host allow-list.
   - `gltf.py`: GLB reader (accessors, sparse, normalized), real file type

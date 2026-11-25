@@ -11,7 +11,9 @@ with one receipt per file (``downloads.py``) and a ``scenario.json`` sidecar
 holding the provenance and receipts. Files that are already there with the
 same hash are kept, never downloaded twice. A 3D job returns several files
 (GLB, OBJ, MTL, textures): with ``formats`` only the preferred format is
-downloaded, chosen by each asset record's format, never by its position.
+downloaded, chosen by each asset record's format, never by its position. A
+result stored as a Blender file (Fable) is fetched converted by Scenario:
+FBX when the job asked for FBX, so quads survive, else GLB.
 
 Both block; the Maya layer runs them on workers. Neither touches Maya.
 """
@@ -87,6 +89,17 @@ MIME_FORMATS = {
     "application/x-fbx": "fbx",
     "model/x-fbx": "fbx",
 }
+BLENDER = "model/x-blender"
+
+
+def _mime(record: dict) -> str:
+    return str(record.get("mimeType") or record.get("mime_type") or "").split(";", 1)[0].strip().lower()
+
+
+def blender_target(params: dict | None, formats: tuple) -> str:
+    """The format a Blender-file result is fetched in: ``fbx`` when the job asked for FBX (quads survive), else ``glb``."""
+    asked = str((params or {}).get("outputFormat") or "").strip().lower()
+    return "fbx" if asked == "fbx" and "fbx" in formats else "glb"
 
 
 def asset_format(record: dict) -> str:
@@ -112,8 +125,9 @@ def _facts(record: dict) -> dict:
 def pick_assets(backend, asset_ids: list, formats: tuple) -> tuple:
     """``(chosen ids, facts by id, thumbnail url)``: the assets of the first format in ``formats`` that the job returned.
 
-    With no match every asset is kept, so the files are still saved and the
-    import can say what it received.
+    With no match, Blender files are chosen (fetched converted, see
+    ``download_results``); with none either, every asset is kept, so the files
+    are still saved and the import can say what it received.
     """
     records = {asset_id: backend.asset(asset_id) or {} for asset_id in asset_ids}
     chosen = list(asset_ids)
@@ -122,6 +136,8 @@ def pick_assets(backend, asset_ids: list, formats: tuple) -> tuple:
         if matching:
             chosen = matching
             break
+    else:
+        chosen = [asset_id for asset_id in asset_ids if _mime(records[asset_id]) == BLENDER] or chosen
     thumb = (records[chosen[0]].get("thumbnail") or {}).get("url") if chosen else ""
     return chosen, {asset_id: _facts(records[asset_id]) for asset_id in chosen}, thumb or ""
 
@@ -152,7 +168,8 @@ def download_results(
     """Downloads every result asset of a finished job into one folder under ``root``.
 
     ``convert`` maps a delivered MIME type to a format Scenario converts to
-    (``{"image/webp": "png"}``: Maya's file node cannot read WebP).
+    (``{"image/webp": "png"}``: Maya's file node cannot read WebP). With
+    ``formats``, a Blender file is converted too (``blender_target``).
     ``formats`` (``("glb",)``) downloads only the assets of the first format
     the job returned, plus the result's thumbnail; the choice is kept on the job.
     ``progress(index, received, total)`` reports per file. Returns the ``ready`` row.
@@ -167,6 +184,9 @@ def download_results(
         raise errors.ProtocolError("Scenario finished the job without a result file.")
     backend = session.backend()
     thumb = ""
+    convert = dict(convert or {})
+    if formats:
+        convert.setdefault(BLENDER, blender_target(row.get("params"), formats))
     if formats and "picked" not in result:
         picked, facts, thumb = pick_assets(backend, list(result["asset_ids"]), formats)
         result.update(picked=picked, facts=facts)
@@ -188,7 +208,7 @@ def download_results(
                 files.append(kept[asset_id])
                 continue
             first = backend.download_url(asset_id)
-            fmt = (convert or {}).get((first.get("mime_type") or "").lower(), "")
+            fmt = convert.get(_mime(first), "")
             if fmt:
                 first = backend.download_url(asset_id, fmt)
             links = [first]
@@ -197,7 +217,8 @@ def download_results(
                 return links.pop() if links else backend.download_url(asset_id, fmt)
 
             name = stem if len(asset_ids) == 1 else f"{stem}_{index + 1}"
-            path = _part_or_new(folder, name, naming.extension_for(first.get("mime_type", ""), first.get("url", "").split("?", 1)[0]))
+            ext = "." + fmt if fmt in ("glb", "fbx") else naming.extension_for(first.get("mime_type", ""), first.get("url", "").split("?", 1)[0])
+            path = _part_or_new(folder, name, ext)
             receipt = downloads.download(
                 get_link,
                 path,
@@ -207,6 +228,8 @@ def download_results(
             )
             receipt["asset_id"] = asset_id
             receipt.update(facts.get(asset_id) or {})
+            if fmt and asset_id in facts:
+                receipt["format"] = fmt  # what was fetched, not what Scenario stores
             files.append(receipt)
     except downloads.Cancelled:
         session.ledger.set_state(local_id, "download_failed", "stopped", result_json=dict(result, folder=folder, files=files), error="Download stopped.")
