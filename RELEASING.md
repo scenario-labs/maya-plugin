@@ -53,7 +53,7 @@ It checks the answer for this release's version, since an HTTP 200 alone can car
 - Under `/handbook/`, the handbook built from the newest published release's docs (chapters in `handbook.config.json`), its pictures under `/handbook/media/` and the link-preview card `/handbook/og.png` (components' `og`, set by `og` in `handbook.config.json`). The proxy redirects `/handbook` to `/handbook/`.
 - The release's ZIP under `/download/` with `download/latest.json`.
 
-Preview it from a checkout: copy `site/` to a folder, build the handbook into its `handbook/` with `HANDBOOK_PATH=handbook npx github:scenario-labs/components handbook --no-pdf --out <folder>/handbook`, and serve the folder with a server that answers range requests, so the videos seek. Keep each media file under 50 MB; replacing the film adds its full size to the history again. The Vercel project on `tools/site_proxy` holds the domain, forwards every path to GitHub Pages, counts downloads in PostHog and answers `/download/latest`.
+Preview it from a checkout: copy `site/` to a folder, build the handbook into its `handbook/` with `HANDBOOK_PATH=handbook npx github:scenario-labs/components handbook --no-pdf --out <folder>/handbook`, and serve the folder with a server that answers range requests, so the videos seek. The media under `site/assets/` are Git LFS files (`.gitattributes`), so the repository keeps only pointers: install Git LFS before cloning to preview them, and keep each file under 50 MB. The Vercel project on `tools/site_proxy` holds the domain, forwards every path to GitHub Pages, counts downloads in PostHog and answers `/download/latest`.
 
 Set once by an administrator:
 

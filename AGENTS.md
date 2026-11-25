@@ -217,6 +217,8 @@ reports go under `tests/reports/`.
   made by `tools/readme_media.sh` with the team and account names masked,
   and `tools/render_glb.py` (renders of a result, no interface in them);
   look at every file before committing it.
+- The site's media (`site/assets/`, see `.gitattributes`) are Git LFS files:
+  commit them with Git LFS installed, so only pointers enter the history.
 - Name the contributing agent in the PR and keep its co-author trailer on
   commits and in the squash message. A human reviews the complete diff before
   merge.

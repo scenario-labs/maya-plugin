@@ -56,6 +56,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          lfs: true
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -76,6 +77,15 @@ jobs:
             else
               echo "::notice::$tag has no site/: main's page"
             fi
+          fi
+      # The site's media are Git LFS files: a pointer left in site/ would be
+      # published in place of a film or a picture.
+      - name: Check that the page's media are real files
+        run: |
+          set -euo pipefail
+          if grep -rlIx 'version https://git-lfs.github.com/spec/v1' site; then
+            echo "::error::Git LFS pointers in site/: the media were not fetched."
+            exit 1
           fi
       # The handbook from the newest release's docs under /handbook/, the page
       # in site/ at the root, and the ZIP once the release's SHA256SUMS and

@@ -1,0 +1,7 @@
+# The site's media (films, clips, pictures, models, the guide) live in Git LFS,
+# so the repository keeps only small pointers. The Pages workflow fetches them.
+site/assets/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
+site/assets/**/*.webp filter=lfs diff=lfs merge=lfs -text
+site/assets/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+site/assets/**/*.glb filter=lfs diff=lfs merge=lfs -text
+site/assets/**/*.pdf filter=lfs diff=lfs merge=lfs -text
